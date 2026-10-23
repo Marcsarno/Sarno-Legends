@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Render lab: battle stage</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1416; color: #ece4d2; font-family: 'Barlow Semi Condensed', system-ui, sans-serif; }
+  #stage { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #bar { position: fixed; left: 8px; right: 8px; bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px; pointer-events: auto; justify-content: center; }
+  #bar button { font: 600 13px/1 Oswald, system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #ece4d2;
+    background: #20323acc; border: 1px solid #2d4249; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+  #bar button:hover { background: #2d4249; }
+  #bar button.on { background: #c8483a; border-color: #e8846f; }
+  #log { position: fixed; left: 10px; top: 8px; font: 12px/1.35 ui-monospace, monospace; color: #9fb0ae; white-space: pre; pointer-events: none; text-shadow: 0 1px 2px #000; }
+  .num { position: absolute; transform: translate(-50%, -50%); font: 400 44px/1 'Bebas Neue', Impact, sans-serif; letter-spacing: .02em;
+    color: #fff; -webkit-text-stroke: 2px #1a0505; paint-order: stroke fill; text-shadow: 0 3px 0 #0009; pointer-events: none; white-space: nowrap; }
+  .num.hp { color: #ff5a4a; font-size: 52px; } .num.block { color: #9fd0ff; font-size: 34px; } .num.heal { color: #8fd16a; }
+  .num.status { color: #d9a7ff; font-size: 26px; } .num.blocked { color: #b9c2c4; font-size: 30px; } .num.big { font-size: 72px; }
+  .banner { position: fixed; left: 50%; top: 34%; transform: translate(-50%, -50%); font: 400 64px/1 'Bebas Neue', Impact, sans-serif; letter-spacing: .06em;
+    color: #ece4d2; text-shadow: 0 4px 0 #000a, 0 0 30px #000; pointer-events: none; white-space: nowrap; }
+  .banner.finisher { color: #ffd166; font-size: 96px; transform: translate(-50%, -50%) rotate(-6deg); -webkit-text-stroke: 3px #5c1010; paint-order: stroke fill; }
+  .banner.enemy { color: #ff8f80; }
+  .tag { position: absolute; transform: translate(-50%, -100%); font: 600 12px/1 Oswald, sans-serif; color: #ece4d2; background: #000a; padding: 3px 6px; border-radius: 4px; pointer-events: none; white-space: nowrap; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div id="ui"></div>
+<div id="log"></div>
+<div id="bar"></div>
+<script type="module" src="./render.js"></script>
+</body>
+</html>

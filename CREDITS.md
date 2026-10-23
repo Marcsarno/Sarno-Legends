@@ -1,0 +1,38 @@
+# Credits
+
+Every downloaded asset the game ships, with its licence. Add a row when you add a file.
+
+## Sound effects (`public/assets/sfx/`)
+
+All CC0 (public domain). The takes were cut, trimmed, pitched and levelled for Marc's other game, yola-zombie (its `SOUND_PLAN.md`, "Sources used so far", and `tools/sfx/build_*.py`); the raw packs were never committed. Sarno Legends plays the 166 takes listed in `tools/sfx-keep.json` (about 1.5 MB); the banks that use them are in `src/audio/sfx.js`.
+
+| Source | Licence | Our files (in the keep list) |
+|---|---|---|
+| The Free Firearm Sound Library, "Prepared SFX Library" (opengameart.org/content/the-free-firearm-sound-library) | CC0 | `guns/pistol_01-06` (Walther PPQ, 1911), `guns/shotgun_09-12` (four shotguns from further off), `guns/pump_fwd` (Winchester Model 12) |
+| "handgun reload sound effect" by zer0_sol (opengameart.org/content/handgun-reload-sound-effect) | CC0 | `guns/mag_out`, `guns/mag_in`, `guns/slide` |
+| "Shotgun Reload Sound effects" by zer0_sol (opengameart.org) | CC0 | `lib/rack_04` |
+| Kenney, Impact Sounds (kenney.nl/assets/impact-sounds) | CC0 | `lib/punch_06-08`, `lib/punchheavy_*`, `lib/wood_*`, `lib/metal_*`, `lib/soft_*`, `lib/glass_*`, `zombie/stomp_11-12` and `zombie/debris_*` (pitched down) |
+| Kenney, RPG Audio (kenney.nl/assets/rpg-audio) | CC0 | `lib/blade_*`, `lib/door_*`, `lib/doorshut_*`, `lib/cloth_*`, `lib/click_*`, `lib/pickup_*`, `lib/step_11-14` |
+| "Punch" by qubodup (opengameart.org) | CC0 | `lib/punch_02-05` |
+| "thwack sounds" by AntumDeluge (opengameart.org) | CC0 | `lib/thwack_*` |
+| "Squish Sounds Effects" by EZduzziteh (opengameart.org) | CC0 | `lib/squish_*` |
+| "Zombies Sound Pack" by artisticdude (opengameart.org) | CC0 | `zombie/attack_01-07`, `zombie/hurt_01-04`, `zombie/death_02-05`, `zombie/groar_13` (pitched down) |
+| "80 CC0 creature SFX" 1 + 2 by rubberduck (opengameart.org) | CC0 | `zombie/alert_03-12`, `zombie/hurt_07`, `zombie/death_07-08`, `zombie/scream_02`, `zombie/charge_*`, `zombie/bite_*`, `zombie/sdeath_02`, `zombie/stomp_01-02`, the deep guard voices `zombie/gattack_14`, `gpain_03-04`, `gdeath_02`, `groar_06`, and the boss stinger `zombie/sting_02` (a roar reversed into itself) |
+| "Monster Sound Effects Pack" and "Monster Sound Pack, Volume 1" by Ogrebane (opengameart.org) | CC0 | `zombie/gattack_01-02`, `zombie/gpain_07`, `zombie/groar_14`, `zombie/scream_05` |
+| "75 CC0 breaking / falling / hit sfx" by rubberduck (opengameart.org) | CC0 | `reveal/scrack_14` (wood breaking) |
+| "Swishes Sound Pack" by artisticdude (opengameart.org) | CC0 | `reveal/whoosh_14-17` |
+| BigSoundBank (bigsoundbank.com) | CC0 | `reveal/whoosh_01-10`, `slowswish_*`, `thump_*`, `boom_*`, `crack_02`, `ding_*`, `drum_*`, `heart_*`, `ecg_05`, `flatline_01`, `ring_01`, `arc_*`, `bigstep_*`, `bodyfall_*`, `sbone_*`, `scrack_03/06`, `swet_01`, `ldoorsopen_04`, `ldoorsclose_04` |
+
+Also in `public/assets/sfx/` today but not played (the asset pipeline will drop them): "monster snarls" by Darsycho, "Ghost Monster Voice Moaning & Growling" by qubodup, "Glass Break" by Till Behrend, "100 CC0 SFX #2" by rubberduck. All CC0.
+
+Synthesised in code (no files): the UI ticks, card swishes, energy and turn bells, deny buzz, coin tinkle, status stingers and the felt "kick" under gunshots (`SYNTHS` in `src/audio/sfx.js`).
+
+## Music (`public/assets/music/`)
+
+Supplied by Marc for his games, copied from yola-zombie. Not CC0: they are Marc's to license.
+
+| File | Where it plays |
+|---|---|
+| `agile_groove.mp3` ("Agile Groove", Marc's track; yola-zombie `assets/music/`) | normal fights |
+| `ch2_a_tension.mp3` (yola-zombie neighborhood level) | title, map and other screens |
+| `ch2_c_action.mp3` (yola-zombie neighborhood level) | elite fights and the boss |

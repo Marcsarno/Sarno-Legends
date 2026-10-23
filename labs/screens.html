@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>Screens lab</title>
+<style>
+  #lab-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 999; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    padding: 5px 8px; background: #050909ee; border-top: 1px solid #2d4249; font: 500 11px/1 Oswald, system-ui, sans-serif; color: #9fb0ae; }
+  #lab-bar b { font: 400 18px/1 'Bebas Neue', Impact, sans-serif; letter-spacing: .06em; color: #ece4d2; margin-right: 6px; }
+  #lab-bar b em { color: #c8483a; font-style: normal; } #lab-bar b i { color: #2fa39a; font-style: normal; }
+  #lab-bar a { color: #ece4d2; text-decoration: none; padding: 4px 6px; border-radius: 4px; background: #18262a; border: 1px solid #2d4249; letter-spacing: .05em; text-transform: uppercase; }
+  #lab-bar a.on { background: #2fa39a; border-color: #7fd6cc; color: #04110f; }
+  #lab-bar a.v { background: transparent; border-style: dashed; }
+  #lab-log { position: fixed; right: 8px; bottom: 36px; z-index: 999; max-width: 340px; font: 11px/1.35 ui-monospace, monospace; color: #7fd6cc;
+    background: #050909d8; border: 1px solid #2d4249; border-radius: 6px; padding: 6px 8px; pointer-events: none; white-space: pre-wrap; }
+  #lab-log:empty { display: none; }
+  body.clean #lab-bar, body.clean #lab-log { display: none; }
+  body:not(.clean) #ui { bottom: 31px; }
+</style>
+</head>
+<body>
+<div id="ui"></div>
+<div id="lab-bar"></div>
+<div id="lab-log"></div>
+<script type="module" src="./screens.js"></script>
+</body>
+</html>

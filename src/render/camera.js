@@ -5,26 +5,26 @@ import * as THREE from 'three';
 
 export const BATTLE = {
   fov: 32,                                   // vertical, at 16:9 (about a 40 mm lens)
-  position: new THREE.Vector3(0.35, 1.7, 9.2),
-  target: new THREE.Vector3(0.35, 1.15, 0),
-  minHalfWidth: 4.9,                         // keep x in [target.x - w, target.x + w] visible on narrow screens
+  position: new THREE.Vector3(0.3, 2.45, 8.0),   // ~11 deg above the action, close enough that a body is ~40% of the height
+  target: new THREE.Vector3(0.3, 1.02, 0),
+  minHalfWidth: 4.15,                        // keep x in [target.x - w, target.x + w] visible on narrow screens
   near: 0.1, far: 80,
 };
 
 // Where everyone stands. Marc holds the forward melee spot; Yola is behind him on the left.
 export const SLOTS = {
-  marc: new THREE.Vector3(-1.75, 0, 0.35),
-  yola: new THREE.Vector3(-3.05, 0, -0.45),
+  marc: new THREE.Vector3(-1.4, 0, 0.45),
+  yola: new THREE.Vector3(-3.3, 0, -0.5),     // 1.9 m back: her line of fire passes behind Marc, clear of his head
   // up to 5 zombies: front row 0-2, back row 3-4 (slot order = action order, left to right on screen)
   enemy: [
     new THREE.Vector3(1.35, 0, 0.45),
-    new THREE.Vector3(2.75, 0, 0.0),
-    new THREE.Vector3(4.05, 0, 0.5),
-    new THREE.Vector3(2.05, 0, -1.25),
-    new THREE.Vector3(3.45, 0, -1.35),
+    new THREE.Vector3(2.6, 0, 0.0),
+    new THREE.Vector3(3.8, 0, 0.5),
+    new THREE.Vector3(1.95, 0, -1.25),
+    new THREE.Vector3(3.25, 0, -1.3),
   ],
   // one big zombie (elite or boss) stands here
-  boss: new THREE.Vector3(2.6, 0, 0.1),
+  boss: new THREE.Vector3(2.45, 0, 0.0),
 };
 
 // Target heights (metres) the character loader scales models to before any per-enemy scale.

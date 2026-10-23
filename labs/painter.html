@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Painter lab: rooms, card art, icons</title>
+<style>
+  html, body { margin: 0; background: #0d1416; color: #ece4d2; font-family: 'Barlow Semi Condensed', system-ui, sans-serif; }
+  body { padding: 14px 16px 40px; }
+  h1 { font: 400 34px/1 'Bebas Neue', Impact, sans-serif; letter-spacing: .06em; margin: 4px 0 4px; }
+  h1 b { color: #c8483a; font-weight: 400; } h1 i { color: #2fa39a; font-style: normal; }
+  h2 { font: 600 15px/1 Oswald, system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #9fb0ae; margin: 26px 0 10px; border-bottom: 1px solid #2d4249; padding-bottom: 6px; }
+  #log { font: 12px/1.4 ui-monospace, monospace; color: #64777a; white-space: pre-wrap; }
+  .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 600px), 1fr)); gap: 14px; }
+  .room { margin: 0; background: #142023; border: 1px solid #2d4249; border-radius: 8px; overflow: hidden; }
+  .room img, .room canvas { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #0b1012; }
+  .room figcaption { display: flex; justify-content: space-between; padding: 7px 10px; font: 500 13px/1 Oswald, sans-serif; letter-spacing: .05em; }
+  .room figcaption span { color: #64777a; font: 12px/1 ui-monospace, monospace; }
+  .sheet { display: flex; flex-wrap: wrap; gap: 10px; }
+  .tile { width: 168px; margin: 0; background: #142023; border: 1px solid #2d4249; border-radius: 8px; overflow: hidden; }
+  .tile img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .tile.sq img { aspect-ratio: 1; object-fit: contain; background: radial-gradient(circle at 50% 45%, #2a3b3f, #121b1d 70%); }
+  .tile.pt img { aspect-ratio: 1; }
+  .tile figcaption { padding: 5px 7px; font: 500 12px/1.1 Oswald, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile figcaption small { display: block; color: #64777a; font: 10px/1.2 ui-monospace, monospace; margin-top: 2px; }
+  .tile.marc { border-color: #7d231b; } .tile.yola { border-color: #145a55; }
+  .single { position: fixed; inset: 0; padding: 0; margin: 0; }
+  .single img { width: 100vw; height: 100vh; object-fit: cover; display: block; }
+  .props { display: grid; grid-template-columns: repeat(auto-fill, 200px); gap: 8px; }
+  nav { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 0; }
+  nav a { color: #ece4d2; text-decoration: none; font: 600 12px/1 Oswald, sans-serif; letter-spacing: .06em; text-transform: uppercase; background: #20323a; border: 1px solid #2d4249; border-radius: 5px; padding: 6px 9px; }
+  nav a:hover { background: #2d4249; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="./painter.js"></script>
+</body>
+</html>

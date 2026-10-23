@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Audio lab</title>
+<link rel="icon" href="data:," />
+<style>
+  body { background: var(--bg, #0d1416); color: var(--ink, #ece4d2); margin: 0; overflow: auto; height: auto; min-height: 100%; }
+  html, body { overflow-y: auto !important; height: auto !important; touch-action: auto !important; user-select: auto !important; }
+  .al { max-width: 1400px; margin: 0 auto; padding: 14px 16px 40px; font-family: var(--f-body, system-ui, sans-serif); }
+  .al-top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; position: sticky; top: 0; z-index: 5; padding: 10px 0 12px;
+    background: linear-gradient(180deg, var(--bg, #0d1416) 85%, #0d141600); }
+  .al-logo { font: 400 30px/1 var(--f-display, Impact); letter-spacing: .04em; }
+  .al-logo b { color: var(--marc, #c8483a); font-weight: 400; } .al-logo i { color: var(--yola, #2fa39a); font-style: normal; }
+  .al-unlock { font: 600 14px/1 var(--f-head, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: #fff; cursor: pointer;
+    background: var(--marc, #c8483a); border: 0; border-radius: 6px; padding: 11px 16px; box-shadow: 0 3px 0 var(--marc-dark, #7d231b); }
+  .al-unlock.on { background: var(--panel-2, #20323a); box-shadow: none; color: var(--good, #8fd16a); cursor: default; }
+  .al-status { font: 12px/1.35 ui-monospace, Menlo, monospace; color: var(--ink-dim, #9fb0ae); min-width: 260px; flex: 1; }
+  .al-status b { color: var(--ink, #ece4d2); font-weight: 600; }
+  .al-meter { width: 200px; height: 34px; border-radius: 6px; background: #0a1012; border: 1px solid var(--line, #2d4249); }
+  .al-grid { display: grid; grid-template-columns: minmax(230px, 280px) 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .al-grid { grid-template-columns: 1fr; } .al-meter { width: 140px; } }
+  @media (max-height: 500px) { .al-top { position: static; } .al-logo { font-size: 24px; } }
+  .al-panel { background: var(--panel, #18262a); border: 1px solid var(--line, #2d4249); border-radius: 10px; padding: 12px 14px 14px; margin-bottom: 14px; }
+  .al-panel h2 { margin: 0 0 10px; font: 600 13px/1 var(--f-head, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim, #9fb0ae); display: flex; gap: 8px; align-items: baseline; }
+  .al-panel h2 small { font: 400 12px var(--f-body, sans-serif); letter-spacing: 0; text-transform: none; color: var(--ink-faint, #64777a); }
+  .al-row { display: grid; grid-template-columns: 62px 1fr 34px; gap: 8px; align-items: center; margin: 6px 0; font: 500 13px var(--f-head, sans-serif); }
+  .al-row output { text-align: right; font: 12px ui-monospace, monospace; color: var(--ink-dim, #9fb0ae); }
+  .al-row input { width: 100%; accent-color: var(--yola, #2fa39a); }
+  .al-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+  .al-btns.sub { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line, #2d4249); }
+  .al-b { font: 500 13px/1.1 var(--f-head, sans-serif); color: var(--ink, #ece4d2); background: var(--panel-2, #20323a); border: 1px solid var(--line, #2d4249);
+    border-radius: 6px; padding: 7px 10px; cursor: pointer; text-align: left; transition: background .12s, transform .08s; }
+  .al-b:hover { background: #29414a; } .al-b:active { transform: translateY(1px); }
+  .al-b small { display: block; font: 400 11px var(--f-body, sans-serif); color: var(--ink-faint, #64777a); margin-top: 2px; }
+  .al-b.marc { border-left: 3px solid var(--marc, #c8483a); } .al-b.yola { border-left: 3px solid var(--yola, #2fa39a); }
+  .al-b.z { border-left: 3px solid #8aa26a; } .al-b.big { border-left: 3px solid var(--gold, #e3b04b); } .al-b.ui { border-left: 3px solid var(--block, #6aa9d8); }
+  .al-b.flash { background: #35505a; }
+  .al-b.on { background: var(--yola-dark, #145a55); border-color: var(--yola, #2fa39a); }
+  .al-b.on small { color: var(--yola-light, #7fd6cc); }
+  .al-b.miss { opacity: .45; }
+  .al-sel { font: 500 13px var(--f-head, sans-serif); background: var(--panel-2, #20323a); color: var(--ink, #ece4d2); border: 1px solid var(--line, #2d4249); border-radius: 6px; padding: 6px 8px; }
+  .al-log { font: 11.5px/1.45 ui-monospace, Menlo, monospace; color: var(--ink-dim, #9fb0ae); height: 210px; overflow: auto; white-space: pre-wrap; background: #0a1012; border-radius: 6px; padding: 8px; }
+  .al-log .s { color: var(--good, #8fd16a); } .al-log .e { color: var(--ink, #ece4d2); } .al-log .w { color: var(--bad, #ff6b5e); }
+  .al-np { font: 12px ui-monospace, monospace; color: var(--ink-dim, #9fb0ae); margin-top: 8px; min-height: 16px; }
+  .al-note { font-size: 12px; color: var(--ink-faint, #64777a); margin: 6px 0 0; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="al" id="app"></div>
+<script type="module" src="./audio.js"></script>
+</body>
+</html>

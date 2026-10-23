@@ -1,0 +1,51 @@
+/* The hand (hand.js): absolutely placed cards moved by per-frame springs, the targeting arrow, burn and power exits. */
+
+.hand { position: absolute; inset: 0; pointer-events: none; z-index: var(--z-hand, 30); }
+.hand--hidden .hand-card { opacity: 0 !important; pointer-events: none !important; transition: opacity .25s; }
+.hand-card {
+  position: absolute; left: 0; top: 0;
+  transform-origin: 50% 50%; will-change: transform, opacity;
+  pointer-events: auto; cursor: pointer; touch-action: none;
+}
+.hand-card * { pointer-events: none; }
+.hand-card--held, .hand-card--out { pointer-events: none; }
+.hand-card--out { cursor: default; }
+
+/* not enough energy: the cost flashes red */
+.card--deny .card__cost { animation: cost-deny .65s ease-out; }
+@keyframes cost-deny {
+  0% { filter: none; transform: scale(1); }
+  20% { filter: hue-rotate(-40deg) saturate(2.4) brightness(1.1); transform: scale(1.3); }
+  100% { filter: none; transform: scale(1); }
+}
+
+/* exhaust: the card catches, glows and burns away from the bottom up, shedding embers */
+.hand-card--burn { animation: card-burn .62s ease-in forwards; }
+.hand-card--burn .card__frame::before {
+  content: ''; position: absolute; inset: -.2em; border-radius: inherit; z-index: 5;
+  background: radial-gradient(120% 60% at 50% 110%, #ffcf5a 0%, #ff7a2a 35%, #c2240f00 70%);
+  mix-blend-mode: screen; animation: burn-glow .62s ease-in forwards;
+}
+@keyframes card-burn {
+  0% { filter: brightness(1); clip-path: inset(0 0 0 0 round .72em); }
+  25% { filter: brightness(1.5) sepia(.5) saturate(2) hue-rotate(-12deg); clip-path: inset(0 0 0 0 round .72em); }
+  100% { filter: brightness(2.6) sepia(1) saturate(4) hue-rotate(-24deg); clip-path: inset(0 0 100% 0 round .72em); }
+}
+@keyframes burn-glow { from { opacity: 0; } 30% { opacity: 1; } to { opacity: 1; } }
+.ember {
+  position: absolute; width: .35em; height: .35em; border-radius: 50%; z-index: 6;
+  background: radial-gradient(circle, #fff3c2, #ffb03a 50%, #ff5a1a00 72%);
+  animation: ember .7s ease-out both;
+}
+@keyframes ember { from { transform: translate(0, 0) scale(1.2); opacity: 1; } to { transform: translate(var(--dx), -6em) scale(.2); opacity: 0; } }
+
+/* powers fly into the heroes, glowing */
+.hand-card--power { filter: drop-shadow(0 0 1.2em #ffe39a) brightness(1.4); }
+
+/* the targeting arrow */
+.tarrow { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: var(--z-drag, 40); opacity: 0; transition: opacity .12s; }
+.tarrow--on { opacity: 1; }
+.tarrow__seg { fill: #f2e6c8; stroke: #1a1410; stroke-width: 2.2; paint-order: stroke fill; filter: drop-shadow(0 1px 1px #000a); }
+.tarrow__head { fill: #f6ead0; stroke: #1a1410; stroke-width: 2.5; paint-order: stroke fill; }
+.tarrow--hot .tarrow__seg { fill: #ff6a4f; }
+.tarrow--hot .tarrow__head { fill: #ff4b33; filter: url(#tarrow-glow); }

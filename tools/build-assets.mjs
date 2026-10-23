@@ -168,11 +168,17 @@ async function main() {
     fs.mkdirSync(path.dirname(dst), { recursive: true });
     await sharp(path.join(CACHE, A, t)).resize(1024, 1024, { fit: 'inside' }).webp({ quality: 80 }).toFile(dst);
   }
+  // only the sounds the game plays (tools/sfx-keep.json, generated from src/audio/sfx.js banks)
+  const keepFile = path.join(ROOT, 'tools/sfx-keep.json');
+  const keep = fs.existsSync(keepFile) ? new Set(JSON.parse(fs.readFileSync(keepFile, 'utf8')).files) : null;
+  fs.rmSync(path.join(OUT, 'sfx'), { recursive: true, force: true });
   for (const d of SFX_DIRS) {
     const dir = path.join(CACHE, A, d);
     const dst = path.join(OUT, d);
     fs.mkdirSync(dst, { recursive: true });
-    for (const f of fs.readdirSync(dir)) if (f.endsWith('.mp3')) fs.copyFileSync(path.join(dir, f), path.join(dst, f));
+    for (const f of fs.readdirSync(dir)) {
+      if (f.endsWith('.mp3') && (!keep || keep.has(`${d}/${f}`))) fs.copyFileSync(path.join(dir, f), path.join(dst, f));
+    }
   }
   fs.mkdirSync(path.join(OUT, 'music'), { recursive: true });
   for (const m of MUSIC) fs.copyFileSync(path.join(CACHE, A, m), path.join(OUT, 'music', path.basename(m)));

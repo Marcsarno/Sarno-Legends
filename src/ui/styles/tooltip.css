@@ -1,0 +1,39 @@
+/* Tooltips (tooltip.js): a dark panel with a coloured accent, an icon chip, a title and body text. */
+
+.tips { position: fixed; inset: 0; z-index: var(--z-tip, 70); pointer-events: none; display: none; }
+.tips--on { display: block; }
+.tips__col {
+  position: absolute; left: 0; top: 0;
+  display: flex; flex-direction: column; gap: calc(var(--u) * .7);
+  width: clamp(150px, calc(var(--u) * 30), 300px);
+  animation: tip-in 140ms var(--ease-out);
+}
+@keyframes tip-in { from { opacity: 0; translate: 0 4px; } }
+.tip {
+  --tip-c: #9fb0ae;
+  position: relative; overflow: hidden;
+  padding: calc(var(--u) * .9) calc(var(--u) * 1.2) calc(var(--u) * 1.05);
+  background: linear-gradient(180deg, #1b2a2e 0%, #121b1e 100%);
+  border: 1px solid #3a535a; border-radius: calc(var(--u) * 1);
+  box-shadow: 0 calc(var(--u) * .5) calc(var(--u) * 2) #000c, inset 0 1px 0 #ffffff14;
+  color: var(--ink);
+}
+.tip::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--tip-c); box-shadow: 0 0 10px var(--tip-c); }
+.tip__head { display: flex; align-items: center; gap: calc(var(--u) * .7); }
+.tip__icon {
+  flex: none; display: grid; place-items: center;
+  width: calc(var(--u) * 3.2); height: calc(var(--u) * 3.2); min-width: 20px; min-height: 20px; border-radius: 30%;
+  background: color-mix(in srgb, var(--tip-c) 22%, #0b1214); color: var(--tip-c);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tip-c) 50%, transparent);
+}
+.tip__icon svg { width: 72%; height: 72%; }
+.tip__title { font: 600 max(13px, calc(var(--u) * 2.15))/1.05 var(--f-head); letter-spacing: .04em; text-transform: uppercase; color: #fff7e6; }
+.tip__sub { margin-left: auto; font: 600 max(10px, calc(var(--u) * 1.5))/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: var(--tip-c); opacity: .9; }
+.tip--bad .tip__sub { color: #ff8f80; }
+.tip--good .tip__sub { color: #9fe07a; }
+.tip__body { margin-top: calc(var(--u) * .55); font: 500 max(12px, calc(var(--u) * 1.95))/1.25 var(--f-body); color: #dcd5c4; }
+.tip__body b:not(.kw) { color: #fff; font-weight: 700; }
+.tip__body .kw { color: var(--gold); }
+.tip__body .num, .tip__body .num-up, .tip__body .num-down { font-weight: 700; color: #fff; }
+.tip__body .num-up { color: var(--good); } .tip__body .num-down { color: var(--bad); }
+.tip__extra { margin-top: calc(var(--u) * .4); color: var(--ink-dim); font-size: .92em; }
