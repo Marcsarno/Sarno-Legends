@@ -72,3 +72,19 @@ Three agents in parallel, then a full playtest on the built game.
   HP carrying over, elites, rewards, rest, shop), skippable, with a Tips toggle and a How to Play panel. Phones: bigger
   card text (~11–12 px), 44 px tap targets, notch/home-bar safe areas, tap-for-tooltip on touch, an incoming-damage
   chip by the party HP ("Lethal" when the hit would end the run).
+
+## Stage 4: balance and everything that didn't need a human (2026-10-23)
+After the research pass (RESEARCH_NOTES pass 7). Three agents in parallel on branch `polish2`, then checks and a playtest.
+- **Card pass** ("every card should have a place"): never-picked cards 13 → 0. Check the Mag back to draw 2 / discard 1
+  through a new mid-fight choice step; Double Tap, Kneecap, Quick Shot, Flare, Deep Breath, Triage, Light on Feet buffed;
+  new Tough It Out, Wait for It, Barbed Wire, Battering Ram give Marc's block ("Bulwark") build a payoff: it now wins as
+  often as the stagger build. The sim bot learned synergies (`tools/sim/cardvalue.mjs`).
+- **Infection 0–5** (our Ascension; 0 = the family level), **Daily Run** with a score, **Run history**, **Collection**.
+- **Save safety** for iPhone: installable web app (manifest, icons, full-screen landscape), `navigator.storage.persist()`,
+  a save code backup/restore, an Add to Home Screen hint in Safari.
+- **Kids and phones**: "End turn with energy left?" (first 3 runs), coach bubble kept clear of the HP bar, 12 px shop
+  names, 44 px tap areas for statuses/relics/potions.
+- **Visuals**: the bat follows the blow in the finisher, auto-quality for weak phones (pixel ratio, then shadows), enemy
+  looks (olive wide Bloater, navy Orderly, grey hunched Biter, thin bile-yellow Spitter), hit squash, a Staggered slump
+  with a violet pulse. Boot: no fallback textures, sounds wait for the first fight's models.
+- **Before → after:** #43–#47 → #48–#55.

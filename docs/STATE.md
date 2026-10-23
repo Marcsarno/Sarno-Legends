@@ -13,6 +13,9 @@ like a video, push to GitHub and Vercel at the end; save and commit before any c
   or create_deployment). Never the hornerxpress account.
 
 ## Stage log
+(Latest: stage 4 merged to main: card pass 8, Infection 0-5, daily run, history, collection, save code + PWA, choice
+step, end-turn warning, auto-quality, enemy looks. 175 tests. Next: Marc's human testing and feedback.)
+
 - Stage 0 done: scaffold, asset pipeline, spec, build-log tooling.
 - Stage 1 done (76d7f28): all modules built and tested in labs; frames #2-#11.
 - Stage 2 done (de61676): integration (src/app/) + QA. tools/playtest.mjs: 5 full bot runs to the boss, 0 errors

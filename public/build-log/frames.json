@@ -374,5 +374,69 @@
   "caption": "Stage 3. The end of a winning run: 16 floors, 11 zombies, best hit 36, 115 scrap banked: enough for the Nail Bat in the Armory.",
   "stage": 3,
   "date": "2026-10-23 15:10"
+ },
+ {
+  "n": 48,
+  "file": "frames/0048-title-daily-run-runs-cards.jpg",
+  "title": "Title: daily run, runs, cards",
+  "caption": "Stage 4. The title gains the family Daily Run (same hospital for everyone that day, best score), Run history and the card Collection.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 49,
+  "file": "frames/0049-mid-fight-choice-discard-a-card.jpg",
+  "title": "Mid-fight choice: discard a card",
+  "caption": "Stage 4. Cards can now ask you to choose: Check the Mag is back to Slay the Spire's rule (draw 2, discard 1).",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 50,
+  "file": "frames/0050-run-history.jpg",
+  "title": "Run history",
+  "caption": "Stage 4. Every run kept: floor, zombies, finishers, HP, supplies, seed, the deck, relics and each fight's HP cost.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 51,
+  "file": "frames/0051-collection.jpg",
+  "title": "Collection",
+  "caption": "Stage 4. Cards, relics and medicine you've seen; the rest are question marks to find.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 52,
+  "file": "frames/0052-end-turn-with-energy-left.jpg",
+  "title": "End turn with energy left?",
+  "caption": "Stage 4. A gentle check for new players (on for the first 3 runs, then a Settings toggle). Also new: zombie looks (this walker's Staggered slump) and the incoming-damage chip.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 53,
+  "file": "frames/0053-infection-levels.jpg",
+  "title": "Infection levels",
+  "caption": "Stage 4. After a first win: Infection 0 (Family) to 5, each unlocked by winning the one below. Careful-bot win rates 99 / 98 / 98 / 89 / 73 / 60%.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 54,
+  "file": "frames/0054-save-code-backup.jpg",
+  "title": "Save code backup",
+  "caption": "Stage 4. iPhone Safari wipes website saves after 7 days unused: the game now installs to the Home Screen, asks to keep its data, and offers a copyable save code.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
+ },
+ {
+  "n": 55,
+  "file": "frames/0055-coach-tip-clear-of-the-hp-bar.jpg",
+  "title": "Coach tip, clear of the HP bar",
+  "caption": "Stage 4. The first-run coach bubble now keeps clear of the party HP and the played card.",
+  "stage": 4,
+  "date": "2026-10-23 22:17"
  }
 ]
