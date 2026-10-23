@@ -28,6 +28,9 @@ async function settle(app, { cards = true } = {}) {
   await until(() => [...document.querySelectorAll('.scr-bg')].every(b => b.classList.contains('scr-bg--painted') || !shown(b)), 90000, 250);
   await until(() => stagePainted(app), 90000, 250);
   if (cards) await until(() => [...document.querySelectorAll('.card__art')].filter(shown).every(a => a.classList.contains('card__art--img')), 60000, 250);
+  // relic, potion and weapon icons (studio renders), then their 0.3 s fade-in
+  await until(() => [...document.querySelectorAll('.scr-item')].filter(shown).every(e => e.classList.contains('scr-item--img')), 60000, 250);
+  await sleep(800);
   await until(() => [...document.querySelectorAll('.tb__face')].every(f => f.classList.contains('tb__face--img')), 40000, 250);
 }
 

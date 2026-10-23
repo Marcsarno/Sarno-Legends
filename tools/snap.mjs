@@ -3,6 +3,7 @@
 // Usage:
 //   node tools/snap.mjs --url http://localhost:5180/ --title "Asset check" --caption "..." [--stage 0] [--eval "js"] [--wait 1500]
 //   node tools/snap.mjs --plan tools/snap-plan.json --stage 3 --base http://localhost:5180/   (every shot in a plan)
+//   a plan entry: { url, title, caption, ready?, eval?, until?, timeout? (ms for until, default 120000), wait? }
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
@@ -23,7 +24,7 @@ async function shoot(page, shot, stage) {
   await page.goto(shot.url, { waitUntil: 'load' });
   if (shot.ready !== false) await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 }).catch(() => {});
   if (shot.eval) await page.evaluate(shot.eval);
-  if (shot.until) await page.waitForFunction(shot.until, null, { timeout: 120000 }).catch(() => console.warn('until timed out', shot.title));
+  if (shot.until) await page.waitForFunction(shot.until, null, { timeout: Number(shot.timeout ?? 120000) }).catch(() => console.warn('until timed out', shot.title));
   await page.waitForTimeout(Number(shot.wait ?? 1200));
   const n = (frames.at(-1)?.n ?? 0) + 1;
   const file = `frames/${String(n).padStart(4, '0')}-${slug(shot.title)}.jpg`;
