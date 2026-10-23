@@ -500,8 +500,10 @@
   .tbwrap { --tb-h: 42px; }
   .tb__right { gap: 8px; }
   .tb__btn { width: 36px; height: 36px; }
-  .tb__potions { gap: 8px; }
-  .tb__potion { width: 32px; height: 32px; }
+  .tb__potions { gap: 10px; }
+  .tb__potion { width: 34px; height: 34px; }
+  .tb__potion::after { inset: -5px; }
+  .tb__floorlbl { font-size: 10.5px; letter-spacing: .18em; }
   .tb__floor { padding: .3em .8em .25em; }
   .hpbar { --bh: 14px; }
   .ehud--party .hpbar { --bh: 16px; }
@@ -512,4 +514,7 @@
   .pile--exhaust { --pile: 36px; }
   .ehud__inc { font-size: 17px; padding: 3px 7px 2px 4px; }
   .ehud__name { font-size: 12px; }
+  .pv__close { width: 44px; height: 44px; }
+  .pv__panel { width: min(calc(100vw - 16px - var(--sa-l) - var(--sa-r)), 1200px); max-height: calc(100vh - 12px - var(--sa-b)); }
+  .tb__menu-btn { min-height: 44px; }
 }

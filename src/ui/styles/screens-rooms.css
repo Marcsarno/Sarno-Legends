@@ -344,5 +344,9 @@
 /* phones held sideways: 44 px choices, pinned buttons clear of the notch and the home bar */
 @media (max-height: 520px) {
   .ev-choice { min-height: 44px; }
+  .ev-choice__key { font-size: 11px; }
+  .rs-hp { height: 16px; }
+  .rs-hp__text { font-size: 13px; }
+  .rs-choice__note { font-size: 12px; color: var(--ink-dim); }
   .sh-leave { right: max(var(--scr-pad), calc(var(--sa-r) + 10px)); bottom: max(calc(var(--u) * 2), calc(var(--sa-b) + 4px)); }
 }

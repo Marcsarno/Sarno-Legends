@@ -69,6 +69,12 @@ export function createStage(canvas, opts = {}) {
   const catcher = new THREE.Mesh(new THREE.PlaneGeometry(40, 20), new THREE.ShadowMaterial({ color: 0x050808, opacity: 0.55, depthWrite: false }));
   catcher.rotation.x = -Math.PI / 2; catcher.position.y = 0.002; catcher.receiveShadow = true; catcher.renderOrder = 1;
   scene.add(catcher);
+  // a depth-only floor: the painted floor is a picture far behind, so a body sinking through it as it fades (or a foot
+  // dipping under it) would draw over the painting; this hides whatever goes below y = 0. In the transparent pass right
+  // after the backdrop (so it never hides the painting itself), before every fading body.
+  const depthFloor = new THREE.Mesh(catcher.geometry, new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: true, transparent: true }));
+  depthFloor.rotation.x = -Math.PI / 2; depthFloor.position.y = 0; depthFloor.renderOrder = -5; depthFloor.name = 'depth-floor';
+  scene.add(depthFloor);
 
   // ---- backdrop: painted plane (painter.js) or the fallback room ----
   const back = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, depthWrite: false, toneMapped: false, transparent: true, opacity: 1 }));
@@ -87,8 +93,12 @@ export function createStage(canvas, opts = {}) {
   // ---- state ----
   const frameFns = new Set();
   const pickables = new Map();  // uid -> { actor, proxy }
-  let speed = 1, hitStopLeft = 0, slowScale = 1, slowLeft = 0, slowTotal = 0, slowTarget = 1;
+  let speed = 1, hitStopLeft = 0, slowScale = 1;
+  // slow motion: ease in to `scale`, hold, ease back out (real seconds)
+  const slow = { on: false, t: 0, inS: 0, holdS: 0, outS: 0, scale: 1, from: 1 };
   let shakeAmp = 0, shakeT = 0, shakeDecay = 1;
+  // camera nudge: a damped kick of the view in a direction (a hit pushes the frame along the blow)
+  const nudgeS = { x: 0, y: 0, vx: 0, vy: 0 };
   const punch = { t: 0, total: 0, amount: 0, target: new THREE.Vector3(), active: false };
   let width = 1, height = 1, roomKey = null, roomToken = 0, frameNo = 0, running = true, disposed = false;
   const tmpV = new THREE.Vector3(), lookBase = BATTLE.target.clone(), lookNow = new THREE.Vector3();
@@ -172,12 +182,36 @@ export function createStage(canvas, opts = {}) {
   // ---- time effects ----
   const setSpeed = x => { speed = x > 0 ? x : 1; };
   const hitStop = ms => { hitStopLeft = Math.max(hitStopLeft, (ms / 1000) / Math.sqrt(speed)); };
-  function slowMo(scale = 0.3, ms = 600) { slowTarget = scale; slowTotal = slowLeft = (ms / 1000) / speed; }
+  /**
+   * Slow motion (real time, divided by the speed setting): ease from the current rate down to `scale` over `inMs`, hold
+   * it for `holdMs`, ease back to full speed over `outMs`. Called while one is running, it keeps the slow rate it has
+   * reached and holds again (the finisher eases in during the swing, then holds through the kill).
+   * slowMo(scale, ms) alone: no ease-in, ms in all with the ease-out over its last 35% (the old form).
+   */
+  function slowMo(scale = 0.3, ms = 600, { inMs = 0, holdMs = null, outMs = null } = {}) {
+    if (holdMs == null) { holdMs = ms * 0.65; outMs = ms * 0.35; }
+    const k = 1 / 1000 / speed;
+    const cur = slowNow();
+    slow.from = cur; slow.scale = scale;
+    slow.inS = Math.abs(cur - scale) < 0.02 ? 0 : Math.max(inMs, 1) * k;   // (already there: straight to the hold)
+    slow.holdS = holdMs * k; slow.outS = Math.max(1e-3, (outMs ?? 0) * k);
+    slow.t = 0; slow.on = true;
+  }
+  function slowNow() {
+    if (!slow.on) return 1;
+    const t = slow.t;
+    if (t < slow.inS) return slow.from + (slow.scale - slow.from) * smooth(t / slow.inS);
+    if (t < slow.inS + slow.holdS) return slow.scale;
+    const u = (t - slow.inS - slow.holdS) / slow.outS;
+    return u >= 1 ? 1 : slow.scale + (1 - slow.scale) * smooth(u);
+  }
   function shake(strength = 0.5, ms = 220) { shakeAmp = Math.max(shakeAmp * 0.6, Math.min(1.5, strength)); shakeT = 0; shakeDecay = Math.max(0.05, ms / 1000); }
+  /** A directional kick of the frame (screen x right, y up; strength ~0..1). Small: the backdrop has a 6% margin. */
+  function nudge(dx = 1, dy = 0, strength = 0.5) { nudgeS.vx += dx * strength * 0.11; nudgeS.vy += dy * strength * 0.11; }
   function punchIn(target, ms = 900, amount = 0.38) {
     const p = target?.isObject3D ? target.getWorldPosition(new THREE.Vector3()) : (target ? target.clone() : BATTLE.target.clone());
     if (target?.isObject3D) p.y = Math.max(p.y, 1.0);
-    punch.target.copy(p); punch.total = (ms / 1000); punch.t = 0; punch.amount = amount; punch.active = true;
+    punch.target.copy(p); punch.total = (ms / 1000) / speed; punch.t = 0; punch.amount = amount; punch.active = true;
   }
 
   // ---- projection and picking ----
@@ -216,10 +250,10 @@ export function createStage(canvas, opts = {}) {
     frameNo++;
     let k = speed;
     if (hitStopLeft > 0) { hitStopLeft -= realDt; k = 0; }
-    else if (slowLeft > 0) {
-      slowLeft -= realDt;
-      const u = 1 - slowLeft / slowTotal; // ease out of the slow-mo over its last 35%
-      slowScale = u < 0.65 ? slowTarget : slowTarget + (1 - slowTarget) * smooth((u - 0.65) / 0.35);
+    else if (slow.on) {
+      slow.t += realDt;
+      slowScale = slowNow();
+      if (slow.t >= slow.inS + slow.holdS + slow.outS) { slow.on = false; slowScale = 1; }
       k *= slowScale;
     } else slowScale = 1;
     const dt = realDt * k;
@@ -265,6 +299,18 @@ export function createStage(canvas, opts = {}) {
       fov = zf;
     }
     camera.lookAt(lookNow);
+    // nudge: a stiff damped spring (settles in ~0.25 s)
+    if (nudgeS.vx || nudgeS.vy || Math.abs(nudgeS.x) > 1e-5 || Math.abs(nudgeS.y) > 1e-5) {
+      for (let left = realDt; left > 1e-6; left -= 1 / 120) {
+        const h = Math.min(left, 1 / 120);
+        nudgeS.vx += (-420 * nudgeS.x - 30 * nudgeS.vx) * h; nudgeS.vy += (-420 * nudgeS.y - 30 * nudgeS.vy) * h;
+        nudgeS.x += nudgeS.vx * h; nudgeS.y += nudgeS.vy * h;
+      }
+      const lim = 0.012;
+      nudgeS.x = THREE.MathUtils.clamp(nudgeS.x, -lim, lim); nudgeS.y = THREE.MathUtils.clamp(nudgeS.y, -lim, lim);
+      camera.rotateY(-nudgeS.x); camera.rotateX(nudgeS.y);
+      if (Math.abs(nudgeS.vx) + Math.abs(nudgeS.vy) < 1e-4 && Math.abs(nudgeS.x) + Math.abs(nudgeS.y) < 1e-5) nudgeS.x = nudgeS.y = nudgeS.vx = nudgeS.vy = 0;
+    }
     // shake: small rotations (keep the backdrop registered)
     if (shakeAmp > 0.001) {
       shakeT += realDt;
@@ -294,7 +340,8 @@ export function createStage(canvas, opts = {}) {
     renderer, scene, camera, clock,
     slots: { marc: SLOTS.marc.clone(), yola: SLOTS.yola.clone(), enemy: SLOTS.enemy.map(v => v.clone()), boss: SLOTS.boss.clone() },
     lights: { hemi, key, rim, fill, partyLamp, enemyLamp },
-    setRoom, project, onFrame, resize, setSpeed, shake, hitStop, slowMo, punchIn, pick, pickDetail, dispose,
+    setRoom, project, onFrame, resize, setSpeed, shake, nudge, hitStop, slowMo, punchIn, pick, pickDetail, dispose,
+    slowRate: () => slowScale,                                  // the slow-motion rate now (1 = none)
     setCameraOverride(fn) { camOverride = fn || null; },     // labs / title screen: fn(camera, realDt) replaces the battle view
     addPickable, setPickable,
     getSpeed: () => speed, timeScale: () => (hitStopLeft > 0 ? 0 : speed * slowScale), frame: () => frameNo,

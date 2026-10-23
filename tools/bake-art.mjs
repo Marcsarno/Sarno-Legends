@@ -61,7 +61,7 @@ async function startServer() {
 }
 const stopServer = () => { if (server && server.exitCode === null) server.kill('SIGTERM'); server = null; };
 process.on('exit', stopServer);
-process.on('SIGINT', () => { stopServer(); process.exit(130); });
+for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { stopServer(); process.exit(130); });
 function freePort(p) {
   return new Promise(res => { const s = net.createServer(); s.once('error', () => res(freePort(p + 1))); s.listen(p, () => s.close(() => res(p))); });
 }
@@ -91,7 +91,6 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>bake</titl
 </script></body></html>`;
 
 // ---------------------------------------------------------------- main
-const old = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
 const base = await startServer();
 say('dev server', base);
 const browser = await launch();
@@ -120,10 +119,33 @@ const hash = buf => crypto.createHash('sha1').update(buf).digest('hex').slice(0,
 function write(rel, buf) { fs.mkdirSync(path.dirname(path.join(OUT, rel)), { recursive: true }); fs.writeFileSync(path.join(OUT, rel), buf); return { file: rel, hash: hash(buf), kb: Math.round(buf.length / 102.4) / 10 }; }
 const wanted = id => !IDS || IDS.has(id);
 
+// The manifest is re-read and merged on every save (after each picture), so an interrupted bake keeps what it made and
+// two bakes of different parts (--only rooms / --only cards,icons,portraits) can run side by side.
+const sizeKey = a => (Array.isArray(a) ? a.join('x') : String(a));
+const studioSizes = { card: sizeKey(info.studioSizes.card), relic: sizeKey(info.studioSizes.icon), potion: sizeKey(info.studioSizes.icon), weapon: sizeKey(info.studioSizes.icon), portrait: sizeKey(info.studioSizes.portrait) };
+const roomOrder = info.rooms.map(r => r.key + '|' + JSON.stringify(r.look || null));
+const made = { rooms: [], art: {} };   // what this run baked
+let warnedStale = false;
+function saveManifest() {
+  const disk = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
+  let rooms = disk.rooms?.version === info.bakeVersion ? disk.rooms : { list: [] };
+  let studio = disk.studio?.version === info.studioVersion && JSON.stringify(disk.studio.sizes) === JSON.stringify(studioSizes) ? disk.studio : { files: {} };
+  if (!warnedStale && ((disk.rooms && rooms !== disk.rooms && made.rooms.length) || (disk.studio && studio !== disk.studio && Object.keys(made.art).length))) {
+    warnedStale = true; say('(the manifest was for another painter / studio version: only pictures baked for this one are listed)');
+  }
+  const id = e => e.key + '|' + JSON.stringify(e.look || null);
+  const list = [...(rooms.list || []).filter(e => !made.rooms.some(m => id(m) === id(e))), ...made.rooms]
+    .filter(e => roomOrder.includes(id(e))).sort((a, b) => roomOrder.indexOf(id(a)) - roomOrder.indexOf(id(b)));
+  rooms = { version: info.bakeVersion, sizes: info.sizes, list };
+  studio = { version: info.studioVersion, sizes: studioSizes, files: { ...(studio.files || {}), ...made.art } };
+  const manifest = { generated: new Date().toISOString(), note: 'tools/bake-art.mjs (npm run bake). Do not edit by hand.', rooms, studio };
+  fs.mkdirSync(OUT, { recursive: true });
+  fs.writeFileSync(MANIFEST + '.tmp', JSON.stringify(manifest, null, 1) + '\n');
+  fs.renameSync(MANIFEST + '.tmp', MANIFEST);
+  return manifest;
+}
+
 // ---- rooms
-const rooms = old.rooms?.version === info.bakeVersion ? old.rooms : { version: info.bakeVersion, list: [] };
-if (old.rooms && old.rooms.version !== info.bakeVersion && ONLY.includes('rooms') && IDS) say(`rooms: the old bake is for ${old.rooms.version}: only the rooms baked now will be listed`);
-rooms.version = info.bakeVersion; rooms.sizes = info.sizes;
 if (ONLY.includes('rooms')) {
   for (const { key, look, tag } of info.rooms) {
     if (!wanted(key)) continue;
@@ -138,21 +160,12 @@ if (ONLY.includes('rooms')) {
       variants.push({ ...f, w, h, q });
       say(`room ${name} ${kind} ${w}x${h}: ${f.kb} KB (q${q}, ${Math.round((Date.now() - t1) / 1000)} s)`);
     }
-    rooms.list = rooms.list.filter(e => !(e.key === key && JSON.stringify(e.look || null) === JSON.stringify(look || null)));
-    rooms.list.push({ key, look: look || null, tag: tag || '', variants });
+    made.rooms.push({ key, look: look || null, tag: tag || '', variants });
+    saveManifest();
   }
-  // keep the list in BAKE_ROOMS order, and only rooms that still exist
-  const order = info.rooms.map(r => r.key + '|' + JSON.stringify(r.look || null));
-  rooms.list = rooms.list.filter(e => order.includes(e.key + '|' + JSON.stringify(e.look || null)))
-    .sort((a, b) => order.indexOf(a.key + '|' + JSON.stringify(a.look || null)) - order.indexOf(b.key + '|' + JSON.stringify(b.look || null)));
 }
 
 // ---- studio art
-const sizeKey = a => (Array.isArray(a) ? a.join('x') : String(a));
-const sizes = { card: sizeKey(info.studioSizes.card), relic: sizeKey(info.studioSizes.icon), potion: sizeKey(info.studioSizes.icon), weapon: sizeKey(info.studioSizes.icon), portrait: sizeKey(info.studioSizes.portrait) };
-const fresh = old.studio?.version === info.studioVersion && JSON.stringify(old.studio.sizes) === JSON.stringify(sizes);
-if (old.studio && !fresh) say(`studio: the old bake is for ${old.studio.version}: only the pictures baked now will be listed`);
-const studio = { version: info.studioVersion, sizes, files: fresh ? { ...old.studio.files } : {} };
 const ENC = {   // WebP settings per kind
   card: { quality: 75, effort: 6, smartSubsample: true },
   relic: { quality: 82, alphaQuality: 90, effort: 6 }, potion: { quality: 82, alphaQuality: 90, effort: 6 }, weapon: { quality: 82, alphaQuality: 90, effort: 6 },
@@ -170,24 +183,24 @@ if (ONLY.includes('portraits')) for (const id of ['marc', 'yola', ...info.enemie
 let n = 0;
 for (const [kind, id, rel, alias] of jobs) {
   if (!wanted(id)) continue;
-  if (alias) { if (studio.files[alias]) studio.files[`${kind}:${id}`] = { ...studio.files[alias] }; continue; }
+  if (alias) {
+    const src = made.art[alias] || saveManifest().studio.files[alias];
+    if (src) made.art[`${kind}:${id}`] = { ...src };
+    continue;
+  }
   const t1 = Date.now();
   const png = fromPng(await call(([k, i]) => window.__bake.art(k, i), kind, id));
-  const f = write(rel, await sharp(png).webp(ENC[kind]).toBuffer());
-  studio.files[`${kind}:${id}`] = f;
+  made.art[`${kind}:${id}`] = write(rel, await sharp(png).webp(ENC[kind]).toBuffer());
   n++;
-  if (args.verbose || n % 10 === 1) say(`${kind} ${id}: ${f.kb} KB (${Date.now() - t1} ms)`);
+  if (args.verbose || n % 10 === 1) say(`${kind} ${id}: ${made.art[`${kind}:${id}`].kb} KB (${Date.now() - t1} ms)`);
+  if (n % 5 === 0) saveManifest();
 }
-// aliases whose weapon was baked in this run (or before) but listed after them
-for (const [kind, id, , alias] of jobs) if (alias && wanted(id) && studio.files[alias]) studio.files[`${kind}:${id}`] = { ...studio.files[alias] };
 
-// ---------------------------------------------------------------- manifest + clean-up
-const manifest = { generated: new Date().toISOString(), note: 'tools/bake-art.mjs (npm run bake). Do not edit by hand.', rooms, studio };
-fs.mkdirSync(OUT, { recursive: true });
-fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 1) + '\n');
+// ---------------------------------------------------------------- manifest + clean-up (only the folders this run baked)
+const { rooms, studio } = saveManifest();
 const listed = new Set([...rooms.list.flatMap(e => e.variants.map(v => v.file)), ...Object.values(studio.files).map(f => f.file)]);
 let removed = 0;
-for (const dir of ['rooms', 'cards', 'icons', 'portraits']) {
+for (const dir of ONLY) {
   const d = path.join(OUT, dir);
   if (!fs.existsSync(d)) continue;
   for (const f of fs.readdirSync(d)) if (!listed.has(`${dir}/${f}`)) { fs.unlinkSync(path.join(d, f)); removed++; }

@@ -10,36 +10,40 @@
 import * as THREE from 'three';
 import { createWeapon, WEAPONS, DEFAULT_WEAPON } from './weapons.js';
 
-// clip: { start, impact, end } in clip seconds, measured in labs/render.html?measure=<who> (impact: where the weapon tip,
-// or a zombie's faster hand, moves fastest), then nudged by eye on contact sheets. yaw: the hero's world facing for a
-// target straight along +x (the batting clips swing toward the model's left, the sword set toward its front); reach: how
-// far ahead of the target's centre the striker stands (m); travel: forward root motion the clip already has (zombies).
+// clip: { start, cock, impact, end } in clip seconds, measured in labs/render.html?measure=<who> (impact: where the
+// weapon tip, or a zombie's faster hand, moves fastest), then set by eye on contact sheets (labs/render.html?inspect=):
+// start: the wind-up begins (the weapon starts back); cock: the wind-up is loaded (bat high, arm drawn back), the snap
+// from here to the impact plays fast; end: the recovery is done. strike() plays start -> cock over the wind-up time,
+// cock -> impact over the snap, holds the impact pose, then plays the rest over the recovery (director.js PACING).
+// yaw: the hero's world facing for a target straight along +x (the batting clips swing toward the model's left, the sword
+// set toward its front); reach: how far ahead of the target's centre the striker stands (m); travel: forward root motion
+// the clip already has (zombies).
 export const CLIP_TIMING = {
   // Marc: every strike sweeps through the front of the body at its impact (the heading of the bat tip ~0), so the yaws
   // face the target, turned ~0.15 rad toward the camera
-  bat_swing: { start: 0.9, impact: 1.245, end: 1.75, yaw: 1.4, reach: 1.15 },
-  ual1_Sword_Attack: { start: 0.2, impact: 0.45, end: 1.05, yaw: 1.45, reach: 1.25 },
-  ual_Sword_Regular_A: { start: 0.0, impact: 0.25, end: 0.47, yaw: 1.4, reach: 1.1 },
-  ual_Sword_Regular_B: { start: 0.05, impact: 0.283, end: 0.57, yaw: 1.4, reach: 1.15 },
-  ual_Sword_Regular_C: { start: 0.4, impact: 0.7, end: 1.35, yaw: 1.45, reach: 1.25 },
-  ual_Sword_Heavy_D: { start: 0.3, impact: 0.655, end: 1.3, yaw: 1.15, reach: 1.3 },
-  ual_Sword_Dash: { start: 0.12, impact: 0.35, end: 1.0, yaw: 1.4, reach: 1.15 },
-  melee_horizontal: { start: 0.62, impact: 0.985, end: 1.6, yaw: 1.5, reach: 1.2 },
-  hub_crowbar_combo: { start: 0.42, impact: 0.67, end: 1.45, yaw: 1.4, reach: 1.1 },
-  hub_execution_B_uppercut: { start: 0.1, impact: 0.685, end: 1.6, yaw: 1.55, reach: 1.15 },
-  hub_execution_C_uppercut_mirrored: { start: 0.1, impact: 0.685, end: 1.6, yaw: 1.55, reach: 1.15 },
-  gs_low_slash: { start: 0.6, impact: 0.985, end: 1.5, yaw: 1.45, reach: 1.0 },
+  bat_swing: { start: 0.55, cock: 0.95, impact: 1.245, end: 1.75, yaw: 1.4, reach: 1.15 },
+  ual1_Sword_Attack: { start: 0.0, cock: 0.33, impact: 0.45, end: 1.05, yaw: 1.45, reach: 1.25 },
+  ual_Sword_Regular_A: { start: 0.0, cock: 0.15, impact: 0.25, end: 0.47, yaw: 1.4, reach: 1.1 },
+  ual_Sword_Regular_B: { start: 0.0, cock: 0.17, impact: 0.283, end: 0.57, yaw: 1.4, reach: 1.15 },
+  ual_Sword_Regular_C: { start: 0.2, cock: 0.55, impact: 0.7, end: 1.35, yaw: 1.45, reach: 1.25 },
+  ual_Sword_Heavy_D: { start: 0.08, cock: 0.5, impact: 0.655, end: 1.3, yaw: 1.15, reach: 1.3 },
+  ual_Sword_Dash: { start: 0.0, cock: 0.26, impact: 0.36, end: 1.0, yaw: 1.4, reach: 1.15 },
+  melee_horizontal: { start: 0.4, cock: 0.85, impact: 0.985, end: 1.6, yaw: 1.5, reach: 1.2 },
+  hub_crowbar_combo: { start: 0.2, cock: 0.55, impact: 0.67, end: 1.45, yaw: 1.4, reach: 1.1 },
+  hub_execution_B_uppercut: { start: 0.05, cock: 0.54, impact: 0.655, end: 1.6, yaw: 1.55, reach: 1.15 },
+  hub_execution_C_uppercut_mirrored: { start: 0.05, cock: 0.54, impact: 0.655, end: 1.6, yaw: 1.55, reach: 1.15 },
+  gs_low_slash: { start: 0.3, cock: 0.85, impact: 0.985, end: 1.5, yaw: 1.45, reach: 1.0 },
   ual_Sword_Block: { start: 0.0, impact: 0.25, end: 1.1, yaw: 1.25 },
   // zombies (they keep their root motion; reach = hips to the hero's centre at the impact)
-  ual_Zombie_Scratch: { start: 0.3, impact: 0.63, end: 1.3, reach: 0.8 },
-  scratch: { start: 0.3, impact: 0.63, end: 1.3, reach: 0.8 },
-  attack: { start: 0.6, impact: 1.08, end: 1.8, reach: 0.85 },
-  ual_Zombie_Bite: { start: 0.15, impact: 0.47, end: 1.1, reach: 0.7 },
-  shield_bash: { start: 0.0, impact: 0.13, end: 0.85, reach: 1.0 },
-  slam: { start: 0.3, impact: 0.75, end: 1.37, reach: 0.9, travel: 0.9 },
-  slam_b: { start: 0.3, impact: 0.72, end: 1.6, reach: 0.9 },
-  shield_dash: { start: 0.0, impact: 0.45, end: 1.1, reach: 0.9 },
-  guard_leap_slam: { start: 1.3, impact: 2.5, end: 3.4, reach: 1.0 },
+  ual_Zombie_Scratch: { start: 0.15, cock: 0.5, impact: 0.63, end: 1.3, reach: 0.8 },
+  scratch: { start: 0.15, cock: 0.5, impact: 0.63, end: 1.3, reach: 0.8 },
+  attack: { start: 0.3, cock: 0.92, impact: 1.08, end: 1.8, reach: 0.85 },
+  ual_Zombie_Bite: { start: 0.05, cock: 0.36, impact: 0.47, end: 1.1, reach: 0.7 },
+  shield_bash: { start: 0.2, cock: 0.5, impact: 0.64, end: 0.85, reach: 1.0 },
+  slam: { start: 0.3, cock: 0.6, impact: 0.75, end: 1.37, reach: 0.9, travel: 0.9 },
+  slam_b: { start: 0.3, cock: 0.58, impact: 0.72, end: 1.6, reach: 0.9 },
+  shield_dash: { start: 0.0, cock: 0.3, impact: 0.45, end: 1.1, reach: 0.9 },
+  guard_leap_slam: { start: 1.3, cock: 2.25, impact: 2.5, end: 3.4, reach: 1.0 },
 };
 
 // deaths: [clip, start s, on the floor s] (yola-zombie's DEATHS table, 30 fps frames / 30)
@@ -63,8 +67,15 @@ export const HERO_ANIMS = {
     reload: ['pistol_reload'], melee_light: ['ual_Sword_Regular_A'],
   },
 };
-// world facing of each stance for zombies straight along +x (the batting stance faces the camera, front shoulder to them)
-export const STANCE_YAW = { bat_idle: 0.32, pistol_idle: Math.PI / 2 - 0.3, rifle_aim_idle: Math.PI / 2 - 0.3, ual1_Idle_Loop: Math.PI / 2 - 0.35, ual_Sword_Block: 1.2 };
+// world facing of each stance for zombies straight along +x. bat_idle's root is turned ~1.5 rad from the model's front
+// (a batter stands side-on): at 1.7 his chest is to the camera, his front shoulder, eyes and bat aimed at the zombies;
+// the look-at (actor.look) then turns his head and chest a little further onto the target.
+export const STANCE_YAW = { bat_idle: 1.7, ual1_Sword_Idle: 1.3, pistol_idle: Math.PI / 2 - 0.3, rifle_aim_idle: Math.PI / 2 - 0.3, ual1_Idle_Loop: Math.PI / 2 - 0.35, ual_Sword_Block: 1.2 };
+// how far the look-at may turn the head / chest off the clip (rad), and the share each bone takes
+const LOOK = { max: 0.95, spine: 0.22, neck: 0.33, head: 0.45 };
+// the defeat: each hero's fall (death_fall: a stagger, then down onto the left side), facing so they fall away from the
+// zombies; root: how much of the clip's ~1.4 m slide to keep
+const DEFEAT = { clip: 'death_fall', from: 0.6, floor: 1.55, rate: 1.1, yaw: { marc: 2.15, yola: 1.75 }, root: 0.55 };
 export const LOW_READY = { arm: 0.42, wrist: -0.15, chest: 0.05 };
 const ZOMBIE_IDLES = ['idle', 'ual_Zombie_Idle_Loop'];
 const ZOMBIE_ATTACKS = ['ual_Zombie_Scratch', 'scratch', 'ual_Zombie_Bite', 'attack'];
@@ -118,6 +129,11 @@ export class Actor {
     data.model.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.emissive) this.mats.push(m); m.userData.baseEmissive = m.emissive?.clone(); m.userData.baseTransparent = m.transparent; }); });
     this.gripPose = null;
     this.saved = new Map();                       // bone -> its clip pose before this frame's corrections
+    this.life = Math.random() * 100;              // idle-life clock (breathing, sway), out of phase per actor
+    this.lookTarget = null; this.lookWeight = 1; this.lookW = 0; this.lookYaw = 0;
+    this.lean = 0;                                // anticipation lean (rad, + = into the strike)
+    this.strikePlan = null;
+    this.headFwd = faceForward(data.model, data.bones.Head);
 
     // contact blob under the hips
     this.blob = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: blobTexture(), transparent: true, depthWrite: false, opacity: 0.75 }));
@@ -227,13 +243,39 @@ export class Actor {
   forward(out = new THREE.Vector3()) { return out.set(Math.sin(this.yaw), 0, Math.cos(this.yaw)); }
 
   // ---- combat beats ----
-  /** A timed strike: plays `clip` so its impact lands `hitIn` seconds from now; resolves at the impact. */
-  strike(clip, { hitIn = 0.27, after = 1.25, then = 'idle', fade = 0.08 } = {}) {
+  /**
+   * A timed strike: plays `clip` so its impact lands `hitIn` seconds from now; resolves at the impact.
+   * The wind-up (clip start -> cock) fills hitIn - snap, the snap (cock -> impact) is fast, then the impact pose holds
+   * for `hold` and the rest of the clip plays over `recover`. lean: a procedural lean back during the wind-up, released
+   * into the strike at the snap (anticipation for clips that have little of their own).
+   */
+  strike(clip, { hitIn = 0.5, snap = 0.13, hold = 0.14, recover = 0.45, lean = 0.12, then = 'idle', fade = 0.1 } = {}) {
     const T = CLIP_TIMING[clip] || { start: 0, impact: this.duration(clip) * 0.45, end: this.duration(clip) };
-    const rate = Math.max(0.6, (T.impact - T.start) / hitIn);
-    this.play(clip, { from: T.start, timeScale: rate, fade, to: T.end, then });
-    this.afterImpact = { a: this.cur, impact: T.impact, rate: after };
+    const cock = T.cock ?? T.impact - (T.impact - T.start) * 0.3;
+    snap = Math.min(snap, hitIn * 0.6);
+    const wind = Math.max(1e-3, hitIn - snap);
+    // the wind-up plays at 0.45-1.6x the clip's own speed: start later (or earlier) in the clip to fit
+    const r = THREE.MathUtils.clamp((cock - T.start) / wind, 0.45, 1.6);
+    const start = Math.max(0, Math.min(cock - 0.02, cock - r * wind));
+    const r1 = (cock - start) / wind, r2 = Math.max(0.05, (T.impact - cock) / snap);
+    const end = T.end ?? this.duration(clip);
+    this.play(clip, { from: start, timeScale: r1, fade, to: end, then });
+    this.strikePlan = { a: this.cur, cock, impact: T.impact, r2, hold, holdLeft: hold, rec: Math.max(0.3, (end - T.impact) / Math.max(0.05, recover)), phase: 0, lean };
+    this.afterImpact = null;
+    this.leanT = { t: 0, d: wind, amt: lean };
     return new Promise(resolve => this.timer(hitIn, () => resolve(true)));
+  }
+  // the strike's phases, after the mixer: snap at the cock, freeze at the impact, then the recovery
+  updateStrike(dt) {
+    const P = this.strikePlan; if (!P) return;
+    if (this.cur !== P.a || !P.a.isRunning()) { this.strikePlan = null; this.leanT = null; return; }
+    const a = P.a;
+    if (P.phase === 0 && a.time >= P.cock - 1e-4) {
+      P.phase = 1; a.timeScale = P.r2;
+      if (this.leanT) { this.bend.v += P.lean * 32; this.leanT = null; }   // release the lean into the blow
+    }
+    if (P.phase === 1 && a.time >= P.impact - 1e-4) { P.phase = 2; a.time = P.impact; a.timeScale = 0.035; }
+    if (P.phase === 2) { P.holdLeft -= dt; if (P.holdLeft <= 0) { P.phase = 3; a.timeScale = P.rec; this.strikePlan = null; } }
   }
   timer(sec, fn) { this.tweens.push({ timer: true, t: 0, d: sec, fn }); }
   wait(sec) { return new Promise(r => this.timer(sec, r)); }
@@ -241,9 +283,11 @@ export class Actor {
   /** Hit reaction: flash, a knock back along the hit, a short flinch clip. heavy: bigger. */
   hit({ heavy = false, fromDir = null, amount = 0, blocked = false } = {}) {
     if (this.dead) return;
-    this.flash(blocked ? 0x9fd0ff : this.isHero ? 0xff8a7a : 0xffffff, blocked ? 0.6 : this.isHero ? 0.55 : 0.8);
-    const k = blocked ? 0.04 : heavy ? 0.22 : 0.12;
-    this.knock.v -= k * 14; this.bend.v -= (heavy ? 0.9 : 0.55) * (blocked ? 0.4 : 1) * 10;
+    this.flash(blocked ? 0x9fd0ff : this.isHero ? 0xff8a7a : 0xffffff, blocked ? 0.6 : this.isHero ? 0.6 : 1);
+    // knockback grows with the damage (a big hit shoves the body back ~0.3 m)
+    const k = blocked ? 0.05 : THREE.MathUtils.clamp(0.09 + amount * 0.009 + (heavy ? 0.07 : 0), 0.1, 0.32);
+    this.knock.v -= k * 15; this.bend.v -= (heavy ? 1.0 : 0.6) * (blocked ? 0.4 : 1) * 10;
+    this.strikePlan = null; this.leanT = null;
     if (blocked) return;
     if (this.lying) return;
     if (this.isHero) {
@@ -255,6 +299,36 @@ export class Actor {
     if (!c) return;
     const span = { ual1_Hit_Chest: [0, 0.37, 1.1], ual1_Hit_Head: [0, 0.47, 1.1], react_small_front: [0.05, 0.9, 1.5], hit_flinch: [0.1, 0.9, 1.6], react_large_front: [0.0, 1.2, 1.6], ual_Hit_Knockback: [0, 0.8, 1.2], hit_stumble: [0.1, 1.2, 1.7] }[c] || [0, 0.8, 1.4];
     this.play(c, { from: span[0], to: span[1], timeScale: span[2], fade: 0.05 });
+  }
+
+  /**
+   * The defeat: a hero goes down and stays down. Turns to fall away from the zombies, staggers, drops the weapon and
+   * collapses (death_fall, held on its last frame). Resolves on the floor.
+   */
+  collapse({ delay = 0 } = {}) {
+    if (this.dead && this.collapsed_) return Promise.resolve();
+    this.dead = true; this.collapsed_ = true; this.aiming = false; this.lockYaw = true;
+    this.strikePlan = null; this.leanT = null; this.highlight(false);
+    for (const t of this.tweens) if (!t.timer && !t.done) { t.done = true; t.resolve?.(false); }  // no dash home mid-fall
+    return new Promise(resolve => this.timer(delay, () => {
+      const c = this.pickClip([DEFEAT.clip, 'death_defeat']);
+      const yaw = DEFEAT.yaw[this.id] ?? this.yaw;
+      this.turnTo(yaw, 260);
+      if (!c) { resolve(); return; }
+      const fall = (DEFEAT.floor - DEFEAT.from) / DEFEAT.rate;
+      this.play(c, { from: DEFEAT.from, timeScale: DEFEAT.rate, fade: 0.18, then: 'hold' });
+      // the clip slides the hips ~1.4 m to the side it falls: keep part of it (the root slides back the rest)
+      const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+      this.tween(this.root, 'position', this.root.position.clone().addScaledVector(side, -1.36 * (1 - DEFEAT.root)), fall * 1000, easeInOut);
+      this.timer(fall * 0.45, () => this.dropWeapon());
+      this.timer(fall, () => { this.knock.v -= 1.2; resolve(); });
+    }));
+  }
+  /** Let go of the weapon: it falls out of the hand to the floor (back in hand on reset()). */
+  dropWeapon() {
+    if (!this.weapon || this.weapon.dropped) return;
+    const f = this.forward(_v);
+    this.weapon.drop(new THREE.Vector3(f.x * 0.6 + (Math.random() - 0.5) * 0.4, 1.1, f.z * 0.6 + (Math.random() - 0.5) * 0.4));
   }
 
   /** Death: the killing kind picks the clip. Resolves when the body is on the floor; it sinks and fades after. */
@@ -303,6 +377,7 @@ export class Actor {
   /** A hero back on their feet at home (a new combat after a defeat, the title screen). */
   reset() {
     this.dead = false; this.hidden = false; this.fading = null; this.fade = 1; this.sink = 0; this.lift = 0;
+    this.collapsed_ = false; this.strikePlan = null; this.leanT = null; this.lookYaw = 0; this.lookW = 0; this.weapon?.pickUp?.();
     this.knock.x = this.knock.v = this.bend.x = this.bend.v = 0; this.recoil = 0; this.aiming = false;
     this.root.position.copy(this.home); this.setVisible(true);
     this.mats.forEach(m => { m.opacity = 1; m.transparent = !!m.userData.baseTransparent; m.needsUpdate = true; });
@@ -441,8 +516,7 @@ export class Actor {
       }
       this.tweens = this.tweens.filter(t => !t.done);
     }
-    // the strike's follow-through slows after the impact
-    if (this.afterImpact && this.cur === this.afterImpact.a && this.cur.time >= this.afterImpact.impact) { this.cur.timeScale = this.afterImpact.rate; this.afterImpact = null; }
+    this.life += dt;
     // springs, in small steps: a whole frame in one step (dt is game time: x speed, and a slow device's frame can be
     // 1/20 s) makes them blow up, throwing the actor kilometres off screen
     const sp = (s, k, c) => {
@@ -460,6 +534,7 @@ export class Actor {
     for (const [b, q] of this.saved) b.quaternion.copy(q);
     this.saved.clear();
     this.mixer.update(dt);
+    this.updateStrike(dt);
     // pending play() resolution
     const p = this.pending;
     if (p && (p.a.time >= p.end - 1e-4 || !p.a.isRunning() || !p.a.enabled)) {
@@ -478,6 +553,29 @@ export class Actor {
   postPose(dt) {
     const B = this.bones;
     if (this.gripPose && this.weapon && !this.dead) for (const [b, q] of this.gripPose) { this.touch(b); b.quaternion.slerp(q, 0.85); }
+    this.lookPose(dt);
+    // idle life: heroes breathe, zombies sway (each on its own clock), only while in the stance idle
+    const inIdle = !this.dead && !this.lying && this.cur && this.cur.getClip().name.replace('#alt', '') === this.stanceClip();
+    this.idleW = (this.idleW ?? 0) + ((inIdle ? 1 : 0) - (this.idleW ?? 0)) * Math.min(1, dt * 4);
+    if (this.idleW > 0.01) {
+      const w = this.idleW, t = this.life, lat = this.lateral(_v2);
+      if (this.isHero) {
+        if (B.Spine2) this.rotateAbout(B.Spine2, lat, 0.022 * Math.sin(t * 1.75) * w);                // breath
+        if (B.Spine) this.rotateAbout(B.Spine, UP, 0.03 * Math.sin(t * 0.55 + 1.3) * w);               // weight shift
+      } else {
+        if (B.Spine) this.rotateAbout(B.Spine, this.forward(_v3), 0.07 * Math.sin(t * 0.9) * w);       // sway
+        if (B.Spine1) this.rotateAbout(B.Spine1, lat, 0.04 * Math.sin(t * 1.3 + 0.7) * w);
+        if (B.Head) this.rotateAbout(B.Head, this.forward(_v3), 0.12 * Math.sin(t * 0.7 + 2.1) * w);   // head loll
+      }
+    }
+    // anticipation: lean back through the wind-up (released into the strike by updateStrike)
+    if (this.leanT) {
+      this.leanT.t += dt;
+      const u = Math.min(1, this.leanT.t / this.leanT.d), k = -this.leanT.amt * (u < 0.7 ? easeInOut(u / 0.7) : 1);
+      const lat = this.lateral(_v2);
+      if (B.Spine1) this.rotateAbout(B.Spine1, lat, k * 0.5);
+      if (B.Spine2) this.rotateAbout(B.Spine2, lat, k * 0.5);
+    }
     if (Math.abs(this.bend.x) > 1e-3 && B.Spine1) this.rotateAbout(B.Spine1, this.lateral(_v2), this.bend.x * 0.25);
     // guns at low ready while idle (so Yola isn't aiming at Marc's head); raised for the shot
     if (this.weapon && this.weapon.kind !== 'melee') {
@@ -502,6 +600,27 @@ export class Actor {
     for (const b of this.collapsed) b.scale.setScalar(0.001);
     this.data.model.updateMatrixWorld(true);
     if (this.weapon) { this.weapon.update(dt); this.weapon.setVisible(this.root.visible && !this.hidden); if (this.root.visible) this.weapon.place(this); }
+    if (this.attachments) for (const o of this.attachments) o.userData.faceCamera?.(this.stage.camera);
+  }
+
+  // turn the head (and a little of the chest) toward lookTarget: a world point, or an actor (its head)
+  lookPose(dt) {
+    const B = this.bones;
+    const want = this.dead || this.lying || !this.headFwd || !B.Head || !this.lookTarget ? 0 : this.lookWeight;
+    this.lookW += (want - this.lookW) * Math.min(1, dt * 6);
+    if (this.lookW < 0.01 || !this.headFwd || !B.Head) { this.lookYaw *= 0.9; return; }
+    const tgt = this.lookTarget?.isVector3 ? this.lookTarget : this.lookTarget?.anchor ? this.lookTarget.anchor('chest', _v3) : null;
+    if (!tgt) return;
+    const hp = B.Head.getWorldPosition(_v);
+    const f = _v2.copy(this.headFwd).applyQuaternion(B.Head.getWorldQuaternion(_q));
+    const dx = tgt.x - hp.x, dz = tgt.z - hp.z;
+    if (f.x * f.x + f.z * f.z < 1e-4 || dx * dx + dz * dz < 1e-4) return;
+    const a = THREE.MathUtils.clamp(Math.atan2(f.z * dx - f.x * dz, f.x * dx + f.z * dz), -LOOK.max, LOOK.max) * this.lookW;
+    this.lookYaw += (a - this.lookYaw) * Math.min(1, dt * 9);
+    if (Math.abs(this.lookYaw) < 1e-4) return;
+    if (B.Spine2) this.rotateAbout(B.Spine2, UP, this.lookYaw * LOOK.spine);
+    if (B.Neck) this.rotateAbout(B.Neck, UP, this.lookYaw * LOOK.neck);
+    this.rotateAbout(B.Head, UP, this.lookYaw * (B.Neck ? LOOK.head : LOOK.head + LOOK.neck));
   }
   // the character's own left-right axis in the world
   lateral(out) { return out.crossVectors(UP, this.forward(_v3)).normalize(); }
@@ -554,6 +673,16 @@ export class Actor {
   }
 }
 const _c = new THREE.Color();
+
+// the face's forward in the head bone's own frame, from the bind pose (every model faces +z when bound)
+function faceForward(model, head) {
+  if (!head) return null;
+  let inv = null;
+  model.traverse(o => { if (!inv && o.isSkinnedMesh) { const i = o.skeleton.bones.indexOf(head); if (i >= 0) inv = o.skeleton.boneInverses[i]; } });
+  if (!inv) return null;
+  const v = new THREE.Vector3(0, 0, 1).transformDirection(inv);
+  return Number.isFinite(v.x) ? v : null;
+}
 
 /** Convenience: build an actor for a hero or a zombie model key at a slot. */
 export function heroYaw() { return Math.PI / 2 - 0.32; }

@@ -427,6 +427,18 @@ export function createCombatUI(opts) {
     }
   }
 
+  // the bottom of the top bar (and the relic tray under it), measured now and then: intents stay below it
+  let tbBottom = 0, tbAt = 0;
+  function topLimit() {
+    const now = performance.now();
+    if (now - tbAt > 1000) {
+      tbAt = now;
+      tbBottom = topbar.el.querySelector('.tb')?.getBoundingClientRect().bottom || 0;
+      for (const e of M.enemies.values()) e._ih = e.intentEl?.firstChild.offsetHeight || 0;
+    }
+    return tbBottom;
+  }
+
   function place(r, feet, head, floorY, isParty) {
     const vis = !feet || feet.visible === false ? 'hidden' : '';
     if (r._vis !== vis) { r.root.style.visibility = vis; if (r.intentEl) r.intentEl.style.visibility = vis; r._vis = vis; }
@@ -443,8 +455,10 @@ export function createCombatUI(opts) {
       const bs = `translate(${box.x.toFixed(1)}px, ${box.y.toFixed(1)}px)`;
       if (r.body && r._bs !== bs + box.w + box.h) { r.body.style.transform = bs; r.body.style.width = box.w + 'px'; r.body.style.height = box.h + 'px'; r._bs = bs + box.w + box.h; }
       if (r.intentEl) {
-        const it = `translate(${head.x.toFixed(1)}px, ${(head.y - 6).toFixed(1)}px)`;
-        if (r._it !== it) { r.intentEl.style.transform = it; r.moveEl.style.transform = `translate(${head.x.toFixed(1)}px, ${(head.y - 6).toFixed(1)}px)`; r._it = it; }
+        // over the head, but never up under the top bar (a tall elite on a short phone screen)
+        const iy = Math.max(head.y - 6, topLimit() + (r._ih || 0) + 4);
+        const it = `translate(${head.x.toFixed(1)}px, ${iy.toFixed(1)}px)`;
+        if (r._it !== it) { r.intentEl.style.transform = it; r.moveEl.style.transform = it; r._it = it; }
       }
     }
   }

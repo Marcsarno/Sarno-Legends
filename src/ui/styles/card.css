@@ -223,16 +223,16 @@
 .card__backmark svg { width: 2.6em; height: 2.6em; transform: rotate(-45deg); }
 
 /* ---------------------------------------------------------------- phones held sideways (short screens)
-   The hand cards grow a little and give the art a little less room, so the rules text reads at 11-12 px on an 844x390
-   phone (it was 9 px). Rewards, the shop and the deck keep the full layout (they're shown bigger anyway). */
+   The hand cards grow a little, and the small cards (hand, shop shelf, deck grid) give the art a little less room, so
+   the rules text reads at 11-12 px on an 844x390 phone (it was 8-9 px). Reward and zoomed cards keep the full layout. */
 @media (max-height: 520px) {
   :root { --card-hand-w: clamp(84px, min(25.5vmin, 12.5vw), 124px); }
-  .card--hand .card__art { height: 4.55em; }
-  .card--hand .card__type { top: 6.6em; }
-  .card--hand .card__type span { font-size: .72em; }
-  .card--hand .card__sigil { top: 5.86em; }
-  .card--hand .card__text { top: 7.42em; padding: .35em .32em .3em; font-size: 1.22em; line-height: 1.08; }
-  .card--hand .card__text--long { font-size: 1.12em; }
-  .card--hand .card__text--xlong { font-size: 1.02em; line-height: 1.04; }
-  .card--hand .card__text--xxlong { font-size: .92em; line-height: 1.02; }
+  :is(.card--hand, .card--grid) .card__art { height: 4.55em; }
+  :is(.card--hand, .card--grid) .card__type { top: 6.6em; }
+  :is(.card--hand, .card--grid) .card__type span { font-size: .72em; }
+  :is(.card--hand, .card--grid) .card__sigil { top: 5.86em; }
+  :is(.card--hand, .card--grid) .card__text { top: 7.42em; padding: .35em .32em .3em; font-size: 1.22em; line-height: 1.08; }
+  :is(.card--hand, .card--grid) .card__text--long { font-size: 1.12em; }
+  :is(.card--hand, .card--grid) .card__text--xlong { font-size: 1.02em; line-height: 1.04; }
+  :is(.card--hand, .card--grid) .card__text--xxlong { font-size: .92em; line-height: 1.02; }
 }

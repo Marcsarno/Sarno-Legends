@@ -3,7 +3,8 @@
 // the 3D stage) and steps aside while the target is gone. Never modal: only the bubble itself takes taps.
 //   const c = createCallout({ onGotIt(id), onSkip(id) })
 //   c.show({ id, title, sub?, target: () => Element | DOMRect | null, side?: 'top'|'bottom'|'left'|'right'|'auto',
-//            ring?: true, pad?: 6, swipe?: false })          replaces whatever is shown; swipe: a finger slides up from it
+//            ring?: true, pad?: 6, swipe?: false, width? })  replaces whatever is shown; swipe: an arrow rises out of it;
+//                                                          width: a narrower bubble (px) that fits beside a panel
 //   c.hide()     c.quiet(bool)  (faded and click-through, e.g. while a card is dragged)     c.shown -> id | null
 //   c.destroy()
 // A tap anywhere on the bubble is "Got it"; "Skip tips" turns the coach off (Settings > Tips turns it back on).
@@ -37,6 +38,7 @@ export function createCallout({ onGotIt, onSkip } = {}) {
     title.textContent = cur.title || '';
     sub.textContent = cur.sub || '';
     sub.hidden = !cur.sub;
+    bubble.style.maxWidth = bubble.style.minWidth = cur.width ? `min(${cur.width}px, 76vw)` : '';
     layer.dataset.tip = cur.id;
     layer.classList.remove('coach--on'); void layer.offsetWidth;
     lastKey = '';

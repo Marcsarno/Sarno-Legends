@@ -24,8 +24,8 @@ const TIPS = {
   block: { title: 'Block soaks damage until your next turn', sub: 'Plan it against the damage the zombies show.', side: 'top' },
   endturn: { title: 'End Turn when you’re out of energy', sub: 'The zombies act, then you get fresh energy and cards.', side: 'top' },
   stagger: { title: 'Staggered zombies take 50% more damage', sub: 'Marc staggers, Yola cashes in.', side: 'top' },
-  elite_fight: { title: 'Elites are tough, but drop a relic', sub: 'Spend your best cards here.', side: 'bottom' },
-  reward: { title: 'Take what you like', sub: 'A new card is optional: a small deck draws its best cards more often.', side: 'auto', tapAway: true },
+  elite_fight: { title: 'Elites are tough, but drop a relic', sub: 'Spend your best cards here.', side: 'top' },
+  reward: { title: 'Take what you like', sub: 'A new card is optional: a small deck draws its best cards more often.', side: 'left', width: 220, tapAway: true },
   rest: { title: 'Rest to heal, or Patch Up a card', sub: 'You only get one, so pick what you need most.', side: 'auto', tapAway: true },
   shop: { title: 'Spend your supplies here', sub: 'Paying to remove a weak card makes the deck stronger too.', side: 'auto', tapAway: true },
 };
@@ -33,7 +33,15 @@ export const TIP_IDS = Object.keys(TIPS);
 
 const $ = sel => document.querySelector(sel);
 const touchFirst = () => typeof matchMedia === 'function' && matchMedia('(hover: none)').matches;
-const shown = el => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight; };
+// on screen, and done fading in (a tip pointing into a half-drawn panel reads as a glitch)
+const shown = el => {
+  if (!el) return false;
+  const r = el.getBoundingClientRect();
+  if (!(r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight)) return false;
+  let o = 1;
+  for (let e = el; e && e !== document.body; e = e.parentElement) o *= Number(getComputedStyle(e).opacity) || 0;
+  return o > 0.95 && !el.getAnimations?.().some(a => a.playState === 'running' && Number.isFinite(a.effect?.getComputedTiming?.().endTime));
+};
 
 export function createCoach(app) {
   const disabled = (!!app.params?.get('shot') && !app.params.get('tips')) || app.params?.get('tips') === '0';
@@ -68,7 +76,7 @@ export function createCoach(app) {
     S.perScreen++;
     markSeen(id);
     const sub = typeof t.sub === 'function' ? t.sub(info) : t.sub;
-    callout.show({ id, title: t.title, sub, side: t.side || 'auto', ring: t.ring !== false, swipe: !!t.swipe, target });
+    callout.show({ id, title: t.title, sub, side: t.side || 'auto', ring: t.ring !== false, swipe: !!t.swipe, width: t.width, target });
     if (t.tapAway) {
       // screens: any tap elsewhere (after a moment to read) closes it; the tap still does its job
       const fn = e => { if (now() - S.shownAt > 900 && !e.target.closest?.('.coach__bubble')) close(false); };
