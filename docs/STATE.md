@@ -14,7 +14,9 @@ like a video, push to GitHub and Vercel at the end; save and commit before any c
 
 ## Stage log
 - Stage 0 done: scaffold, asset pipeline, spec, build-log tooling (commits 7162637 and after).
-- Stage 1 running: workflow wf_52a84bc0-8c2 builds engine, run+sim, render, painter+studio, UI kit, screens, audio,
-  StS check, logic review in parallel (module ownership in the workflow prompts / BUILD_SPEC section 9).
+- Stage 1 done (commit 76d7f28): all modules built and tested in labs; 149 tests; frames #2-#11.
+  Builder reports: /tmp/claude-0/-home-user/d8a7a6c5-169c-5c1d-a65d-4fcaf359827b/tasks/wiaxv90v2.output (scratch; may be gone).
+- Stage 2 running: workflow wf_6d3cdcfa-e19 = integrator (index.html, src/main.js, src/app/) then QA (tools/playtest.mjs,
+  tools/snap-plan.json, bug fixes).
 - Next: Stage 2 integration (src/main.js + src/app/: router, combat screen wiring stage+director+HUD+audio, save/continue,
   debug API window.__SL), playtest bot (tools/playtest.mjs), snap plan, then review/polish loops, deploy.

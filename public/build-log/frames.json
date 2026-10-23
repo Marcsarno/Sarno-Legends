@@ -6,5 +6,85 @@
   "caption": "Day one: Marc (bat idle), Yola (pistol idle) and a walker, loaded from the compressed GLBs (43 MB of models down to 15 MB). No room, no UI, no weapons in hand yet.",
   "stage": 0,
   "date": "2026-10-23 04:49"
+ },
+ {
+  "n": 2,
+  "file": "frames/0002-painted-room-er-lobby.jpg",
+  "title": "Painted room: ER lobby",
+  "caption": "Stage 1. The room painter builds a small 3D room from the hospital kit (desk, chairs, wheelchair, blood decals), renders it from the exact battle camera, then runs an oil-paint (Kuwahara) filter, canvas grain and a colour grade over it, so the backdrop reads as a painting.",
+  "stage": 1,
+  "date": "2026-10-23 09:05"
+ },
+ {
+  "n": 3,
+  "file": "frames/0003-painted-room-boss-gate.jpg",
+  "title": "Painted room: boss gate",
+  "caption": "Stage 1. The boss room: elevator, barriers, red emergency light. Each of the 10 rooms has its own palette and dressing.",
+  "stage": 1,
+  "date": "2026-10-23 09:06"
+ },
+ {
+  "n": 4,
+  "file": "frames/0004-painted-room-pharmacy-shop.jpg",
+  "title": "Painted room: pharmacy (shop)",
+  "caption": "Stage 1. The shop backdrop: medicine shelves, counter, green light.",
+  "stage": 1,
+  "date": "2026-10-23 09:07"
+ },
+ {
+  "n": 5,
+  "file": "frames/0005-battle-stage-first-fight.jpg",
+  "title": "Battle stage: first fight",
+  "caption": "Stage 1. The 3D stage on the painted ward: Marc at the melee spot with his bat in hand, Yola behind with her pistol, zombies in their slots, contact shadows, the director playing a scripted fight.",
+  "stage": 1,
+  "date": "2026-10-23 09:07"
+ },
+ {
+  "n": 6,
+  "file": "frames/0006-battle-stage-the-shield-guard.jpg",
+  "title": "Battle stage: the Shield Guard",
+  "caption": "Stage 1. The boss cast: the Shield Guard with his procedural riot shield.",
+  "stage": 1,
+  "date": "2026-10-23 09:08"
+ },
+ {
+  "n": 7,
+  "file": "frames/0007-combat-hud-on-the-real-engine.jpg",
+  "title": "Combat HUD on the real engine",
+  "caption": "Stage 1. The card UI driving the real combat engine (no 3D yet): the hand, energy orb, piles, End Turn, intents and HP bars over stand-in silhouettes.",
+  "stage": 1,
+  "date": "2026-10-23 09:08"
+ },
+ {
+  "n": 8,
+  "file": "frames/0008-title-screen.jpg",
+  "title": "Title screen",
+  "caption": "Stage 1. The title screen on the painted ER backdrop (the live 3D heroes join it at integration).",
+  "stage": 1,
+  "date": "2026-10-23 09:09"
+ },
+ {
+  "n": 9,
+  "file": "frames/0009-hospital-floor-plan-map.jpg",
+  "title": "Hospital floor-plan map",
+  "caption": "Stage 1. The act map as a hospital blueprint: fights, elites, supply closets, pharmacy, locked rooms, treasure, the boss elevator at the top.",
+  "stage": 1,
+  "date": "2026-10-23 09:09"
+ },
+ {
+  "n": 10,
+  "file": "frames/0010-pharmacy-screen.jpg",
+  "title": "Pharmacy screen",
+  "caption": "Stage 1. The shop: cards, relics, potions, card removal.",
+  "stage": 1,
+  "date": "2026-10-23 09:09"
+ },
+ {
+  "n": 11,
+  "file": "frames/0011-armory-weapon-unlocks.jpg",
+  "title": "Armory (weapon unlocks)",
+  "caption": "Stage 1. Weapons are the meta artifact system: scrap from every run unlocks bats, a crowbar, an axe, a sledgehammer, a shotgun and a sawed-off; each changes a passive and swaps starter cards.",
+  "stage": 1,
+  "date": "2026-10-23 09:10"
  }
 ]

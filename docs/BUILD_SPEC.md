@@ -5,6 +5,19 @@ Where this page and GAME_CORE disagree on a number, GAME_CORE's [StS, memory] nu
 
 Goal (Marc): "a fully playable loop start to finish like act one of slay the spire. Weapon unlocks can be sort of the artifact system." Polish, organisation, balance and feel.
 
+
+> **Build corrections (2026-10-23).** The engine follows `STS_NUMBERS_CHECK.md` and the balance sim; the tables below are updated where a number changed. Rules that changed:
+> - Party debuffs tick at the end of the round (after the zombies' turn), so Staggered 2 from a zombie lasts through two of your turns, as in StS.
+> - Spiked (Shield Guard) hits once per Attack card, not per hit; Mode Shift counts HP lost after block.
+> - Hunch triggers after the attack's last hit.
+> - Sleeping Patient: stunned only when damage wakes it; a timer wake (after 3 turns) attacks right away; Plating is removed on waking.
+> - Shield Guard: on the switch it gains 20 block, then spends a turn raising Spiked 3 before Shield Charge.
+> - Treasure: chest size first (small 50 / medium 33 / large 17); relic rarity by size 75/25/0, 35/50/15, 0/75/25; gold not guaranteed (small 50% 23–27, medium 35% 45–55, large 50% 68–82).
+> - Card rarity pity: shortfall below zero comes out of uncommon; offset capped at +40; shop rolls don't move it.
+> - Map: no rest site on row 14; room odds are shares of the whole map.
+> - Potion prices: common 48–53, uncommon 71–79.
+> - Finishers only count when a hero's attack lands the kill (not Bleed, potions or relics).
+
 ## 0. Ground rules for everyone building
 
 - **Copy mechanics, never Slay the Spire's names, text or art.** All names below are ours.
@@ -235,7 +248,7 @@ Names in **bold** are what the player sees. "StS" column is only for us.
 | suppressing_fire | **Suppressing Fire** | common | 1 | A | 3 dmg + 1 Weakened to ALL | 5 | — |
 | cover_him | **Cover Him** | common | 1 | S | 7 block; if any zombie is Staggered draw 1 | 10 | — |
 | tuck_and_roll | **Tuck and Roll** | common | 1 | S | 5 block, draw 2 | 8 | Backflip |
-| check_mag | **Check the Mag** | common | 0 | S | draw 1, discard 1 | draw 2, discard 2 | Prepared |
+| check_mag | **Check the Mag** | common | 0 | S | 2 block, draw 1 (no in-fight card choice yet) | 4 block | Prepared |
 | flare | **Flare** | common | 1 | S | 1 Weakened to ALL, draw 1 | 2 Weakened | — |
 | quick_shot | **Quick Shot** | common | 0 | A | 3 dmg | 5 | — |
 | cheap_shot | **Cheap Shot** | common | 0 | A | 3 dmg; +4 if Staggered | 4; +6 | — |
@@ -243,14 +256,14 @@ Names in **bold** are what the player sees. "StS" column is only for us.
 | triage | **Triage** | uncommon | 1 | S, exhaust | heal 4 | 6 | GAME_CORE |
 | adrenaline_shot | **Adrenaline Shot** | uncommon | 0 | S, exhaust | +1 energy, draw 1 | +2 energy | GAME_CORE |
 | marksman | **Marksman** | uncommon | 1 | P | attacks deal +3 to Staggered zombies | +4 | our pillar power |
-| spray_and_pray | **Spray and Pray** | uncommon | 1 | A | 3 dmg to a random zombie ×4 | ×5 | Sword Boomerang |
+| spray_and_pray | **Spray and Pray** | uncommon | 1 | A | 3 dmg to a random zombie ×3 | ×4 | Sword Boomerang |
 | painkillers | **Painkillers** | uncommon | 1 | P | +2 Agility | +3 | Footwork |
 | light_on_feet | **Light on Feet** | uncommon | 1 | P | whenever you play a Skill gain 1 block | 2 | — |
 | triple_tap | **Triple Tap** | uncommon | 2 | A | 4 dmg ×3; +2 each if Staggered | 5 ×3; +3 | — |
 | covering_fire | **Covering Fire** | uncommon | 1 | A | 4 dmg to ALL, 4 block | 6, 6 | — |
 | clean_kill | **Clean Kill** | rare | 1 | A | 9 dmg; if it kills: +1 energy, draw 2 | 12 | — |
 | overdrive | **Overdrive** | rare | 0 | S, exhaust | lose 6 HP, +2 energy, draw 3 | draw 5 | Offering |
-| slow_motion | **Slow Motion** | rare | 2 | S, exhaust | your cards cost 0 this turn | cost 1 | Bullet Time |
+| slow_motion | **Slow Motion** | rare | 3 | S, exhaust | your cards cost 0 this turn; you can't draw more this turn | cost 2 | Bullet Time |
 | dead_eye | **Dead Eye** | rare | 1 | P | first 2 attacks each turn on a Staggered zombie draw 1 | cost 0 | — |
 | defibrillator | **Defibrillator** | rare | 2 | S, exhaust | heal 12 | 16 | GAME_CORE (scarce heal) |
 | point_blank | **Point Blank** | rare | 2 | A | 16 dmg; +10 if Staggered | 20; +14 | — |
@@ -269,7 +282,7 @@ Names in **bold** are what the player sees. "StS" column is only for us.
 | biter | **Biter** | z_patient | 10–15 | Bite D (5–7 fixed per zombie); Grow +3 Str | Red Louse: Bite 75 / Grow 25, never same 3×; starts with Hunch 3–7 |
 | spitter | **Spitter** | z_patient_mod | 11–17 | Bite D (5–7); Spit 2 Weakened (debuff) | Green Louse: Bite 75 / Spit 25; never same 3×; Hunch 3–7 |
 | screamer | **Screamer** | z_girl | 48–54 | turn 1 Shriek (gain Frenzy 3); then Claw 6 every turn | Cultist |
-| sprinter | **Sprinter** | z_sprinter | 14–18 | Lunge 9 every turn | kill-it-first pressure (Sneaky Gremlin) |
+| sprinter | **Sprinter** | z_sprinter | 10–14 | Lunge 9 every turn | kill-it-first pressure (Sneaky Gremlin) |
 | nurse | **Nurse** | z_nurse | 28–32 | Jab 6; Mend: other zombies +5 HP, self 6 block; Revive: a dead zombie gets up at 50% HP (buff) | if a zombie died and revives < 2: Revive; else alternate Jab / Mend (Jab first) |
 | bloater | **Bloater** | z_scrubs | 22–28 | Bite 6; Grow +3 Str; on death: Spore Burst, party gets 2 Staggered | Fungi Beast: Bite 60 / Grow 40, never Bite 3×, never Grow 2× |
 | **Elite** big_walker | **Big Walker** | z_brute ×1.3 | 82–86 | turn 1 Roar (gain Rage 2); Charge 14; Headbutt 6 + 2 Staggered | Gremlin Nob: after Roar, Headbutt 33 / Charge 67, never Charge 3× |
@@ -300,13 +313,13 @@ Presentation notes: the Sleeping Patient lies on a recovery bed (`ual_IdleToLay`
 | iv_bag | **IV Bag** | common | heal 2 at the start of each combat | Blood Vial |
 | coin_jar | **Coin Jar** | common | gain 9 supplies whenever you add a card | Ceramic Fish |
 | tally_marks | **Tally Marks** | common | every 10th attack deals double damage (counter) | Pen Nib |
-| riot_vest | **Riot Vest** | uncommon | end of turn with no block: gain 6 block | Orichalcum |
+| riot_vest | **Riot Vest** | common | end of turn with no block: gain 6 block | Orichalcum |
 | combo_counter | **Combo Counter** | uncommon | every 3rd attack in a turn: +1 Strength | Kunai/Shuriken |
 | box_cutter | **Box Cutter** | uncommon | every 3rd Skill in a turn: 5 dmg to ALL | Letter Opener |
 | door_wedge | **Door Wedge** | uncommon | turn 2: gain 14 block | Horn Cleat |
 | trophy_belt | **Trophy Belt** | uncommon | when a zombie dies: +1 energy, draw 1 | Gremlin Horn |
 | emergency_rations | **Emergency Rations** | uncommon | end of combat at ≤50% HP: heal 12 | Meat on the Bone |
-| hollow_points | **Hollow Points** | rare | Staggered zombies take 75% more (not 50%) | Paper Phrog |
+| hollow_points | **Hollow Points** | uncommon | Staggered zombies take 75% more (not 50%) | Paper Phrog |
 | steel_plate | **Steel Plate** | rare | whenever you'd lose HP, lose 1 less | Tungsten Rod |
 | defib_pads | **Defib Pads** | rare | once: when you'd die, heal to 50% instead | Lizard Tail |
 | cooler | **Cooler** | rare | unspent energy carries to next turn | Ice Cream |
@@ -319,11 +332,11 @@ Bought in the **Armory** with **scrap** (earned every run, win or lose, no toll:
 | id | Hero | Name | Cost | Model | Passive | Starter swap |
 |---|---|---|---|---|---|---|
 | wood_bat | Marc | **Wood Bat** | free | wood_bat | the first Bat Swing each combat deals double | — |
-| nail_bat | Marc | **Nail Bat** | 80 | wood_bat + nails (procedural) | — | Bat Swing → **Nail Swing** (1: 5 dmg, 2 Bleed; up 7, 3) |
-| wire_bat | Marc | **Wire-and-Tape Bat** | 200 | wood_bat + wire wrap (procedural) | Bleed on zombies also makes them take +2 from Marc's attacks | Bat Swing → **Barbed Swing** (1: 6 dmg, 2 Bleed; up 8, 3) |
+| nail_bat | Marc | **Nail Bat** | 80 | wood_bat + nails (procedural) | — | all 3 Bat Swings → **Nail Swing** (1: 6 dmg, 2 Bleed; up 8, 3) (sim tune: was 5) |
+| wire_bat | Marc | **Wire-and-Tape Bat** | 200 | wood_bat + wire wrap (procedural) | Bleed on zombies also makes them take +2 from Marc's attacks | all 3 Bat Swings → **Barbed Swing** (1: 6 dmg, 2 Bleed; up 8, 3) |
 | crowbar | Marc | **Crowbar** | 120 | crowbar | your first attack each combat applies 2 Staggered | Home Run → **Pry Loose** (2: 9 dmg, 2 Staggered, draw 1; up 12, 3) |
 | fire_axe | Marc | **Fire Axe** | 250 | fire_axe | Marc's attacks deal +2; you start each combat with 1 Shaken | Brace ×1 → **Chop Block** (1: 6 dmg, 4 block) |
-| sledgehammer | Marc | **Sledgehammer** | 350 | sledgehammer | Home Run → **Sledge** (2: 14 dmg, 3 Staggered; up 18, 4) | first turn of each combat: −1 energy |
+| sledgehammer | Marc | **Sledgehammer** | 350 | sledgehammer | first turn of each combat: −1 energy | Home Run → **Sledge** (2: 18 dmg, 3 Staggered; up 22, 4) (sim tune: was 14) |
 | pistol | Yola | **Pistol** | free | pistol_core | Clean Shot is Innate (starts in hand) | — |
 | shotgun | Yola | **Pump Shotgun** | 150 | pump_shotgun | — | Pistol Shot ×2 → **Buckshot** (1: 4 dmg to ALL; up 6) |
 | sawed_off | Yola | **Sawed-Off** | 300 | pump_short | Yola's attacks deal +3 to Staggered zombies | Clean Shot → **Both Barrels** (2: 7 dmg ×2; +4 each if Staggered) |
