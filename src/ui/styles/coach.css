@@ -1,0 +1,84 @@
+/* Coach callouts (callout.js) and the How to Play panel (screens/howto.js).
+   A callout is a warm paper note with a gold edge, so it reads as "the game talking to you" against the dark HUD;
+   a soft gold ring pulses on the thing it points at. Sizes have pixel floors so phone text stays >= 12 px. */
+
+.coach { position: fixed; inset: 0; z-index: 66; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .22s, visibility 0s .22s; }
+.coach--on { opacity: 1; visibility: visible; transition: opacity .22s, visibility 0s; }
+.coach--lost .coach__ring, .coach--lost .coach__bubble { opacity: 0; pointer-events: none; }
+.coach--quiet .coach__bubble { opacity: .18; pointer-events: none; }
+.coach--quiet .coach__ring { opacity: .3; }
+.coach__safe { position: fixed; left: var(--sa-l); top: var(--sa-t); right: var(--sa-r); bottom: var(--sa-b); pointer-events: none; visibility: hidden; }
+
+.coach__ring {
+  position: absolute; left: 0; top: 0; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 3px #ffd166, 0 0 0 7px #ffd16630, 0 0 22px 4px #ffcf5a88;
+  animation: coach-ring 1.4s ease-in-out infinite; transition: opacity .2s;
+}
+@keyframes coach-ring { 0%, 100% { box-shadow: 0 0 0 3px #ffd166, 0 0 0 7px #ffd16630, 0 0 22px 4px #ffcf5a88; } 50% { box-shadow: 0 0 0 3px #fff2c0, 0 0 0 11px #ffd16618, 0 0 30px 8px #ffcf5aaa; } }
+
+.coach__bubble {
+  position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer;
+  width: max-content; max-width: min(330px, 76vw); min-width: min(220px, 70vw);
+  padding: 10px 12px 4px 14px; border-radius: 12px;
+  background: linear-gradient(180deg, #fbf3df, #efe2c4); color: #1d1a17;
+  box-shadow: 0 0 0 2px #e3b04b, 0 0 0 4px #1a120688, 0 10px 28px #000c;
+  font-family: var(--f-body); text-align: left;
+  transition: opacity .2s;
+  animation: coach-in .32s var(--ease-back);
+}
+@keyframes coach-in { from { opacity: 0; scale: .86; } }
+.coach__bubble::before { /* a teal tab on the left: the nurse's note */
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 3px 3px 0; background: var(--yola);
+}
+.coach__arrow {
+  position: absolute; width: 14px; height: 14px; background: #f6ecd5; transform: translate(-50%, -50%) rotate(45deg);
+  box-shadow: 0 0 0 2px #e3b04b;
+}
+.coach__bubble[data-side="top"] .coach__arrow { top: 100%; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.coach__bubble[data-side="bottom"] .coach__arrow { top: 0; background: #fbf3df; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.coach__bubble[data-side="left"] .coach__arrow { left: 100%; clip-path: polygon(100% 0, 100% 100%, 0 0); }
+.coach__bubble[data-side="right"] .coach__arrow { left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+.coach__text { position: relative; }
+.coach__title { font: 700 max(15px, calc(var(--u) * 2.5))/1.15 var(--f-body); letter-spacing: .01em; color: #17130f; }
+.coach__sub { margin-top: 3px; font: 500 max(13px, calc(var(--u) * 2.1))/1.25 var(--f-body); color: #4b4234; }
+.coach__btns { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin: 4px -6px 0 0; }
+.coach__btns button {
+  position: relative; display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 12px; border-radius: 99px; cursor: pointer;
+  font: 600 max(12px, calc(var(--u) * 1.9))/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase;
+}
+.coach__btns button::after { content: ''; position: absolute; inset: -4px -2px; }   /* 44 px tall hit area */
+.coach__skip { border: 0; background: none; color: #7a6d58; }
+.coach__skip:hover { color: #3a3226; }
+.coach__ok { border: 1.5px solid #0c4440; background: linear-gradient(180deg, #2fa39a, #17625b); color: #fff; box-shadow: 0 2px 0 #0b2b28; }
+.coach__ok span { display: grid; width: 14px; height: 14px; }
+.coach__ok span svg { width: 100%; height: 100%; }
+.coach__ok:hover { filter: brightness(1.1); }
+
+/* ---------------------------------------------------------------- How to Play (a modal like Settings) */
+.scr--howto .scr-modal { width: min(calc(100% - var(--sa-l) - var(--sa-r) - 16px), 980px); max-height: calc(100% - 16px - var(--sa-b)); }
+.ht-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: max(8px, calc(var(--u) * 1.4)); }
+.ht-item {
+  --c: var(--gold);
+  display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 2px max(8px, calc(var(--u) * 1.2));
+  padding: max(8px, calc(var(--u) * 1.4)) max(10px, calc(var(--u) * 1.6)); border-radius: var(--radius);
+  background: linear-gradient(180deg, #ffffff08, #ffffff03); box-shadow: inset 0 0 0 1px #ffffff12;
+}
+.ht-item__ico {
+  grid-row: span 2; width: max(30px, calc(var(--u) * 5.4)); height: max(30px, calc(var(--u) * 5.4)); border-radius: 30%; display: grid; place-items: center;
+  color: var(--c); background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--c) 26%, #1d2c30), #0b1213 75%);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 55%, black);
+}
+.ht-item__ico svg { width: 62%; height: 62%; }
+.ht-item b { font: 600 max(13px, calc(var(--u) * 2.3))/1.1 var(--f-head); letter-spacing: .05em; text-transform: uppercase; color: #fff7e6; align-self: center; }
+.ht-item p { margin: 3px 0 0; font: 500 max(12.5px, calc(var(--u) * 2.05))/1.28 var(--f-body); color: var(--ink-dim); }
+.ht-item p .kw { color: var(--gold); }
+.ht-item p .m { color: var(--marc-light); font-weight: 700; } .ht-item p .y { color: var(--yola-light); font-weight: 700; }
+.ht-foot { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: max(8px, calc(var(--u) * 1.4)); margin-top: max(10px, calc(var(--u) * 1.8)); }
+.ht-foot__note { margin-right: auto; color: var(--ink-faint); font: 500 max(12px, calc(var(--u) * 1.9))/1.2 var(--f-body); }
+@media (max-width: 700px) { .ht-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-height: 460px) {
+  .scr--howto .scr-modal__head { padding-top: 8px; padding-bottom: 6px; }
+  .scr--howto .scr-modal__body { padding-top: 8px; padding-bottom: 8px; }
+  .ht-item { padding: 6px 8px; }
+  .ht-item p { line-height: 1.22; }
+}

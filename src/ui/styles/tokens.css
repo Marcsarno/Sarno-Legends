@@ -73,5 +73,14 @@
   --shadow-lg: 0 calc(var(--u) * 1.2) calc(var(--u) * 5) #000c;
   --glow-marc: 0 0 calc(var(--u) * 2) #c8483a99;
   --glow-yola: 0 0 calc(var(--u) * 2) #2fa39a99;
+  /* safe areas (notches, rounded corners, the home bar): everything pinned to an edge keeps clear of them */
+  --sa-t: env(safe-area-inset-top, 0px);
+  --sa-r: env(safe-area-inset-right, 0px);
+  --sa-b: env(safe-area-inset-bottom, 0px);
+  --sa-l: env(safe-area-inset-left, 0px);
+
   --z-stage: 0; --z-world: 10; --z-hud: 20; --z-hand: 30; --z-drag: 40; --z-screen: 50; --z-modal: 60; --z-tip: 70; --z-toast: 80;
 }
+
+/* a notched phone held sideways, for checking the safe areas on a desktop browser: <html data-sim-safe> */
+html[data-sim-safe] { --sa-l: 47px; --sa-r: 47px; --sa-b: 21px; }
