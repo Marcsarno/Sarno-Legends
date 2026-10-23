@@ -86,5 +86,85 @@
   "caption": "Stage 1. Weapons are the meta artifact system: scrap from every run unlocks bats, a crowbar, an axe, a sledgehammer, a shotgun and a sawed-off; each changes a passive and swaps starter cards.",
   "stage": 1,
   "date": "2026-10-23 09:10"
+ },
+ {
+  "n": 12,
+  "file": "frames/0012-title-live-3d-heroes.jpg",
+  "title": "Title: live 3D heroes",
+  "caption": "Stage 2 (integration, work in progress). The real title screen: Marc and Yola as live 3D models idling in the painted ER, the menu on the right.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 13,
+  "file": "frames/0013-a-run-begins-the-lobby.jpg",
+  "title": "A run begins: the lobby",
+  "caption": "Stage 2. A new run starts at the Lobby on the blueprint map; the first row is always fights.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 14,
+  "file": "frames/0014-first-real-fight-aiming.jpg",
+  "title": "First real fight: aiming",
+  "caption": "Stage 2. Everything wired together: the painted ward, the 3D cast, the hand from the real engine. Dragging Clean Shot draws the targeting arrow to the Screamer and its HP bar previews the hit.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 15,
+  "file": "frames/0015-zombies-turn.jpg",
+  "title": "Zombies' turn",
+  "caption": "Stage 2. End Turn hands over to the zombies: the banner, the energy orb empties, the Screamer already down to 41/54 from Marc and Yola's hits.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 16,
+  "file": "frames/0016-supply-closet-rest.jpg",
+  "title": "Supply closet (rest)",
+  "caption": "Stage 2. A rest site reached by the autoplay bot: Rest (heal 24) or Patch Up (upgrade a card).",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 17,
+  "file": "frames/0017-supply-crate-treasure.jpg",
+  "title": "Supply crate (treasure)",
+  "caption": "Stage 2. The treasure row: tap the crate to open it.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 18,
+  "file": "frames/0018-pharmacy-live.jpg",
+  "title": "Pharmacy, live",
+  "caption": "Stage 2. The shop inside the real run: card art rendered from the animation clips, 3D-rendered relic and medicine icons, a sale tag, card removal.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 19,
+  "file": "frames/0019-locked-room-break-room.jpg",
+  "title": "Locked room: Break Room",
+  "caption": "Stage 2. An event with costs and rewards in green and red (story text is a placeholder for Marc).",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 20,
+  "file": "frames/0020-boss-the-shield-guard.jpg",
+  "title": "Boss: the Shield Guard",
+  "caption": "Stage 2. The boss fight at the security gate: 240 HP, riot shield, red emergency light.",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 21,
+  "file": "frames/0021-result-screen-defeat.jpg",
+  "title": "Result screen (defeat)",
+  "caption": "Stage 2. \"You were overrun\": the run summary and scrap banked for the Armory (a forced test loss, hence the zeros).",
+  "stage": 2,
+  "date": "2026-10-23 10:36"
  }
 ]
