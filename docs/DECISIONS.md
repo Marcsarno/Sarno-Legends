@@ -78,6 +78,15 @@ What Marc said and decided, in order, with what was done about it. All on 2026-1
       - The asset pipelines.
     - It deploys to Vercel like the others.
 
+## Building it (2026-10-23)
+
+17. **Build it.** "I'm ready to begin building the game … a fully playable loop start to finish like act one of slay the spire. Weapon unlocks can be sort of the artifact system." Built and deployed the same day: https://sarno-legends.vercel.app (build log at /build-log/, catalog in `BUILD_LOG.md`).
+18. **Voices.** Marc suggested Kokoro (free, Apache-2.0) for voice lines for enemies, Yola and Marc. 126 placeholder barks generated; Marc picks the voices and rewrites the lines (`tools/voice/lines.json`).
+19. **Feel, after playing the first build.**
+    - "Marc needs to actually face the zombies."
+    - "The finishers need more time to slow motion."
+    - "The attacks all happen so quick. I think it's ok to give them a moment to show what they are doing." (GAME_CORE pacing updated.)
+
 ## Standing rules from Marc's other projects (carried over)
 
 - Marc decides story beats. Names, lines and stats are placeholders until he approves them.

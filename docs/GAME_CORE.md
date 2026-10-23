@@ -220,8 +220,11 @@ Later, once the core is proven:
 - **Screen:** landscape. Painted room, heroes on the left, zombies on the right with their intents above them.
 - **Hand:** one straight row of cards along the bottom.
 - **Controls:** energy bottom-left, End Turn bottom-right. Drag up to play a card; tap to read it.
-- **Pacing:**
-  - Basic cards take about 0.5–0.6 s; the hit lands around 0.25–0.3 s.
+- **Pacing** (updated after Marc played the first build, 2026-10-23: "The attacks all happen so quick. I think it's ok to give them a moment to show what they are doing"; "The finishers need more time to slow motion"):
+  - Attacks get a visible wind-up, the strike, a short hold on impact and a recovery: basic attacks about 1 s, heavy ones 1.3–1.6 s, zombie attacks about 1 s each with a clear lunge at the hero they hit.
+  - Finishers hold slow motion through the impact, the death and the burst (about 1.2–1.6 s of real time on the first one in a run).
+  - The 1.5×/2× speed setting is there for players who want it faster.
+  - (Original plan, kept for reference: basic cards about 0.5–0.6 s with the hit around 0.25–0.3 s.)
   - Five cards take about 4–5 s.
   - The next card can be played as soon as the hit lands.
   - Zombies act together.
