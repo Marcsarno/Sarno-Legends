@@ -294,5 +294,45 @@
   "caption": "Stage 2 complete. A locked-room event with its choices (text is a placeholder).",
   "stage": 2,
   "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 38,
+  "file": "frames/0038-supply-crate.jpg",
+  "title": "Supply Crate",
+  "caption": "The treasure room before the crate is opened.",
+  "stage": 2,
+  "date": "2026-10-23 14:11"
+ },
+ {
+  "n": 39,
+  "file": "frames/0039-deck.jpg",
+  "title": "Deck",
+  "caption": "The deck viewer over the map.",
+  "stage": 2,
+  "date": "2026-10-23 14:14"
+ },
+ {
+  "n": 40,
+  "file": "frames/0040-floor-cleared.jpg",
+  "title": "Floor Cleared",
+  "caption": "The victory screen after the boss: the run summary and the scrap.",
+  "stage": 2,
+  "date": "2026-10-23 14:20"
+ },
+ {
+  "n": 41,
+  "file": "frames/0041-overrun.jpg",
+  "title": "Overrun",
+  "caption": "The defeat screen: the run summary and the scrap banked.",
+  "stage": 2,
+  "date": "2026-10-23 14:26"
+ },
+ {
+  "n": 42,
+  "file": "frames/0042-settings.jpg",
+  "title": "Settings",
+  "caption": "Game speed, music, sound, screen shake, gore.",
+  "stage": 2,
+  "date": "2026-10-23 14:28"
  }
 ]
