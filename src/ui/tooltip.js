@@ -50,10 +50,16 @@ export function tipStatus(id, n = 1) {
   return { title: `${statusName(id)}${amount}`, body: describeStatus(id, n), icon: s.icon, color: s.color, sub: s.kind === 'power' ? 'Power' : good ? 'Buff' : 'Debuff', tone: good ? 'good' : 'bad' };
 }
 
+// the run in progress, for text that depends on it (the Nurse's Kit heals less at Infection 5): set by the app
+let runOf = () => null;
+export function setTipRun(fn) { runOf = typeof fn === 'function' ? fn : () => null; }
+
 export function tipRelic(id, counter) {
   const r = RELICS[id];
   if (!r) return { title: id, body: '' };
-  let body = describeRelic(id);
+  let run = null;
+  try { run = runOf(); } catch { run = null; }
+  let body = describeRelic(id, run || undefined);
   if (r.counterMax && counter >= 0) body += `<div class="tip__extra">Count: ${counter} / ${r.counterMax}</div>`;
   if (counter === -1) body += '<div class="tip__extra">Used up.</div>';
   return { title: r.name, body, icon: relicGlyph(id), color: r.rarity === 'weapon' ? (r.hero === 'yola' ? '#2fa39a' : '#c8483a') : RARITY_COLOR[r.rarity], sub: r.rarity === 'weapon' ? 'Weapon' : RARITY_LABELS[r.rarity] };

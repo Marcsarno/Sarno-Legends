@@ -26,6 +26,7 @@ import { SLOTS } from '../render/camera.js';
 import { resetFinishers } from '../render/director.js';
 import { createAudio } from '../audio/audio.js';
 import { setSpeed as setUiSpeed } from '../ui/tween.js';
+import { setTipRun } from '../ui/tooltip.js';
 import { SCREENS } from '../ui/screens/index.js';
 import * as R from '../game/run.js';
 import * as M from '../game/meta.js';
@@ -76,6 +77,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     settings: () => ({ ...profile.settings, ...(over.speed ? { speed: over.speed } : {}) }),
     setSpeedOverride(x) { over.speed = x || null; applySettings(); },
   };
+  setTipRun(() => app.run);   // relic tooltips read the run (the Nurse's Kit at Infection 5)
   const G = createGameApi(() => profile);   // the engine's daily run and Infection levels (src/app/gameapi.js)
   app.game = G;
 

@@ -44,7 +44,7 @@ export function mount(root, ctx) {
   function renderMenu() {
     const scrap = ctx.profile?.scrap ?? 0;
     const save = ctx.save || ctx.saveInfo;
-    const contNote = save ? [save.daily ? 'Daily · ' : '', `Floor ${save.floor ?? '?'}`, h('br'), save.hp != null ? `${save.hp}/${save.maxHp} HP` : ''] : null;
+    const contNote = save ? [save.daily ? 'Daily · ' : save.infection ? `Infection ${save.infection} · ` : '', `Floor ${save.floor ?? '?'}`, h('br'), save.hp != null ? `${save.hp}/${save.maxHp} HP` : ''] : null;
     const d = ctx.daily;
     const dailyBtn = d ? btn('.ttl-btn--daily', 'star', 'Daily Run',
       armedFor === 'daily' ? tapAgain : [d.label || 'Today', h('br'), d.best != null ? `Best ${d.best}` : 'Not played'],
