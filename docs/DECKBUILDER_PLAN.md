@@ -148,9 +148,28 @@ No well-known zombie roguelike deckbuilder turned up, so the niche looks open.
   - A text-size setting.
 - **Card art:** rendered stills from the animation clips, at the moment of impact. All use the same camera, light, colour grade and frame, and sit over a crop of the painted room. Heal and buff cards need a staged pose.
 
+## Family: their own card sets
+
+Marc's idea (2026-10-23), the same pattern as Monster Train's clans and Cobalt Core's crew.
+
+- **Choosing helpers:** at the start of a mission you choose who comes along. Their **own card set joins the deck for that run**: a few starter cards, plus their cards in the reward pool.
+- **One clear identity each.** Who does what is Marc's call; for example, one person's cards are about traps, another's about speed.
+- **No 3D model needed.** Their cards play a painted portrait cut-in with an effect. Each person costs about 10–15 card designs and one painted portrait.
+- **Replay value:** each pairing plays differently.
+- **The kids:** could get a smaller "help from home" set of 1–2 cards.
+
+## Decided (2026-10-23)
+
+- **One shared deck** (Marc's lean).
+  - Safety net: every reward offers at least one card per hero.
+  - Some cards draw a card for a named hero.
+  - Separate decks were weighed and set aside: two hands on a small screen, more deck-building, and harder to add family sets.
+- **What carries between runs:** currency and upgrades only.
+  - A lost run still earns some currency (e.g. scrap) for weapon upgrades.
+  - Nothing story-like is left behind.
+- **Family:** they bring their own card sets for the mission (above).
+
 ## Open questions for Marc
 
-1. Shared deck (recommended) or a separate deck per hero?
-2. Who and what are the floor bosses and story beats?
-3. Should a lost run leave something behind for the next one (Inscryption's idea)?
-4. Which family members are call-ins? They could be rare cards.
+1. Who and what are the floor bosses and story beats?
+2. Which family members get card sets, and what is each one's style?
