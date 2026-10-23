@@ -334,5 +334,45 @@
   "caption": "Game speed, music, sound, screen shake, gore.",
   "stage": 2,
   "date": "2026-10-23 14:28"
+ },
+ {
+  "n": 43,
+  "file": "frames/0043-loading-with-a-tip.jpg",
+  "title": "Loading with a tip",
+  "caption": "Stage 3. The boot screen now loads in about a third of the time (prebaked painted rooms and card art) and teaches while it loads.",
+  "stage": 3,
+  "date": "2026-10-23 15:10"
+ },
+ {
+  "n": 44,
+  "file": "frames/0044-marc-faces-the-zombies.jpg",
+  "title": "Marc faces the zombies",
+  "caption": "Stage 3, Marc's note: \"Marc needs to actually face the zombies.\" His batting stance now aims his bat, shoulder and eyes at the zombies (it was turned toward Yola). Compare with #26.",
+  "stage": 3,
+  "date": "2026-10-23 15:10"
+ },
+ {
+  "n": 45,
+  "file": "frames/0045-elite-the-sleeping-patient.jpg",
+  "title": "Elite: the Sleeping Patient",
+  "caption": "Stage 3. The Sleeping Patient on its bed. New: the incoming-damage chip by the party HP (-11 HP this turn, striped on the bar), bigger card text, a card zoomed for reading.",
+  "stage": 3,
+  "date": "2026-10-23 15:10"
+ },
+ {
+  "n": 46,
+  "file": "frames/0046-shield-guard-down.jpg",
+  "title": "Shield Guard down",
+  "caption": "Stage 3. A full playtest run on the built game beat the Shield Guard in 9 turns: FLOOR CLEARED.",
+  "stage": 3,
+  "date": "2026-10-23 15:10"
+ },
+ {
+  "n": 47,
+  "file": "frames/0047-floor-cleared-the-result.jpg",
+  "title": "Floor cleared: the result",
+  "caption": "Stage 3. The end of a winning run: 16 floors, 11 zombies, best hit 36, 115 scrap banked: enough for the Nail Bat in the Armory.",
+  "stage": 3,
+  "date": "2026-10-23 15:10"
  }
 ]
