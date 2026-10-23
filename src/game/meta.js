@@ -21,6 +21,7 @@ export const SETTINGS = {
   sfx: v => typeof v === 'number' && v >= 0 && v <= 1,
   shake: v => typeof v === 'boolean',
   gore: v => v === 'full' || v === 'low',
+  voices: v => typeof v === 'boolean',   // the barks (src/audio/voice.js); absent = on (kept out of DEFAULT_SETTINGS for older profiles)
 };
 
 const FREE = Object.values(WEAPONS).filter(w => !w.cost).map(w => w.id);

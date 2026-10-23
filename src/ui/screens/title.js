@@ -1,7 +1,7 @@
 // Title screen: the painted ER behind, the SARNO (red) LEGENDS (teal) logo and the menu on the right, the scrap count and
 // version in the corner. The center-left stays clear: the app stands live 3D Marc and Yola there.
 //   ctx: { hasSave, save?: { floor, hp, maxHp }, profile: { scrap }, version, rooms, audio }
-//   act: continue(), newRun(), armory(), settings()
+//   act: continue(), newRun(), armory(), settings()   (with a save, New Run needs a second tap: it abandons that run)
 
 import { shell, backdrop, hoverSounds, ui, st, h, icon, anim, wait, enter } from './common.js';
 
@@ -19,13 +19,26 @@ export function mount(root, ctx) {
   // the menu and the scrap chip are rebuilt on update() (a reset profile or an abandoned run changes them)
   const menu = h('nav.ttl-menu');
   const scrapN = h('span');
+  // New Run over a saved run abandons it: the first tap asks, a second tap within a few seconds starts the new run
+  let armed = 0;
+  function newRun() {
+    if (ctx.hasSave && !armed) {
+      ui(ctx, 'deny');
+      armed = setTimeout(() => { armed = 0; renderMenu(); }, 3500);
+      renderMenu();
+      menu.querySelector('.ttl-btn--primary')?.focus({ preventScroll: true });
+      return;
+    }
+    clearTimeout(armed); armed = 0;
+    ctx.act?.newRun?.();
+  }
   function renderMenu() {
     const scrap = ctx.profile?.scrap ?? 0;
     const save = ctx.save || ctx.saveInfo;
     const contNote = save ? [`Floor ${save.floor ?? '?'}`, h('br'), save.hp != null ? `${save.hp}/${save.maxHp} HP` : ''] : null;
     menu.replaceChildren(...[   // (replaceChildren would print a null as the text "null")
       ctx.hasSave ? btn('.ttl-btn--cont', 'arrow_up', 'Continue', contNote, () => ctx.act?.continue?.()) : null,
-      btn('.ttl-btn--primary', 'swords', ctx.hasSave ? 'New Run' : 'Start a Run', null, () => ctx.act?.newRun?.()),
+      btn('.ttl-btn--primary', 'swords', ctx.hasSave ? 'New Run' : 'Start a Run', armed ? ['Tap again to', h('br'), 'abandon the saved run'] : null, newRun),
       btn('', 'weapon_wood_bat', 'Armory', h('span.gold-c', `${scrap} scrap`), () => ctx.act?.armory?.()),
       btn('', 'settings', 'Settings', null, () => ctx.act?.settings?.())].filter(Boolean));
     scrapN.textContent = String(scrap);
@@ -52,6 +65,7 @@ export function mount(root, ctx) {
       h('span', ctx.version ? 'v' + String(ctx.version).replace(/^v/, '') : '')),
   );
   s.cleanup(hoverSounds(ctx, s.el));
+  s.cleanup(() => clearTimeout(armed));
 
   // entrance: logo slams in, the menu slides after it
   anim(s.el, [{ opacity: 0 }, { opacity: 1 }], 500, 'out');

@@ -1,0 +1,65 @@
+{
+  "_status": "PLACEHOLDER lines, written by Claude for Marc to edit. Marc decides story and dialogue: change, add or delete any line, then run tools/voice/generate.py (see README.md) to re-record. Keep barks short (1-6 words), warm, family friendly, no backstory. Regular zombies never speak (they have their own groans).",
+  "_format": "speakers.<who>.triggers.<trigger>.lines: a line is a string, or { \"text\": \"shown in the lab\", \"say\": \"what the voice reads, if it needs a respelling\" }. Files come out as public/assets/voice/<who>/<trigger>_<n>.mp3 in list order. When the game plays each trigger, and how often, is in src/audio/voice.js (RULES).",
+  "speakers": {
+    "marc": {
+      "name": "Marc",
+      "voice": "am_michael",
+      "speed": 1.05,
+      "triggers": {
+        "swing": { "when": "Marc plays a bat card (rare)", "lines": ["Batter up!", "Here goes.", "Get back!", "Hey, ugly!", "Coming through!"] },
+        "big_hit": { "when": "a big hit lands (Home Run, Grand Slam, 14+ damage)", "lines": ["Home run!", "Out of the park!", "That one's gone!", "Going, going... gone!"] },
+        "stagger": { "when": "Marc staggers a zombie", "lines": ["He's wobbling!", "Rang his bell!", "He's open, Yola!", "He's seeing stars!", "Your turn, babe!"] },
+        "kill": { "when": "Marc kills a zombie", "lines": ["Stay down.", "Down you go.", "One less.", "Got him.", "Next!"] },
+        "finisher": { "when": "Marc's finisher (a kill on a Staggered zombie)", "lines": ["Lights out.", "Strike three.", "And stay down!", "That's the game."] },
+        "block": { "when": "Marc braces (block card)", "lines": ["I got you.", "Behind me!", "Bracing!", "Let them come."] },
+        "hurt": { "when": "Marc takes a hit", "lines": ["Ow!", "Okay, that hurt.", "I'm fine!", "Lucky shot.", "Hey, watch it!"] },
+        "low_hp": { "when": "the party drops under 30% HP", "lines": ["I can't take much more.", "We need a break, Yola.", "Running on empty.", "Hang in there."] },
+        "turn": { "when": "the start of your turn (rare)", "lines": ["Okay. Think.", "Our move.", "Stay sharp.", "Alright, let's go."] },
+        "elite": { "when": "an elite fight starts", "lines": ["That's a big one.", "Careful. This one's different.", "Stay behind me.", "Oh, he's big."] },
+        "boss": { "when": "the Shield Guard fight starts (after his line)", "lines": ["That's the guard.", "Big guy. Stay close.", "Okay. Here we go, Yola.", "We go through him."] },
+        "victory": { "when": "a fight is won", "lines": ["We did it.", "Clear. You okay?", "Nice work, partner.", "Room's clear."] },
+        "defeat": { "when": "the party falls (short, pained)", "lines": ["Yola... I'm sorry.", "Not... like this.", "Yola..."] },
+        "yola_hurt": { "when": "Yola takes a hit", "lines": ["Yola!", "Yola, you okay?", "Get away from her!", "Back off!"] },
+        "praise_yola": { "when": "Yola kills a zombie", "lines": ["Nice shot!", "Great shot, babe!", "Bullseye.", "Remind me never to make you mad.", "That's my wife."] }
+      }
+    },
+    "yola": {
+      "name": "Yola",
+      "voice": "af_heart",
+      "speed": 1.05,
+      "triggers": {
+        "shot": { "when": "Yola plays a gun card (rare)", "lines": ["Hold still.", "Got a shot.", "Firing!", "Eyes on him.", "Covering you!"] },
+        "kill": { "when": "Yola kills a zombie", "lines": ["Got him.", "He's down.", "Target down.", "One down."] },
+        "finisher": { "when": "Yola's finisher (a kill on a Staggered zombie)", "lines": ["Clean.", "Headshot.", "Night night.", "Perfect."] },
+        "cash_in": { "when": "Yola shoots a Staggered zombie (not a kill)", "lines": ["Now, while it's down!", "Wide open.", "I see it!", "Thanks for the opening!"] },
+        "heal": { "when": "Yola heals the party (Triage, Defibrillator)", "lines": ["Hold still, I've got you.", "Let me patch that.", "Deep breath.", "Nurse's orders."] },
+        "dodge": { "when": "Yola dodges (block / dodge card)", "lines": ["Whoa!", "Missed me.", "Too slow.", "Nope!"] },
+        "hurt": { "when": "Yola takes a hit", "lines": ["Ow!", "I'm okay!", "That hurt!", "I'm fine, keep going!"] },
+        "low_hp": { "when": "the party drops under 30% HP", "lines": ["Marc, we're in trouble.", "We need a break.", "I'm running low.", "Not good, Marc."] },
+        "praise_marc": { "when": "Marc staggers a zombie", "lines": ["Nice hit, babe!", "That's my guy!", "He's wobbling!", "Good one, Marc!"] },
+        "marc_hurt": { "when": "Marc takes a hit (the mirror of Marc's \"Yola!\")", "lines": ["Marc!", "Marc, you okay?", "Get away from him!", "Hey! Back off!"] },
+        "elite": { "when": "an elite fight starts", "lines": ["Marc... that one's bigger.", "Careful, this one's nasty.", "Uh oh.", "Oh, I don't like this."] },
+        "boss": { "when": "the Shield Guard fight starts (after his line)", "lines": ["Is that... the security guard?", "Look at the size of him.", "Okay. Together.", "Marc, the shield."] },
+        "victory": { "when": "a fight is won", "lines": ["We're okay.", "That's how it's done.", "Good teamwork.", "Breathe. We made it."] },
+        "defeat": { "when": "the party falls (short, pained)", "lines": ["Marc...", "I'm sorry...", "No... no..."] }
+      }
+    },
+    "guard": {
+      "name": "Shield Guard (boss)",
+      "voice": "am_adam",
+      "speed": 0.95,
+      "fx": "zombie",
+      "triggers": {
+        "start": { "when": "the boss fight starts", "lines": ["Visiting hours... are over.", "Show me... your badge."] },
+        "shift": { "when": "he raises his shield (mode shift)", "lines": ["Restricted... area.", "Stand... back."] },
+        "death": { "when": "he dies", "lines": ["End of... shift.", "Clocking... out."] }
+      }
+    }
+  },
+  "audition": {
+    "_note": "4 lines per candidate voice so Marc can compare them in labs/voice.html. Kokoro's own grades (VOICES.md): af_heart A, af_bella A-, af_nicole B-, af_sarah C+, am_fenrir C+, am_michael C+, am_puck C+, am_eric D.",
+    "marc": { "candidates": ["am_michael", "am_fenrir", "am_puck", "am_eric"], "lines": ["Batter up!", "Stay behind me.", "Great shot, babe!", "Yola... I'm sorry."] },
+    "yola": { "candidates": ["af_heart", "af_bella", "af_sarah", "af_nicole"], "lines": ["Now, while it's down!", "Hold still, I've got you.", "Clean.", "Marc, look at the size of him."] }
+  }
+}

@@ -5,7 +5,8 @@
 //   audio.ui('click' | 'hover' | 'card' | 'deny' | 'coin' | 'open' | 'close' | 'select' | 'end_turn' | ...)
 //   audio.sfx(key, { vol, rate, pitch, at, pan, delay })   any bank or synth by name (sfx.js); at = screen x in px
 //   audio.music('menu' | 'map' | 'fight' | 'elite' | 'boss' | null)   crossfades; waits for unlock if needed
-//   audio.setVolume({ master, music, sfx })   0..1 each (the settings sliders); duck(ms, amount)
+//   audio.setVolume({ master, music, sfx, voice, voices })   0..1 each (the settings sliders); voices: the barks on/off
+//   audio.voice                         the bark director (voice.js): Marc, Yola and the Shield Guard speak; duck(ms, amount)
 //   extras: walk(steps), door(kind), setLoadout({ marc, yola }), setParty({ hp, maxHp }), lowHp(bool), preload(),
 //           stopAll(), mute(bool), meter(), state(), has(key), destroy()
 // Graph: sfx bus -> glue compressor -> master -> limiter -> out; ui bus and music bus -> master; a generated room
@@ -15,10 +16,11 @@
 // browser without Web Audio just means silence.
 import { BANKS, SYNTHS, UI, createEventSounds, filesInUse } from './sfx.js';
 import { createMusic, TRACKS } from './music.js';
+import { createVoice } from './voice.js';
 
 const DEFAULT_BASE = ((import.meta.env && import.meta.env.BASE_URL) || '/') + 'assets/';
 const MAX_VOICES = 28;                         // recorded voices ringing at once (synths are short and not counted)
-const TRIM = { sfx: 0.95, ui: 0.8, music: 0.6 }; // bus levels under the player's volume sliders
+const TRIM = { sfx: 0.95, ui: 0.8, music: 0.6, voice: 1.0 }; // bus levels under the player's volume sliders
 const REF_DB = -16;                            // takes are matched to this loudest-50-ms RMS (within +-6 dB)
 const PRELOAD_ORDER = ['swing', 'bat_hit', 'pistol', 'party_hit', 'z_attack', 'z_hurt', 'z_death', 'z_alert', 'body_fall',
   'block', 'dodge', 'heavy_hit', 'bullet_hit', 'stagger', 'stagger_crack', 'finisher', 'supplies', 'step', 'door'];
@@ -43,7 +45,7 @@ export function createAudio(opts = {}) {
   const base = opts.base || DEFAULT_BASE;
   const hasWindow = typeof window !== 'undefined';
   let c = null, N = null, unlocked = false, destroyed = false, muted = false;
-  const vol = { master: 1, music: 0.7, sfx: 0.8, ...(opts.volume || {}) };
+  const vol = { master: 1, music: 0.7, sfx: 0.8, voice: 0.9, ...(opts.volume || {}) };
 
   const raw = new Map();       // path -> Promise<ArrayBuffer | null>   (fetch only, works before unlock)
   const loading = new Map();   // path -> Promise<entry | null>
@@ -75,7 +77,8 @@ export function createAudio(opts = {}) {
     N.master = c.createGain();
     N.master.connect(N.limiter); N.limiter.connect(c.destination);
     N.glue = comp({ threshold: -18, knee: 10, ratio: 2.5, attack: 0.005, release: 0.2 });
-    N.glue.connect(N.master);
+    N.sfxDuck = c.createGain(); N.glue.connect(N.sfxDuck); N.sfxDuck.connect(N.master); // dips a little under a voice line
+    N.voice = c.createGain(); N.voice.connect(N.master);                                  // the barks (voice.js)
     N.sfx = c.createGain(); N.sfx.connect(N.glue);
     N.ui = c.createGain(); N.ui.connect(N.master);
     N.music = c.createGain(); N.music.connect(N.master);
@@ -118,6 +121,7 @@ export function createAudio(opts = {}) {
     set(N.sfx, curve(vol.sfx) * TRIM.sfx);
     set(N.ui, curve(vol.ui ?? vol.sfx) * TRIM.ui);
     set(N.music, curve(vol.music) * TRIM.music);
+    set(N.voice, curve(vol.voice) * TRIM.voice);
   }
 
   const running = () => !!c && c.state === 'running' && !destroyed;
@@ -395,6 +399,16 @@ export function createAudio(opts = {}) {
   // ------------------------------------------------------------------ music
   const music = createMusic({ base, bus: () => N?.musicDuck || null, ctx: () => c });
 
+  // ------------------------------------------------------------------ voice barks (voice.js): their own bus, ducking the rest
+  const voice = createVoice({
+    base, load: loadFile, ctx: () => (running() ? c : null), bus: () => N?.voice || null, settings: opts.settings,
+    prefetch: hasWindow && opts.preload !== false,
+    duck: (sec) => {
+      duck(sec * 1000 + 150, 0.6);
+      try { const g = N.sfxDuck.gain, t = c.currentTime; g.cancelScheduledValues(t); g.setTargetAtTime(0.78, t, 0.03); g.setTargetAtTime(1, t + sec + 0.1, 0.12); } catch { /* ignore */ }
+    },
+  });
+
   // ------------------------------------------------------------------ the event map
   const events = createEventSounds({
     play: (key, o) => play(key, o),
@@ -418,7 +432,7 @@ export function createAudio(opts = {}) {
         try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch { /* unsupported */ }
         try { if (SILENT_WAV) { const el = new Audio(SILENT_WAV); el.loop = true; el.setAttribute('playsinline', ''); el.play()?.catch?.(() => {}); N.keepAlive = el; } } catch { /* ignore */ }
       }
-      if (opts.preload !== false) startPreload();
+      if (opts.preload !== false) { startPreload(); setTimeout(() => voice.preload(), 1500); }
     }
     music.unlock();
     return true;
@@ -467,14 +481,16 @@ export function createAudio(opts = {}) {
     get context() { return c; },
 
     sfx: safe((key, o = {}) => play(key, o), false),
-    event: safe((evt) => events.handle(evt)),
+    event: (evt) => { try { events.handle(evt); } catch (err) { console.warn('[audio]', err); } voice.event(evt); },
+    voice,
     ui: safe((name, o = {}) => {
       const k = UI[name] || (SYNTHS[name] || BANKS[name] ? name : 'click');
       return BANKS[k] ? play(k, o) : runSynth(k, { ...o, bus: 'ui' });
     }, false),
     music: safe((track, o) => music.play(track, o)),
     setVolume: safe((v = {}) => {
-      for (const k of ['master', 'music', 'sfx', 'ui']) {
+      if ('voices' in v) voice.setEnabled(v.voices == null ? null : !!v.voices);
+      for (const k of ['master', 'music', 'sfx', 'ui', 'voice']) {
         if (v[k] == null || !isFinite(+v[k])) continue;
         const x = +v[k] > 1 ? +v[k] / 100 : +v[k];          // 0..1 (or 0..100 from a raw slider)
         vol[k] = Math.max(0, Math.min(1, x));
@@ -492,10 +508,10 @@ export function createAudio(opts = {}) {
     // a room's door as you enter: 'open' | 'shut' | 'lift' (the boss elevator)
     door: safe((kind = 'open') => play({ open: 'door', shut: 'door_shut', lift: 'lift_open', lift_close: 'lift_close' }[kind] || 'door')),
     setLoadout: safe((w) => events.setLoadout(w)),
-    setParty: safe((p) => events.setParty(p)),
+    setParty: safe((p) => { events.setParty(p); voice.setParty(p); }),
     // the HUD's onLowHp(bool): start / stop the heartbeat (the event map also does this from the party's HP)
     lowHp: safe((on) => heartbeat(on === true ? 1 : on || 0)),
-    resetCombat: safe(() => events.reset()),
+    resetCombat: safe(() => { events.reset(); voice.reset(); }),
     // fetch the files now (no decode needed: works before the first gesture); 'all' or a list of bank keys / tracks
     preload: safe((what = 'all') => {
       const keys = what === 'all' ? Object.keys(BANKS) : [].concat(what);
@@ -504,7 +520,7 @@ export function createAudio(opts = {}) {
     stopAll: safe(() => {
       if (!c) return; const t = c.currentTime;
       for (const v of voices) { try { v.out.gain.setTargetAtTime(0, t, 0.02); } catch { /* gone */ } }
-      voices = []; heartbeat(0);
+      voices = []; heartbeat(0); voice.stop();
     }),
     has: (key) => !!BANKS[key] || !!SYNTHS[key] || !!UI[key],
     keys: () => ({ banks: Object.keys(BANKS), synths: Object.keys(SYNTHS), ui: Object.keys(UI), tracks: Object.keys(TRACKS) }),
@@ -518,12 +534,12 @@ export function createAudio(opts = {}) {
       ctx: c ? c.state : 'none', unlocked, sampleRate: c?.sampleRate || 0, volume: { ...vol }, muted,
       files: filesInUse().length, decoded: decoded.size, failed: [...failed], voices: c ? (prune(), voices.length) : 0,
       stats: { ...stats }, heartbeat: beatLevel, duck: N ? +N.musicDuck.gain.value.toFixed(3) : 1,
-      music: music.state(), combat: events.state,
+      music: music.state(), combat: events.state, voice: (({ log, ...v }) => v)(voice.state()),
     }),
     // per-file measurements after decode (lab)
     measurements: () => Object.fromEntries([...decoded.entries()].map(([f, en]) => [f, { db: en.db, peak: en.peak, norm: +en.norm.toFixed(2), start: +en.start.toFixed(3), dur: +en.buf.duration.toFixed(2) }])),
     destroy: safe(() => {
-      destroyed = true; clearTimeout(beatTimer); music.play(null, { fade: 0.2 });
+      destroyed = true; clearTimeout(beatTimer); music.play(null, { fade: 0.2 }); voice.stop();
       listeners.forEach((off) => off());
       setTimeout(() => { try { c?.close(); } catch { /* ignore */ } }, 300);
     }),

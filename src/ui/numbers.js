@@ -14,7 +14,7 @@ export function createNumbers(layer) {
   const recent = new Map();   // key -> { t, n }
 
   function pop({ x, y, text, kind = 'damage', big = false, key = null }) {
-    if (x == null || y == null) return null;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;   // (no anchor on screen: nothing to pop)
     const now = performance.now();
     const k = key ?? `${Math.round(x / 40)}:${Math.round(y / 40)}`;
     const r = recent.get(k);

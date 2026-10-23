@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Voice lab</title>
+<link rel="icon" href="data:," />
+<style>
+  body { background: var(--bg, #0d1416); color: var(--ink, #ece4d2); margin: 0; overflow: auto; height: auto; min-height: 100%; }
+  html, body { overflow-y: auto !important; height: auto !important; touch-action: auto !important; user-select: auto !important; }
+  .vl { max-width: 1400px; margin: 0 auto; padding: 14px 16px 40px; font-family: var(--f-body, system-ui, sans-serif); }
+  .vl-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; position: sticky; top: 0; z-index: 5; padding: 10px 0 12px;
+    background: linear-gradient(180deg, var(--bg, #0d1416) 85%, #0d141600); }
+  .vl-logo { font: 400 30px/1 var(--f-display, Impact); letter-spacing: .04em; }
+  .vl-logo b { color: var(--marc, #c8483a); font-weight: 400; } .vl-logo i { color: var(--yola, #2fa39a); font-style: normal; }
+  .vl-unlock { font: 600 14px/1 var(--f-head, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: #fff; cursor: pointer;
+    background: var(--marc, #c8483a); border: 0; border-radius: 6px; padding: 11px 16px; box-shadow: 0 3px 0 var(--marc-dark, #7d231b); }
+  .vl-unlock.on { background: var(--panel-2, #20323a); box-shadow: none; color: var(--good, #8fd16a); cursor: default; }
+  .vl-status { font: 12px/1.35 ui-monospace, Menlo, monospace; color: var(--ink-dim, #9fb0ae); flex: 1; min-width: 240px; }
+  .vl-status b { color: var(--ink, #ece4d2); font-weight: 600; }
+  .vl-ctl { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font: 500 13px var(--f-head, sans-serif); }
+  .vl-ctl input[type=range] { width: 110px; accent-color: var(--yola, #2fa39a); }
+  .vl-panel { background: var(--panel, #18262a); border: 1px solid var(--line, #2d4249); border-radius: 10px; padding: 12px 14px 14px; margin-bottom: 14px; }
+  .vl-panel h2 { margin: 0 0 10px; font: 600 13px/1 var(--f-head, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim, #9fb0ae); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .vl-panel h2 small { font: 400 12px var(--f-body, sans-serif); letter-spacing: 0; text-transform: none; color: var(--ink-faint, #64777a); }
+  .vl-panel h3 { margin: 14px 0 8px; font: 400 22px/1 var(--f-display, Impact); letter-spacing: .04em; }
+  .vl-panel h3.marc { color: var(--marc, #c8483a); } .vl-panel h3.yola { color: var(--yola, #2fa39a); } .vl-panel h3.guard { color: var(--gold, #e3b04b); }
+  .vl-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .vl-two { grid-template-columns: 1fr; } }
+  .vl-cands { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+  .vl-cands th { text-align: left; font: 500 12px var(--f-head, sans-serif); color: var(--ink-faint, #64777a); padding: 0 6px; }
+  .vl-cands td { padding: 0 3px; vertical-align: middle; }
+  .vl-vname { font: 600 14px var(--f-head, sans-serif); white-space: nowrap; }
+  .vl-vname small { display: block; font: 400 11px var(--f-body, sans-serif); color: var(--ink-faint, #64777a); }
+  .vl-badge { display: inline-block; font: 600 10px/1 var(--f-head, sans-serif); letter-spacing: .08em; text-transform: uppercase; padding: 3px 5px; border-radius: 4px; background: var(--yola-dark, #145a55); color: var(--yola-light, #7fd6cc); margin-left: 6px; vertical-align: 2px; }
+  .vl-b { font: 500 13px/1.15 var(--f-head, sans-serif); color: var(--ink, #ece4d2); background: var(--panel-2, #20323a); border: 1px solid var(--line, #2d4249);
+    border-radius: 6px; padding: 7px 10px; cursor: pointer; text-align: left; transition: background .12s, transform .08s; }
+  .vl-b:hover { background: #29414a; } .vl-b:active { transform: translateY(1px); }
+  .vl-b small { display: block; font: 400 11px var(--f-body, sans-serif); color: var(--ink-faint, #64777a); margin-top: 2px; }
+  .vl-b.marc { border-left: 3px solid var(--marc, #c8483a); } .vl-b.yola { border-left: 3px solid var(--yola, #2fa39a); } .vl-b.guard { border-left: 3px solid var(--gold, #e3b04b); }
+  .vl-b.on { background: var(--yola-dark, #145a55); border-color: var(--yola, #2fa39a); }
+  .vl-b.playing { background: #35505a; }
+  .vl-b.miss { opacity: .45; }
+  .vl-b.stale { border-style: dashed; }
+  .vl-cands .vl-b { width: 100%; }
+  .vl-trigs { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  .vl-trig { background: var(--panel-2, #20323a); border: 1px solid var(--line, #2d4249); border-radius: 8px; padding: 9px 10px; }
+  .vl-trig header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 4px; }
+  .vl-trig header b { font: 600 13px var(--f-head, sans-serif); letter-spacing: .04em; }
+  .vl-trig header span { font: 11px ui-monospace, monospace; color: var(--ink-faint, #64777a); white-space: nowrap; }
+  .vl-trig p { margin: 0 0 6px; font-size: 12px; color: var(--ink-dim, #9fb0ae); }
+  .vl-lines { display: flex; flex-wrap: wrap; gap: 5px; }
+  .vl-lines .vl-b { background: #172429; }
+  .vl-cmd { font: 12.5px/1.5 ui-monospace, Menlo, monospace; background: #0a1012; border-radius: 6px; padding: 8px 10px; color: var(--ink, #ece4d2); white-space: pre-wrap; word-break: break-all; margin: 6px 0 0; }
+  .vl-note { font-size: 12.5px; color: var(--ink-dim, #9fb0ae); margin: 6px 0 0; line-height: 1.45; }
+  .vl-note b { color: var(--ink, #ece4d2); }
+  .vl-log { font: 11.5px/1.45 ui-monospace, Menlo, monospace; color: var(--ink-dim, #9fb0ae); height: 260px; overflow: auto; white-space: pre-wrap; background: #0a1012; border-radius: 6px; padding: 8px; margin-top: 10px; }
+  .vl-log .s { color: var(--good, #8fd16a); } .vl-log .e { color: var(--ink, #ece4d2); } .vl-log .k { color: var(--ink-faint, #64777a); } .vl-log .w { color: var(--bad, #ff6b5e); }
+  .vl-btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .vl-sel { font: 500 13px var(--f-head, sans-serif); background: var(--panel-2, #20323a); color: var(--ink, #ece4d2); border: 1px solid var(--line, #2d4249); border-radius: 6px; padding: 6px 8px; }
+  .vl-placeholder { display: inline-block; font: 600 11px/1 var(--f-head, sans-serif); letter-spacing: .1em; text-transform: uppercase; color: var(--gold, #e3b04b); border: 1px solid currentColor; border-radius: 4px; padding: 4px 6px; }
+</style>
+</head>
+<body>
+<div class="vl" id="app"></div>
+<script type="module" src="./voice.js"></script>
+</body>
+</html>

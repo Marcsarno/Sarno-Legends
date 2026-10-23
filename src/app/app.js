@@ -121,6 +121,8 @@ export async function startApp({ params = new URLSearchParams(location.search), 
       try {
         if (fade) await fadeVeil(true, 160);
         await fn();
+        // behind the veil the old screen is gone at once (its own fade-out would ghost through the new one)
+        if (fade) for (const el of uiRoot.querySelectorAll('.scr--leaving')) el.style.visibility = 'hidden';
       } catch (e) {
         showError(e, 'screen change');
       } finally {
@@ -185,6 +187,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
       openMap: () => app.openMapView(),
       settings: () => app.openSettings(),
       potion: (i, action) => mapPotion(i, action),
+      canUsePotion: (i, id) => R.usableOnMap(id),
       ...(extra.act || {}),
     };
     return { run: app.run, profile, studio, audio, rooms, version: VERSION, ...extra, act };
@@ -380,7 +383,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
 
   function fightOver(fight) {
     const run = app.run;
-    if (!run || app.fight !== fight) return;
+    if (!run || run.over || app.fight !== fight) return;   // (over: abandoned from Settings while the last blow played)
     const res = R.finishCombat(run, fight.combat);
     if (!res.ok) { showError(new Error('finishCombat: ' + res.reason), 'fight'); return; }
     if (run.screen === 'reward') {

@@ -81,6 +81,7 @@ export function topbar(ctx, host) {
     onMap: act.openMap ? () => act.openMap() : null,
     onSettings: () => (act.settings ? act.settings() : act.openSettings?.()),
     onPotion: act.potion ? (i, action, el) => act.potion(i, action, el) : null,
+    canUsePotion: act.canUsePotion ? (i, id) => act.canUsePotion(i, id) : null,   // outside a fight: the Medkit
   });
   // measure the bar (and the relic tray hanging under it) so screens can lay out below them
   let ro = null;

@@ -443,8 +443,11 @@ export class Actor {
     }
     // the strike's follow-through slows after the impact
     if (this.afterImpact && this.cur === this.afterImpact.a && this.cur.time >= this.afterImpact.impact) { this.cur.timeScale = this.afterImpact.rate; this.afterImpact = null; }
-    // springs
-    const sp = (s, k, c) => { s.v += (-k * s.x - c * s.v) * dt; s.x += s.v * dt; };
+    // springs, in small steps: a whole frame in one step (dt is game time: x speed, and a slow device's frame can be
+    // 1/20 s) makes them blow up, throwing the actor kilometres off screen
+    const sp = (s, k, c) => {
+      for (let left = dt; left > 1e-6; left -= 1 / 120) { const h = Math.min(left, 1 / 120); s.v += (-k * s.x - c * s.v) * h; s.x += s.v * h; }
+    };
     sp(this.knock, 160, 18); sp(this.bend, 220, 20);
     // yaw
     this.yaw = this.yawTarget;
