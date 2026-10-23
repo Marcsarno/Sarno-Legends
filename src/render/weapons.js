@@ -118,6 +118,19 @@ function placeBatRaw(bones, o, def, fit, k = 1, apart = 0.2) {
   return true;
 }
 
+// turn a placed weapon about its grip so the shaft points at a world point (w: 0 = as placed, 1 = fully aimed)
+const _aq = new THREE.Quaternion(), _aq2 = new THREE.Quaternion(), _aI = new THREE.Quaternion();
+export function aimShaft(o, def, point, w = 1) {
+  const grip = _a.set(...def.grip_primary).multiplyScalar(o.scale.x).applyQuaternion(o.quaternion).add(o.position);
+  const s = _b.set(...def.shaft_axis).normalize().applyQuaternion(o.quaternion);
+  const d = _c.copy(point).sub(grip); if (d.lengthSq() < 1e-6) return;
+  d.normalize();
+  if (s.dot(d) < -0.999) return;                                   // (straight away from it: no stable turn)
+  _aq2.setFromUnitVectors(s, d); _aq.slerpQuaternions(_aI, _aq2, Math.min(1, w));
+  o.position.sub(grip).applyQuaternion(_aq).add(grip);
+  o.quaternion.premultiply(_aq);
+}
+
 // the pistol in the right fist (clipchars.js pistolInFist)
 const _pf = new THREE.Vector3(), _pf2 = new THREE.Vector3(), _pf3 = new THREE.Vector3(), _pq = new THREE.Quaternion();
 export function placePistol(bones, o, P, k = 1) {
@@ -241,7 +254,10 @@ export async function createWeapon(id, scene) {
         obj.quaternion.multiply(_q.setFromEuler(_e.set((SHOTGUN_FIT[id]?.tilt || 0) * D2R, (SHOTGUN_FIT[id]?.turn || 0) * D2R, (SHOTGUN_FIT[id]?.roll || 0) * D2R, 'YXZ')));
         obj.position.copy(R.c).add(_b.set(0, -0.02, -0.02).applyQuaternion(obj.quaternion));
         obj.scale.setScalar(1);
-      } else placeBat(B, obj, W.def, W.fit, k, 0.2, batState, lastDt);
+      } else {
+        placeBat(B, obj, W.def, W.fit, k, 0.2, batState, lastDt);
+        if (actor.weaponAim?.w > 0) aimShaft(obj, W.def, actor.weaponAim.point, actor.weaponAim.w);
+      }
       // procedural slide / pump kick after a shot
       if (kickT < 1) {
         const u = kickT, s = Math.sin(Math.min(1, u) * Math.PI) * kickS;

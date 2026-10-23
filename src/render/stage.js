@@ -169,7 +169,7 @@ export function createStage(canvas, opts = {}) {
       fitBackdrop();
       fadeBackdrop();                              // (the fallback room hides once the painting has faded in)
     } else {
-      back.visible = false; fallback.group.visible = true;
+      back.visible = false; fallback.group.visible = true; fallback.needTextures();
     }
   }
   function fadeBackdrop() { back.material.opacity = 0; back.userData.fade = 0.0001; }
@@ -322,12 +322,22 @@ export function createStage(canvas, opts = {}) {
     if (Math.abs(fov - camera.fov) > 1e-4) { camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 
-  renderer.setAnimationLoop((now) => { if (clock.update) clock.update(now); if (running) step(clock.getDelta()); });
+  // ---- auto quality: weak phones step down (pixel ratio, then shadows) when fights run under ~40 fps ----
+  const quality = createAutoQuality({ renderer, key, maxPixelRatio: opts.maxPixelRatio || 2, auto: opts.autoQuality,
+    fightOn: () => { for (const p of pickables.values()) if (p.enabled !== false && p.owner && !p.owner.isHero && !p.owner.dead) return true; return false; } });
+
+  let lastNow = null;
+  renderer.setAnimationLoop((now) => {
+    if (clock.update) clock.update(now);
+    if (running) { quality.frame(lastNow == null ? 0 : now - lastNow); step(clock.getDelta()); } else quality.frame(-1);
+    lastNow = now;
+  });
   const onResize = () => resize();
   window.addEventListener('resize', onResize);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null; ro?.observe(canvas);
   resize();
   fallback.set(ROOM_TINT.default); fallback.group.visible = true;
+  if (opts.painter === false) fallback.needTextures();
 
   function dispose() {
     disposed = true; running = false; renderer.setAnimationLoop(null);
@@ -338,6 +348,10 @@ export function createStage(canvas, opts = {}) {
 
   return {
     renderer, scene, camera, clock,
+    /** { level, levels, pixelRatio, shadows, auto, frameMs } (auto quality; level 0 = full) */
+    get quality() { return quality.info(); },
+    /** Force a quality level (0 = full .. levels - 1 = lowest), or 'auto' to let the frame time decide again. */
+    setQuality(level) { quality.set(level); },
     slots: { marc: SLOTS.marc.clone(), yola: SLOTS.yola.clone(), enemy: SLOTS.enemy.map(v => v.clone()), boss: SLOTS.boss.clone() },
     lights: { hemi, key, rim, fill, partyLamp, enemyLamp },
     setRoom, project, onFrame, resize, setSpeed, shake, nudge, hitStop, slowMo, punchIn, pick, pickDetail, dispose,
@@ -359,17 +373,80 @@ export function createStage(canvas, opts = {}) {
 
 const smooth = x => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
 
+// Auto quality. While a fight is on stage (a living zombie registered for picking), the real frame time is averaged over
+// windows of WINDOW s (the slowest 8% of frames dropped: a hitch is not the device). A window averaging over DOWN_MS
+// (under ~40 fps) steps down one level: pixel ratio 1.75 -> 1.25 -> 1, then shadows off (the key light's shadow pass).
+// UP_WINDOWS windows in a row at the display's pace (under UP_MS) step back up a level, unless that level has already
+// failed twice this session (no ping-pong). The level reached is remembered on the device (localStorage) so a weak phone
+// starts the next session where it settled. Off under automation (navigator.webdriver: screenshots and playtests keep full
+// quality); ?quality=0..3 fixes a level, ?quality=auto forces it on.
+const Q_WINDOW = 3, Q_DOWN_MS = 25, Q_UP_MS = 17.5, Q_UP_WINDOWS = 3, Q_SETTLE = 1.5, Q_KEY = 'sl.quality';
+function createAutoQuality({ renderer, key, maxPixelRatio, auto, fightOn }) {
+  const dpr = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, maxPixelRatio);
+  const levels = [];
+  for (const pr of [dpr, Math.min(dpr, 1.25), 1]) if (!levels.some(l => l.pr === pr)) levels.push({ pr, shadows: true });
+  const shadowsAllowed = renderer.shadowMap.enabled;
+  if (shadowsAllowed) levels.push({ pr: levels.at(-1).pr, shadows: false });
+  const param = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('quality') : null;
+  const webdriver = typeof navigator !== 'undefined' && navigator.webdriver;
+  let on = param === 'auto' ? true : param != null && param !== '' ? false : auto !== false && !webdriver;
+  let level = 0;
+  if (param != null && /^\d+$/.test(param)) level = Math.min(levels.length - 1, +param);
+  else if (on) { try { level = Math.min(levels.length - 1, Math.max(0, +(localStorage.getItem(Q_KEY) || 0))); } catch { /* storage blocked */ } }
+  const fails = new Array(levels.length).fill(0);
+  let samples = [], winT = 0, settle = Q_SETTLE, goodWindows = 0, lastMs = 0, fight = false;
+
+  function apply() {
+    const L = levels[level];
+    if (renderer.getPixelRatio() !== L.pr) renderer.setPixelRatio(L.pr);      // (keeps the CSS size, resizes the buffer)
+    const sh = shadowsAllowed && L.shadows;
+    if (renderer.shadowMap.enabled !== sh || key.castShadow !== sh) { renderer.shadowMap.enabled = sh; key.castShadow = sh; }
+    samples = []; winT = 0; settle = Q_SETTLE; goodWindows = 0;
+  }
+  function step(d) {
+    const next = Math.max(0, Math.min(levels.length - 1, level + d));
+    if (next === level) return;
+    if (d > 0) fails[level]++;
+    level = next; apply();
+    try { localStorage.setItem(Q_KEY, String(level)); } catch { /* storage blocked */ }
+  }
+  apply();
+  return {
+    // ms: the real time since the last animation frame (-1: the stage is paused)
+    frame(ms) {
+      const f = on && ms >= 0 && (typeof document === 'undefined' || document.visibilityState !== 'hidden') && fightOn();
+      if (!f) { if (fight) { samples = []; winT = 0; } fight = false; return; }
+      if (!fight) { fight = true; settle = Q_SETTLE; }              // a fight just opened: models and shaders settle first
+      if (ms <= 0 || ms > 250) return;                               // (a stall or a background tab, not the device's pace)
+      if (settle > 0) { settle -= ms / 1000; return; }
+      samples.push(ms); winT += ms / 1000;
+      if (winT < Q_WINDOW) return;
+      samples.sort((a, b) => a - b);
+      const keep = samples.slice(0, Math.max(1, Math.floor(samples.length * 0.92)));
+      lastMs = keep.reduce((a, b) => a + b, 0) / keep.length;
+      samples = []; winT = 0;
+      if (lastMs > Q_DOWN_MS) { goodWindows = 0; step(1); return; }
+      goodWindows = lastMs < Q_UP_MS ? goodWindows + 1 : 0;
+      if (goodWindows >= Q_UP_WINDOWS && level > 0 && fails[level - 1] < 2) step(-1);
+    },
+    info: () => ({ level, levels: levels.length, pixelRatio: levels[level].pr, shadows: shadowsAllowed && levels[level].shadows, auto: on, frameMs: +lastMs.toFixed(1) }),
+    set(l) {
+      if (l === 'auto') { on = true; return; }
+      on = false; level = Math.max(0, Math.min(levels.length - 1, l | 0)); apply();
+    },
+  };
+}
+
 // The fallback room: a tiled floor running back to a dim wall, a skirting line and two strips of fluorescent glow.
-// Used until (or instead of) the painted backdrop.
+// Plain colours until (or instead of) the painted backdrop; the tile and wall textures (~240 KB) load only when the room
+// is really needed (no painting for this room: painter off, a failed paint): the baked rooms cover every room at boot.
 function buildFallbackRoom() {
   const group = new THREE.Group(); group.name = 'fallback-room';
-  const floorTex = texture('floor_clinical.webp', { repeat: [7, 4] });
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x56625f, map: floorTex, roughness: 0.42, metalness: 0.0, envMapIntensity: 0.9 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x2f3836, roughness: 0.42, metalness: 0.0, envMapIntensity: 0.9 });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(34, 16), floorMat);
   floor.rotation.x = -Math.PI / 2; floor.position.set(0.5, 0, -2); floor.receiveShadow = true;
   group.add(floor);
-  const wallTex = texture('wall_clinical.webp', { repeat: [6, 1.4] });
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x45524f, map: wallTex, roughness: 0.85, envMapIntensity: 0.3 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2c3533, roughness: 0.85, envMapIntensity: 0.3 });
   const wall = new THREE.Mesh(new THREE.PlaneGeometry(34, 7), wallMat);
   wall.position.set(0.5, 3.5, -5.2); wall.receiveShadow = true;
   group.add(wall);
@@ -390,16 +467,21 @@ function buildFallbackRoom() {
   const top = new THREE.Mesh(new THREE.PlaneGeometry(34, 4), new THREE.MeshBasicMaterial({ map: gradientTex(['#0d1416f0', '#0d141600']), transparent: true, depthWrite: false }));
   top.position.set(0.5, 5.2, -5.1); group.add(top);
   let t = 0;
-  group.onBeforeRender = () => {};
   const tick = () => { t += 1 / 60; const f = Math.sin(t * 13) > 0.93 ? 0.35 : 1; strips[1].material.color.setRGB(0.85 * f, 1 * f, 0.96 * f); };
   group.userData.tick = tick;
   floor.onBeforeRender = tick;
+  let tint = null, textured = false;
+  function applyTextures() {
+    if (!tint) return;
+    floorMat.map = texture(tint.floorTex || 'floor_clinical.webp', { repeat: [7, 4] }); floorMat.color.setHex(tint.floorTint || 0x56625f); floorMat.needsUpdate = true;
+    wallMat.map = texture(tint.wallTex || 'wall_clinical.webp', { repeat: [6, 1.4] }); wallMat.color.setHex(0x45524f); wallMat.needsUpdate = true;
+  }
   return {
     group,
-    set(tint) {
-      floorMat.map = texture(tint.floorTex || 'floor_clinical.webp', { repeat: [7, 4] }); floorMat.color.setHex(tint.floorTint || 0x56625f); floorMat.needsUpdate = true;
-      wallMat.map = texture(tint.wallTex || 'wall_clinical.webp', { repeat: [6, 1.4] }); wallMat.needsUpdate = true;
-    },
+    set(t) { tint = t; if (textured) applyTextures(); },
+    /** The room is really on show (no painting): load and use its textures from now on. */
+    needTextures() { if (!textured) { textured = true; applyTextures(); } },
+    get textured() { return textured; },
   };
 }
 

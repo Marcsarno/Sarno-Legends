@@ -89,8 +89,8 @@ test('cards: upgrades, pools, uids', () => {
   assert.deepEqual(cardView({ id: 'rally', up: true }).keywords, []);
   assert.ok(!isUpgradable({ id: 'panic', up: false }));
   const marc = cardPool({ hero: 'marc' }), yola = cardPool({ hero: 'yola' });
-  assert.equal(marc.length, 27);
-  assert.equal(yola.length, 25);
+  assert.equal(marc.length, 30);
+  assert.equal(yola.length, 26);
   assert.ok(!marc.includes('bat_swing') && !marc.includes('nail_swing'));
   assert.equal(cardPool({ hero: 'yola', rarity: 'rare' }).length, 6);
   syncUids([{ uid: 'c40' }]);

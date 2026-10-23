@@ -3,10 +3,12 @@
 // ?seed= or SHOT1. Scenes:
 //   title armory intro map combat combat_target combat_enemy finisher elite boss reward card_pick rest upgrade shop event
 //   treasure deck victory defeat settings
+//   history collection savecode infection choice endturn_ask a2hs (the save-safety and replay screens)
 import { createProfile } from '../game/meta.js';
 
 export const SHOT_SCENES = ['title', 'armory', 'intro', 'map', 'combat', 'combat_target', 'combat_enemy', 'finisher', 'elite', 'boss',
-  'reward', 'card_pick', 'rest', 'upgrade', 'shop', 'event', 'treasure', 'deck', 'victory', 'defeat', 'settings'];
+  'reward', 'card_pick', 'rest', 'upgrade', 'shop', 'event', 'treasure', 'deck', 'victory', 'defeat', 'settings',
+  'history', 'collection', 'savecode', 'infection', 'choice', 'endturn_ask', 'a2hs'];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function until(fn, timeout = 60000, step = 100) {
@@ -43,6 +45,31 @@ export function shotProfile() {
   p.scrap = 185;
   p.unlocked.push('nail_bat');
   p.stats.runs = 3; p.stats.losses = 3; p.stats.bestFloor = 9;
+  return p;
+}
+
+/** A profile with some history (?shot=history / collection / infection): a few runs, one won, a part-seen collection. */
+export function shotHistoryProfile() {
+  const p = shotProfile();
+  const day = 864e5, now = Date.now();
+  const deck = ['bat_swing', 'bat_swing', 'bat_swing', 'brace', 'brace', 'pistol_shot', 'pistol_shot', 'sidestep', 'sidestep', 'home_run', 'clean_shot', 'tough_it_out+', 'check_mag', 'wait_for_it'];
+  const fights = (n, lostLast) => Array.from({ length: n }, (_, i) => ({ floor: [1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 16][i] ?? i + 1,
+    encounter: i === 10 ? 'shield_guard' : i === 4 ? 'big_walker' : ['shambler_solo', 'screamer_solo', 'biter_pair', 'two_biters'][i % 4],
+    won: !(lostLast && i === n - 1), turns: 3 + (i % 3), hpLost: [4, 0, 9, 6, 14, 3, 7, 0, 5, 11, 22][i] ?? 5, damageTaken: 6 }));
+  p.runs = [
+    { seed: 'K3F9Q', at: now - 3 * day, won: false, floor: 6, hp: 0, maxHp: 80, gold: 64, weapons: { marc: 'wood_bat', yola: 'pistol' }, deck: deck.slice(0, 10),
+      relics: ['nurses_kit', 'wood_bat', 'pistol'], kills: 9, finishers: 3, turns: 21, damageTaken: 80, cause: 'screamer', fights: fights(5, true), scrap: 52 },
+    { seed: 'DAILY-2026-10-22', at: now - day, won: false, floor: 9, hp: 0, maxHp: 80, gold: 110, weapons: { marc: 'wood_bat', yola: 'pistol' }, deck: deck.slice(0, 12),
+      relics: ['nurses_kit', 'coffee_thermos'], kills: 14, finishers: 5, turns: 33, damageTaken: 92, cause: 'big_walker', fights: fights(7, true), daily: '2026-10-22', score: 118 },
+    { seed: 'Z8M2P', at: now - 2 * 3600e3, won: true, floor: 16, hp: 41, maxHp: 86, gold: 140, weapons: { marc: 'nail_bat', yola: 'pistol' }, deck,
+      relics: ['nurses_kit', 'nail_bat', 'pistol', 'duct_tape', 'riot_vest', 'pager'], kills: 27, finishers: 11, turns: 58, damageTaken: 151, cause: null, fights: fights(11, false), scrap: 167, score: 431 },
+  ];
+  p.stats = { ...p.stats, runs: 3, wins: 1, losses: 2, bestFloor: 16 };
+  p.infection = { unlocked: 1 };
+  p.seen = { cards: {}, relics: {}, potions: {} };
+  for (const id of [...deck, 'bat_swing', 'brace', 'pistol_shot', 'sidestep', 'nail_swing', 'pry_loose', 'buckshot', 'clean_shot']) p.seen.cards[id.replace('+', '')] = 1;
+  for (const id of ['nurses_kit', 'duct_tape', 'riot_vest', 'pager', 'coffee_thermos', 'granola']) p.seen.relics[id] = 1;
+  for (const id of ['medkit', 'adrenaline', 'flashbang']) p.seen.potions[id] = 1;
   return p;
 }
 
@@ -157,6 +184,33 @@ export async function runShot(app, scene) {
       break;
     }
     case 'settings': await settle(app); app.openSettings(); await sleep(900); await animationsDone(); break;
+    case 'history': await settle(app); app.openHistory(); await sleep(700); document.querySelector('.hi-row__head')?.click(); await sleep(900); await settle(app, { cards: false }); await animationsDone(); break;
+    case 'collection': await settle(app); app.openCollection(); await sleep(900); await settle(app); await animationsDone(); break;
+    case 'savecode': await settle(app); app.openSaveCode(app.params.get('mode') || 'export'); await sleep(1500); await animationsDone(); break;
+    case 'infection': await settle(app); app.startNewRun(); await sleep(900); await animationsDone(); break;
+    case 'a2hs': await settle(app); await sleep(2200); await animationsDone(); break;
+    case 'choice': case 'endturn_ask': {
+      await SL.combat('shambler_solo');
+      await idleFight();
+      await settle(app);
+      const f = app.fight, c = f.combat;
+      if (scene === 'choice') {
+        const card = c.state.hand.find(k => k.id !== 'check_mag') || c.state.hand[0];
+        card.id = 'check_mag'; card.cost = 0; card.costTurn = undefined;
+        f.ui.sync();
+        await sleep(400);
+        f.play(card.uid);
+        await until(() => f.choice?.open, 30000, 50);
+        await sleep(700);
+        await settle(app);
+      } else {
+        (app.profile.ui ||= {}).warnEndTurn = true;
+        app.fight.ui.el.querySelector('.endturn')?.click();
+        await sleep(700);
+      }
+      await animationsDone();
+      break;
+    }
     default: console.warn('[shot] unknown scene', scene, '- scenes:', SHOT_SCENES.join(' '));
   }
   ready();

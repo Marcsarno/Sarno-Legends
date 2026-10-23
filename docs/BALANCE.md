@@ -1,19 +1,209 @@
 # Balance: what the sim says about act 1
 
-Measured 2026-10-23 with the headless sim (`tools/sim/`), 300 full runs per bot, seed `BAL`, starter weapons
-(Wood Bat + Pistol) unless a table says otherwise. Targets are GAME_CORE's. The headline and per-encounter tables were
-re-run after the logic review's fixes (see "Logic review" at the end); the lever and weapon tables are from before it
-and moved by less than the run-to-run noise.
+Measured 2026-10-23 with the headless sim (`tools/sim/`), seed `BAL`, starter weapons (Wood Bat + Pistol) unless a
+table says otherwise. Targets are GAME_CORE's.
+
+## Pass 8 (2026-10-23): card pass, Infection levels, Daily Run
 
 **Short version**
-- Single fights cost what the targets ask: a normal fight costs the sensible bot 5.6% of Max HP and an elite 24.6%.
-  Both are inside the 5-15% and 20-30% bands.
-- The boss is the wall. It costs 58% of Max HP (target 30-45%), and almost every death is there.
-- Whole runs are easier than the targets. The sensible bot wins 93% and reaches the boss with 85% HP; the targets are
-  40-60% for both. The cause is Slay the Spire's own healing, not any one fight (see "Why runs are easy").
-  No A0 number was changed for it. The levers are measured below for Marc to choose from.
-- One tune applied: the Nail Bat and the Sledgehammer simmed **weaker** than the free Wood Bat, against the
-  "sidegrades, tier 3 a little stronger" rule. Nail Swing went from 5 to 6 damage and Sledge from 14 to 18 (details below).
+- **Every card now has a place.** Before the pass, 13 reward cards were never picked by the sensible bot and 9 more
+  under 11%. After it, every common and uncommon is picked in some runs (lowest: Grit Teeth 1.5%, Tackle 4.9%), and
+  the build-around rares that a balanced draft skips (Fortify, Dead Eye, Rally) are taken 74-86% of the time by a bot
+  that drafts their build (`--archetype`).
+- Both sides were fixed: 9 cards changed or redesigned with Slay the Spire's numbers, 5 new ones (Check the Mag's
+  choice, 2 choice cards, 2 Bulwark payoffs), and the bot learned to rate synergies and to play the cards it used to
+  waste (heals, Wrench Arm, Strength-this-turn, Dig In, Fortify, cash-ins held for the Staggered turn).
+- **Bulwark is a real build**: drafting it wins 96.7% at Infection 0 and 48% at Infection 5, level with the Staggered
+  build (98% / 50%).
+- **Infection 0 got easier** (sensible 92.7% → 99%, boss 58% → 44% of Max HP). About 3.5 points come from the
+  better bot (old cards with the new bot: 96.3%) and about 3 from the card pass. Infection 0 stays the family level;
+  the ladder does the rest: **99 / 98 / 98 / 89 / 73 / 60%** at Infection 0-5 (greedy bot: 81% at 0, 22% at 5).
+- New engine step: a mid-fight card choice (`combat.state.choice` + `combat.choose(uids)`, documented at the top of
+  `src/game/combat.js`). New tool: `tools/sim/cardvalue.mjs` (what one copy of each card is worth).
+
+### Results at Infection 0 (300 runs per bot)
+
+| | random | greedy | **sensible** | expert | sensible before | target |
+|---|---|---|---|---|---|---|
+| win rate % | 0 | 81.3 (was 72.3) | **99** | 99 (was 99.3) | 92.7 | sensible 40-60 |
+| reach the boss % | 5 | 97 | 100 | 100 | 99.0 | |
+| HP entering the boss % (mean / p10 / p90) | 54.3 / 17.5 / 92 | 71.2 / 53.8 / 91.3 | **85.9 / 72.5 / 98.8** | 86.1 / 72.5 / 100 | 84.8 / 71.3 / 97.6 | 40-60 |
+| normal fight: HP lost % (mean / p90) | 25.5 / 58.8 | 7.5 / 18.8 | **5.2 / 12.5** | 4 / 12.6 | 5.6 / 12.9 | 5-15 |
+| elite fight: HP lost % (mean / p90) | 68.3 / 100 | 30.1 / 51.1 | **22 / 41.2** | 19.3 / 37.5 | 24.6 / 46.3 | 20-30 |
+| boss fight: HP lost % (mean / p90) | 63.2 / 108.7 | 62.8 / 83.8 | **44.5 / 69.9** | 36.9 / 60 | 57.9 / 83.8 | 30-45 |
+| turns: normal / elite / boss | 4.7 / 7.1 / 6.9 | 2.9 / 5.5 / 8.4 | 2.7 / 5.6 / 10.1 | 2.5 / 5.1 / 8.3 | 2.9 / 5.9 / 11.1 | |
+| card picks skipped % | 24.4 | 0 | 1.2 | 1.2 | 5.7 | |
+| final deck / relics / supplies | 14.3 / 1.7 / 158 | 20.5 / 5.2 / 184 | 18 / 5.1 / 140 | 18 / 5.1 / 135 | 17.6 / 4.9 / 140 | |
+
+### Card changes
+
+Names kept; numbers are Slay the Spire's where a card has an StS twin (BUILD_SPEC section 4's "StS" column).
+
+| card | was | now | why |
+|---|---|---|---|
+| Check the Mag | 0: 2 Block, draw 1 (no choice step yet) | 0: draw 2, discard 1 (+: draw 3, discard 2) | the engine has the choice now; a Prepared-style filter |
+| Double Tap | 1: 4 ×2 (6 ×2) | 1: 3 ×2, +3 each if Staggered (4 ×2, +4) | was a weaker copy of Marc's One-Two; now a Yola cash-in (6 plain, 18 Staggered) |
+| Kneecap | 1: 6 + 1 Weakened (8, 2) | 1: 7 + 1 Weakened (9, 2) | Sucker Punch's numbers |
+| Quick Shot | 0: 3 (5) | 0: 4 (7) | measured strong already; 4 reads less like filler |
+| Flare | 1: 1 Weakened to ALL, draw 1 (2) | 1: 2 Weakened to ALL, draw 1 (3) | one round of Weakened didn't pay for the energy |
+| Deep Breath | 0: +2 Strength this turn (+4) | the same, and draw 1 | Flex never had a place without multi-hits; the draw makes it never dead |
+| Triage | 1: heal 4, exhaust (6) | 0: heal 4, exhaust (6) | Bandage Up's cost |
+| Light on Feet | power 1: +1 Block per Skill (2) | +2 Block per Skill (3) | Feel No Pain's 3/4 is for a narrower trigger; 1 was below Thick Skin |
+| **Tough It Out** (new, Marc common) | | 1: 7 Block, exhaust a card from your hand (9) | True Grit; the spin: you choose even before the upgrade. Thins starters, feeds Bulwark |
+| **Wait for It** (new, Yola common) | | 1: 6 Block, Retain up to 2 cards this turn (9) | Equilibrium's idea at common size: hold a cash-in for the turn Marc staggers |
+| **Barbed Wire** (new, Marc uncommon) | | 2: 12 Block; until your next turn each zombie hit is answered with 4 (16, 6) | Flame Barrier: Bulwark's uncommon payoff |
+| **Battering Ram** (new, Marc rare power) | | 2: whenever you gain Block, 5 damage to a random zombie (7) | Juggernaut: the Bulwark finisher |
+
+Kept as Slay the Spire has them (their place is a build, which the bot now sees): Heavy Swing (Heavy Blade), Tackle
+(Body Slam), Dig In (Entrench), Fortify (Barricade), Swing Guard (Rage), Grit Teeth (Bloodletting), Rally (Limit
+Break), Momentum (Rampage), Haymaker (Clothesline), Spray and Pray (Sword Boomerang), One-Two (Twin Strike),
+Shoulder Check (Iron Wave), Slow Motion (Bullet Time), Cheap Shot.
+
+### The bot's side (tools/sim/bots.mjs)
+
+- **Ratings**: half the old hand-made tier list, half the measured value of the card (below). Build-around cards keep
+  a low base and earn the rest from the deck: Staggered sources and cash-ins, Strength sources and the multi-hit
+  cards that multiply them, Bulwark engines (Block makers) and payoffs (Tackle, Dig In, Fortify, Barbed Wire,
+  Battering Ram), energy cards for expensive hands, thinning for starter-heavy decks.
+- **Play**: free heals when hurt; Strength-this-turn and Swing Guard only when this turn's attacks use them; Wrench Arm
+  on the focus in long fights; cash-ins wait while a Staggered card is in hand; Weakened counts as Block; Grit Teeth /
+  Slow Motion only when the hand needs the energy; Bulwark order (Block, Dig In, then Tackle); synergy powers only in
+  decks and fights that use them (Dead Eye needs 2 Staggered sources, Fortify needs Block and a long fight); 2-energy
+  heals on a quiet turn.
+- **Choices**: `chooseFor(c)` / `settleChoice(c)` answer any open choice (discard what it can't use, exhaust statuses
+  and starter basics, retain what it can't afford or cash-ins while nothing is Staggered, upgrade the biggest gain).
+  The random bot picks randomly; the expert resolves choices inside its search the same way.
+- `--archetype bulwark|strength|stagger` drafts like a person committing to a build: payoffs whenever offered, support
+  once a payoff is in the deck. Play is unchanged.
+
+### Pick rates (sensible bot, Infection 0) and card value
+
+Pick rate = picked / offered (before: 300 runs; after: 1000 runs). A card offered with two better ones loses the
+pick, so 33% is a strong card. **Value** = the change in win rate when one copy is added to the starter deck,
+Infection 5, 1500 runs per card, same seeds (`node tools/sim/cardvalue.mjs`; baseline 50.3%). Value is the card on its
+own: build-around cards (Dig In, Fortify, Dead Eye, Rally) score low there by design, and noise is about ±2.5 points.
+
+| card | pick % before | pick % after | value (Δ win %) |
+|---|---|---|---|
+| jaw_breaker | 83.3 | 98.4 | +17.6 |
+| overhead_smash | 84.7 | 94 | +12.7 |
+| point_blank | 100 | 89.5 | +7.2 |
+| grand_slam | 58.3 | 86.6 | +10.3 |
+| pumped_up | 73 | 81 | +6.3 |
+| berserker | 86.4 | 77.4 | +1.6 |
+| thick_skin | 48.2 | 72.6 | +15.3 |
+| barbed_wire | new | 71.8 | +2.7 |
+| ground_pound | 82.9 | 67.4 | +3.0 |
+| crowbar_pry | 51.8 | 63.7 | +8.8 |
+| adrenaline_shot | 57.1 | 59.4 | +11.7 |
+| batter_up | 59.4 | 58.1 | +4.0 |
+| covering_fire | 68.7 | 57.2 | +3.5 |
+| hold_the_line | 68.8 | 56.8 | +8.5 |
+| make_it_count | 28.6 | 52.4 | +10.1 |
+| painkillers | 52.9 | 47.1 | +2.8 |
+| haymaker | 11.2 | 42.4 | +10.8 |
+| cheap_shot | 7.4 | 41.6 | +12.5 |
+| wild_swing | 44.8 | 39.2 | +3.7 |
+| battering_ram | new | 39 | +6.8 |
+| triage | 0 | 37.8 | +11.5 |
+| triple_tap | 63.6 | 36.8 | -1.6 |
+| kneecap | 14.1 | 36.5 | +10.9 |
+| shoulder_check | 16.4 | 34.5 | +7.7 |
+| headshot | 93.5 | 32.6 | -3.7 |
+| clean_kill | 45.5 | 32 | +2.6 |
+| deep_breath | 0 | 31.2 | +11.5 |
+| double_tap | 10.1 | 31.1 | +5.3 |
+| wrench_arm | 53.2 | 28.7 | +7.8 |
+| one_two | 10.6 | 26.6 | +6.7 |
+| overdrive | 100 | 26.3 | -1.9 |
+| quick_shot | 0 | 24.8 | +8.3 |
+| tough_it_out | new | 22.9 | +2.5 |
+| momentum | 4.5 | 22 | +8.8 |
+| check_mag | 0 | 20.5 | +2.1 |
+| cover_him | 40.7 | 20.1 | +2.1 |
+| bolt_the_door | 87 | 17.8 | +0.7 |
+| aimed_shot | 36 | 17.3 | +1.1 |
+| marksman | 76.5 | 12.6 | +0.3 |
+| spray_and_pray | 8.5 | 12.4 | +0.5 |
+| swing_guard | 0 | 12.2 | +5.9 |
+| light_on_feet | 3.9 | 12 | +4.6 |
+| suppressing_fire | 27.7 | 11.8 | +3.5 |
+| fortify | 0 | 10.7 | -10.7 |
+| kick_the_door | 26.4 | 9.9 | -3.2 |
+| heavy_swing | 0 | 9.1 | -1.1 |
+| tuck_and_roll | 52.6 | 7 | -4.3 |
+| wait_for_it | new | 6.4 | -1.0 |
+| dig_in | 0 | 6 | -14.0 |
+| flare | 3.7 | 5.6 | +3.3 |
+| slow_motion | 8.6 | 5 | -3.3 |
+| tackle | 0 | 4.9 | -3.9 |
+| defibrillator | 25 | 4.5 | -5.3 |
+| dead_eye | 13 | 3.7 | -13.0 |
+| grit_teeth | 0 | 1.5 | -1.1 |
+| rally | 0 | 1.3 | -7.0 |
+
+Build-around cards inside their build (1000 runs each, `--archetype`): Bulwark picks Barbed Wire 99.7%, Battering Ram
+98.7%, Fortify 86%, Dig In 77%, Tackle 74%; Staggered picks Dead Eye 74%.
+
+### Builds (500-1000 runs each, sensible play, `--archetype`)
+
+| draft | Infection 0 win % | Infection 5 win % |
+|---|---|---|
+| balanced (no lean) | 99.2 | 60.2 |
+| Bulwark | 96.7 | 48.4 |
+| Strength | 98.4 | 55.2 |
+| Staggered | 98.0 | 49.6 |
+
+Inside Bulwark at Infection 5, what the deck ended with matters: Battering Ram + Barbed Wire won 80%, Tackle +
+Battering Ram 75%, Barbed Wire alone 49%, Tackle alone 38%. Body Slam needs a Block engine, as it does in Slay the Spire.
+
+## Infection levels (our Ascension)
+
+Level 0 is the game above (the family level). Each level adds its change to every level below it.
+`src/game/infection.js` has the numbers and `INFECTION_LEVELS` (names and text are placeholders for Marc).
+Slay the Spire spreads these over 20 Ascensions, so each step here is a little bigger than its StS counterpart.
+
+| level | name | adds | StS |
+|---|---|---|---|
+| 0 | Family | — | A0 |
+| 1 | Outbreak | more elites: 12.8% of map rooms instead of 8% | A1 |
+| 2 | Spreading | normal zombies +20% damage (Bite Down 11 → 14) and +10% HP | A2 + A7 |
+| 3 | Mutation | elites +15% damage (Charge 14 → 17, Flail 18 → 21) and +10% HP | A3 + A8 |
+| 4 | Quarantine | the boss +20% damage (Shield Bash 32 → 39) and +30 HP (240 → 270) | A4 + A9 |
+| 5 | Pandemic | Nurse's Kit heals 4 instead of 6; resting heals 25% instead of 30% | (asked for) |
+
+Sensible bot, 500 runs per level:
+
+| infection | win % | reach boss % | HP entering the boss % (mean / p10 / p90) | normal HP lost % | elite HP lost % | boss HP lost % | deaths |
+|---|---|---|---|---|---|---|---|
+| 0 | 99.2 | 100 | 85.6 / 72.5 / 98.8 | 5.3 | 22.1 | 44.5 | boss 4 |
+| 1 | 98.4 | 99.8 | 85.0 / 72.5 / 97.7 | 5.0 | 21.5 | 44.5 | boss 7, Orderlies 1 |
+| 2 | 97.8 | 99.0 | 83.9 / 72.4 / 96.3 | 8.1 | 21.3 | 46.7 | boss 6, Orderlies 4, a Biter 1 |
+| 3 | 89.4 | 92.8 | 81.3 / 70 / 96.3 | 8.2 | 36.1 | 49.0 | boss 17, Sleeping Patient 14, Orderlies 13, others 9 |
+| 4 | 73.2 | 92.8 | 81.3 / 70 / 96.3 | 8.2 | 36.1 | 72.2 | boss 98, elites 31, others 5 |
+| 5 | 60.2 | 89.6 | 75.7 / 61.2 / 90 | 8.2 | 37.3 | 73.4 | boss 147, elites 41, others 11 |
+
+Greedy bot: 81.3% at Infection 0, 22.3% at Infection 5. Levels 1 and 2 barely move the sensible bot (as A1 and A2
+barely move a good StS player: the extra elites pay for themselves in relics, and the Nurse's Kit erases a harder
+hallway fight). The steps that bite are elites (3) and the boss (4). Infection 5 lands the sensible bot inside the
+40-60% band GAME_CORE wants for a careful player.
+
+Unlocks (meta.js): `profile.infection = { unlocked }`; a win at your highest unlocked level opens the next.
+
+## Daily Run and score
+
+- `dailySeed(date)` → `DAILY-YYYY-MM-DD` from the local date. `createRun({ daily: 'YYYY-MM-DD' })` uses it with the
+  free weapons and Infection 0 whatever the profile has, so everyone gets the same map, fights, rewards and Shift
+  Change that day (and the same shuffles while their choices match).
+- `scoreRun(run)`: 10 per floor reached, 2 per zombie killed, 10 per elite and 50 for the boss beaten, and on a win
+  100 + 1 per HP left. No time component. `scoreBreakdown(run)` has the lines; `runSummary(run).score` too.
+  A sensible-bot win scores about 360-460 (median 409).
+- `profile.daily = { 'YYYY-MM-DD': bestScore }` (latest 90 days).
+
+## Earlier passes
+
+Everything below is from before the card pass (Pass 7). Its numbers are the "before" column above; the per-encounter,
+lever and weapon tables were not re-run.
 
 ## How to run it
 
@@ -21,6 +211,9 @@ and moved by less than the run-to-run noise.
 node tools/sim/run.mjs --runs 300 --bot all              # full runs, every bot, prints the markdown report
 node tools/sim/run.mjs --runs 100 --bot sensible --weapons nail_bat,shotgun --json /tmp/out.json
 node tools/sim/bench.mjs --fights 50 --bot greedy,sensible,expert   # each encounter with the starter deck at 80 HP
+node tools/sim/run.mjs --runs 500 --bot sensible --infection 5      # an Infection level (0-5)
+node tools/sim/run.mjs --runs 1000 --bot sensible --archetype bulwark   # draft toward a build (bulwark, strength, stagger)
+node tools/sim/cardvalue.mjs --runs 1500 --infection 5 [--cards tackle,dig_in]   # one copy of each card vs the starter deck
 ```
 
 Same seed, same bot, same run (`playRun(BOTS.sensible, { seed: 'BAL-17' })` replays run 17).

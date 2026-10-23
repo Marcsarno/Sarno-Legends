@@ -7,7 +7,7 @@ import { startApp, warmUp } from './app/app.js';
 import { installDebug } from './app/debug.js';
 import { installErrorOverlay, showError } from './app/errors.js';
 import { createBoot } from './app/loading.js';
-import { runShot, shotProfile } from './app/shots.js';
+import { runShot, shotProfile, shotHistoryProfile } from './app/shots.js';
 
 const params = new URLSearchParams(location.search);
 const shot = params.get('shot');
@@ -16,7 +16,7 @@ installErrorOverlay({ onTitle: () => (app ? app.recover() : location.reload()) }
 
 const boot = createBoot();
 try {
-  app = await startApp({ params, boot, persist: !shot, profile: shot ? shotProfile() : null });
+  app = await startApp({ params, boot, persist: !shot, profile: shot ? (['history', 'collection', 'infection'].includes(shot) ? shotHistoryProfile() : shotProfile()) : null });
   installDebug(app);
   await app.toTitle();
   boot.done();

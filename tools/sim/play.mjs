@@ -1,17 +1,19 @@
 // Plays whole act-1 runs headless: src/game/run.js for the run, the combat engine for every fight, a bot from
 // bots.mjs for every decision. Pure ES module (no node built-ins).
 //
-//   const run = playRun(BOTS.sensible, { seed: 'S1', weapons: { marc: 'nail_bat' } })
+//   const run = playRun(BOTS.sensible, { seed: 'S1', weapons: { marc: 'nail_bat' }, infection: 0..5, addCards: ['tackle'] })
+//   (addCards: put these cards in the starting deck, for tools/sim/cardvalue.mjs)
 //   run.stats.log has every fight ({ t: 'fight', encounter, room, hpBefore, hpAfter, damageTaken, turns, won }),
 //   card offer ({ t: 'cards', offered, picked }), rest, buy, event and the death / victory entry.
 // A fight that runs past maxTurns (a stall) is lost on purpose so a bad bot can't hang the sim.
 
 import * as R from '../../src/game/run.js';
 import { makeRng } from '../../src/game/rng.js';
-import { deckDpt } from './bots.mjs';
+import { deckDpt, settleChoice } from './bots.mjs';
 
-export function playRun(bot, { seed = 'SIM', weapons, neow = true, maxTurns = 60, profile } = {}) {
-  const run = R.createRun({ seed, weapons, neow, profile });
+export function playRun(bot, { seed = 'SIM', weapons, neow = true, maxTurns = 60, profile, infection = 0, daily = null, addCards = [] } = {}) {
+  const run = R.createRun({ seed, weapons, neow, profile, infection, daily });
+  for (const id of addCards) R.addCard(run, id, false, 'sim');
   const ctx = { rng: makeRng(`bot/${bot.name}/${seed}`), cancelled: false };
   for (let steps = 0; !run.over && steps < 3000; steps++) {
     switch (run.screen) {
@@ -64,6 +66,7 @@ export function fight(run, bot, ctx, maxTurns = 60) {
   let turns = 0;
   while (!c.over && turns < maxTurns) {
     bot.turn(c, info);
+    settleChoice(c); // a bot that left a card choice open
     if (!c.over) c.endTurn();
     c.takeEvents();
     turns++;

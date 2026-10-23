@@ -1,8 +1,10 @@
 // Settings: a modal over whatever is behind it. Game speed, music and sound volume, screen shake, gore, and the two
 // destructive buttons (abandon this run, reset the whole profile), each needing a second tap to confirm.
 // Every change goes out at once through act.set(key, value) so the app can apply it live.
-//   ctx: { settings: { speed: 1|1.5|2, music: 0..1, sfx: 0..1, voices: bool, shake: bool, gore: 'full'|'low', tips: bool }, inRun?: bool, version? }
-//   act: set(key, value), close(), abandonRun(), resetProfile(), howTo()   (tips: the first-run coach, src/app/coach.js)
+//   ctx: { settings: { speed: 1|1.5|2, music: 0..1, sfx: 0..1, voices: bool, shake: bool, gore: 'full'|'low', tips: bool,
+//          warnEndTurn: bool }, inRun?: bool, version? }
+//   act: set(key, value), close(), abandonRun(), resetProfile(), howTo(), saveCode()
+//   (tips: the first-run coach, src/app/coach.js; warnEndTurn: "End turn with energy left?"; saveCode: the backup overlay)
 
 import { shell, h, closeBtn, onEscape, hoverSounds, ui, enter } from './common.js';
 import '../styles/screens.css';
@@ -10,7 +12,7 @@ import '../styles/screens.css';
 export function mount(root, ctx) {
   const s = shell(root, 'settings', { modal: true });
   const act = ctx.act || {};
-  const cur = { speed: 1, music: .7, sfx: .8, voices: true, shake: true, gore: 'full', tips: true, ...(ctx.settings || {}) };
+  const cur = { speed: 1, music: .7, sfx: .8, voices: true, shake: true, gore: 'full', tips: true, warnEndTurn: true, ...(ctx.settings || {}) };
   const close = () => { ui(ctx, 'click'); act.close?.(); };
   const set = (k, v) => { cur[k] = v; act.set?.(k, v); if (k === 'voices' && !v) ctx.audio?.voice?.stop?.(); };
 
@@ -62,6 +64,9 @@ export function mount(root, ctx) {
       row('Voices', 'Marc and Yola talk during fights.', seg('voices', [[true, 'On'], [false, 'Off']])),
       row('Screen shake', 'Big hits shake the camera.', seg('shake', [[true, 'On'], [false, 'Off']])),
       row('Gore', 'Low turns off blood and dismemberment.', seg('gore', [['full', 'Full'], ['low', 'Low']])),
+      row('Warn before ending a turn', 'When you still have energy and a card you could play.', seg('warnEndTurn', [[true, 'On'], [false, 'Off']])),
+      act.saveCode ? row('Save code', 'Back up your progress, or bring it to another device.',
+        h('button.btn.set-code', { onclick: () => { ui(ctx, 'click'); act.saveCode(); } }, 'Back up / Restore')) : null,
       h('div.set-danger',
         h('div.set-danger__label', 'Careful'),
         ctx.inRun ? danger('Abandon run', 'Tap again to abandon', act.abandonRun) : null,

@@ -77,6 +77,19 @@ const LOOK = { max: 0.95, spine: 0.22, neck: 0.33, head: 0.45 };
 // zombies; root: how much of the clip's ~1.4 m slide to keep
 const DEFEAT = { clip: 'death_fall', from: 0.6, floor: 1.55, rate: 1.1, yaw: { marc: 2.15, yola: 1.75 }, root: 0.55 };
 export const LOW_READY = { arm: 0.42, wrist: -0.15, chest: 0.05 };
+// The execution clips (hub_execution_*: the finisher and Jaw Breaker) were made for a fist: the right hand chops down
+// from above the shoulder with the bat in one hand, and the fist's grip line holds the bat straight up at the impact
+// (the frame the finisher freezes on). Through the blow the bat is turned to follow the swing onto the target's head:
+// the weight ramps in over the snap (on, clip s), holds through the impact and hands back to the clip's grip (off).
+// The aim point is the strike target's head (actor.strikeTarget), frozen at the impact; without one, a point at reach.
+// through (clip s): after the impact the fist carries on down past the head, so the bat turns from the head to point
+// forward-down-across from the fist (a chop's follow-through), then hands back to the clip's grip (off).
+export const SWING_AIM = {
+  hub_execution_B_uppercut: { on: [0.5, 0.63], off: [0.9, 1.25], head: 0.06, through: [0.66, 0.78] },
+  hub_execution_C_uppercut_mirrored: { on: [0.5, 0.63], off: [0.9, 1.25], head: 0.06, through: [0.66, 0.78] },
+};
+const NO_LOOK = { rate: 1, sway: 1, loll: 1 };
+const ramp = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
 const ZOMBIE_IDLES = ['idle', 'ual_Zombie_Idle_Loop'];
 const ZOMBIE_ATTACKS = ['ual_Zombie_Scratch', 'scratch', 'ual_Zombie_Bite', 'attack'];
 
@@ -119,6 +132,8 @@ export class Actor {
     this.dead = false; this.lying = false; this.hidden = false;
     this.knock = { v: 0, x: 0 };                 // knockback spring along -facing (m)
     this.bend = { v: 0, x: 0 };                  // spine flinch spring (rad)
+    this.sq = { v: 0, x: 0 };                    // squash on a hit (body scale: + = squashed down and out)
+    this.staggered = false; this.staggerW = 0;   // Staggered (the director sets it): an unsteady, slumped idle and a faint glow
     this.recoil = 0;                             // Yola's arm kick (0..1)
     this.flashI = 0; this.flashC = new THREE.Color(1, 1, 1);
     this.hl = 0; this.hlTarget = 0; this.hlC = new THREE.Color(0xffd166);
@@ -210,7 +225,7 @@ export class Actor {
     if (this.dead) return;
     if (this.lying) return this.holdLying();
     const name = this.stanceClip(); if (!name) return;
-    const rate = this.isHero ? 1 : 0.85 + Math.random() * 0.3;
+    const rate = this.isHero ? 1 : (0.85 + Math.random() * 0.3) * (this.look?.rate || 1);   // (looks.js: per-enemy pace)
     if (this.isHero && !this.lockYaw) this.turnTo(STANCE_YAW[name] ?? this.baseYaw, fade > 0 ? 220 : 0);
     this.play(name, { loop: true, fade, timeScale: rate, from: phase != null ? phase * this.duration(name) : 0 });
   }
@@ -260,6 +275,7 @@ export class Actor {
     const r1 = (cock - start) / wind, r2 = Math.max(0.05, (T.impact - cock) / snap);
     const end = T.end ?? this.duration(clip);
     this.play(clip, { from: start, timeScale: r1, fade, to: end, then });
+    this.aimFrozen = this.aimDir0 = null;
     this.strikePlan = { a: this.cur, cock, impact: T.impact, r2, hold, holdLeft: hold, rec: Math.max(0.3, (end - T.impact) / Math.max(0.05, recover)), phase: 0, lean };
     this.afterImpact = null;
     this.leanT = { t: 0, d: wind, amt: lean };
@@ -287,6 +303,7 @@ export class Actor {
     // knockback grows with the damage (a big hit shoves the body back ~0.3 m)
     const k = blocked ? 0.05 : THREE.MathUtils.clamp(0.09 + amount * 0.009 + (heavy ? 0.07 : 0), 0.1, 0.32);
     this.knock.v -= k * 15; this.bend.v -= (heavy ? 1.0 : 0.6) * (blocked ? 0.4 : 1) * 10;
+    if (!blocked) this.sq.v += (heavy ? 2.6 : 1.6) * (this.isHero ? 0.45 : 1);
     this.strikePlan = null; this.leanT = null;
     if (blocked) return;
     if (this.lying) return;
@@ -349,6 +366,7 @@ export class Actor {
     const rate = (floor - s) / fall;
     if (clip) this.play(clip, { from: s, timeScale: rate, fade: 0.08, then: 'hold' });
     this.knock.v -= (kind === 'heavy' || kind === 'blast' ? 3.4 : 2.2);
+    this.sq.v += kind === 'heavy' || kind === 'blast' || finisher ? 2.8 : 2;
     // the back-falls travel ~1 m: take half of it off so a body doesn't land on the zombie behind it
     if (clip && /back|knockback/.test(clip) && !finisher) this.tween(this.root, 'position', this.root.position.clone().addScaledVector(this.forward(new THREE.Vector3()), 0.5), fall * 1000);
     return new Promise(resolve => this.timer(fall, () => {
@@ -363,7 +381,7 @@ export class Actor {
   }
   /** Back on its feet (Nurse revive): rises with the spawn clip. */
   async revive() {
-    this.dead = false; this.hidden = false; this.fading = null; this.fade = 1; this.sink = 0;
+    this.dead = false; this.hidden = false; this.fading = null; this.fade = 1; this.sink = 0; this.staggered = false;
     this.root.visible = true; this.blob.visible = true;
     this.mats.forEach(m => { m.opacity = 1; m.transparent = !!m.userData.baseTransparent; m.needsUpdate = true; });
     this.restoreGore();
@@ -522,7 +540,9 @@ export class Actor {
     const sp = (s, k, c) => {
       for (let left = dt; left > 1e-6; left -= 1 / 120) { const h = Math.min(left, 1 / 120); s.v += (-k * s.x - c * s.v) * h; s.x += s.v * h; }
     };
-    sp(this.knock, 160, 18); sp(this.bend, 220, 20);
+    sp(this.knock, 160, 18); sp(this.bend, 220, 20); sp(this.sq, 260, 16);
+    const sq = THREE.MathUtils.clamp(this.sq.x, -0.16, 0.16);
+    this.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
     // yaw
     this.yaw = this.yawTarget;
     this.body.rotation.y = this.yaw;
@@ -563,10 +583,26 @@ export class Actor {
         if (B.Spine2) this.rotateAbout(B.Spine2, lat, 0.022 * Math.sin(t * 1.75) * w);                // breath
         if (B.Spine) this.rotateAbout(B.Spine, UP, 0.03 * Math.sin(t * 0.55 + 1.3) * w);               // weight shift
       } else {
-        if (B.Spine) this.rotateAbout(B.Spine, this.forward(_v3), 0.07 * Math.sin(t * 0.9) * w);       // sway
-        if (B.Spine1) this.rotateAbout(B.Spine1, lat, 0.04 * Math.sin(t * 1.3 + 0.7) * w);
-        if (B.Head) this.rotateAbout(B.Head, this.forward(_v3), 0.12 * Math.sin(t * 0.7 + 2.1) * w);   // head loll
+        // (looks.js idle: rate scales the clock, sway / loll the amplitudes; breathe: a slow heave; twitch: head jerks)
+        const L = this.look || NO_LOOK, ft = t * L.rate;
+        if (B.Spine) this.rotateAbout(B.Spine, this.forward(_v3), 0.07 * L.sway * Math.sin(ft * 0.9) * w);       // sway
+        if (B.Spine1) this.rotateAbout(B.Spine1, lat, 0.04 * L.sway * Math.sin(ft * 1.3 + 0.7) * w);
+        if (B.Head) this.rotateAbout(B.Head, this.forward(_v3), 0.12 * L.loll * Math.sin(ft * 0.7 + 2.1) * w);   // head loll
+        if (L.breathe && B.Spine2) this.rotateAbout(B.Spine2, lat, -0.045 * L.breathe * Math.sin(t * 1.1) * w);
+        if (L.twitch && B.Head) {
+          const j = Math.pow(Math.max(0, Math.sin(t * 1.9)), 14) * Math.sin(t * 31);
+          this.rotateAbout(B.Head, UP, 0.28 * L.twitch * j * w);
+          if (B.RightForeArm) this.rotateAbout(B.RightForeArm, lat, 0.18 * L.twitch * j * w);
+        }
       }
+    }
+    // Staggered: the body slumps forward, wobbles, the head droops (zombies; it eases in and out)
+    this.staggerW += ((this.staggered && !this.isHero && !this.dead && !this.lying ? 1 : 0) - this.staggerW) * Math.min(1, dt * 3);
+    if (this.staggerW > 0.01) {
+      const k = this.staggerW * Math.max(0.25, this.idleW), t = this.life, lat = this.lateral(_v2);   // (mostly in the idle)
+      if (B.Spine1) this.rotateAbout(B.Spine1, lat, 0.1 * k);
+      if (B.Spine) this.rotateAbout(B.Spine, this.forward(_v3), 0.07 * k * Math.sin(t * 2.4));
+      if (B.Head) this.rotateAbout(B.Head, this.lateral(_v2), 0.16 * k * (0.55 + 0.45 * Math.sin(t * 1.6)));
     }
     // anticipation: lean back through the wind-up (released into the strike by updateStrike)
     if (this.leanT) {
@@ -603,8 +639,37 @@ export class Actor {
     }
     for (const b of this.collapsed) b.scale.setScalar(0.001);
     this.data.model.updateMatrixWorld(true);
+    this.updateWeaponAim();
     if (this.weapon) { this.weapon.update(dt); this.weapon.setVisible(this.root.visible && !this.hidden); if (this.root.visible) this.weapon.place(this); }
     if (this.attachments) for (const o of this.attachments) o.userData.faceCamera?.(this.stage.camera);
+  }
+
+  // SWING_AIM: where the held bat is turned to this frame ({ point, w } or null; weapons.js place() reads it)
+  updateWeaponAim() {
+    const name = this.cur ? this.cur.getClip().name.replace('#alt', '') : null;
+    const A = name && !this.dead && this.weapon?.kind === 'melee' ? SWING_AIM[name] : null;
+    const t = A ? this.cur.time : 0;
+    const w = A ? ramp(A.on[0], A.on[1], t) * (1 - ramp(A.off[0], A.off[1], t)) : 0;
+    if (w < 1e-3) { this.weaponAim = null; if (!A || t < A.on[0]) this.aimFrozen = this.aimDir0 = null; return; }
+    const impact = CLIP_TIMING[name]?.impact ?? A.on[1];
+    let p = this.aimFrozen;
+    if (!p) {
+      p = this.aimP || (this.aimP = new THREE.Vector3());
+      const tg = this.strikeTarget;
+      if (tg && !tg.hidden && tg.bones?.Head) { tg.bones.Head.getWorldPosition(p); p.y += A.head * (tg.scale || 1); }
+      else { this.root.getWorldPosition(p).addScaledVector(this.forward(_v), CLIP_TIMING[name]?.reach ?? 1.1); p.y += 1.45 * this.rigScale; }
+      if (t >= impact - 1e-3) {
+        this.aimFrozen = p.clone();
+        this.aimDir0 = p.clone().sub(this.bones.RightHand.getWorldPosition(_v)).normalize();
+      }
+    }
+    const u = A.through && this.aimDir0 ? ramp(A.through[0], A.through[1], t) : 0;
+    if (u > 0) {
+      const d = _v2.copy(this.forward(_v3)).multiplyScalar(0.6).addScaledVector(this.lateral(_v), 0.35); d.y = -0.72; d.normalize();
+      d.lerp(this.aimDir0, 1 - u).normalize();
+      p = (this.aimT || (this.aimT = new THREE.Vector3())).copy(this.bones.RightHand.getWorldPosition(_v)).addScaledVector(d, 0.8);
+    }
+    this.weaponAim = { point: p, w };
   }
 
   // turn the head (and a little of the chest) toward lookTarget: a world point, or an actor (its head)
@@ -643,12 +708,14 @@ export class Actor {
     this.flashI = Math.max(0, this.flashI - dt * 15);
     const pulse = 0.55 + 0.45 * Math.sin(performance.now() / 160);
     const hlI = this.hl * 0.16 * (0.7 + 0.3 * pulse);
-    if (hlI > 0.001 || this.flashI > 0.001 || this.lastEm) {
+    const stI = this.staggerW * 0.07 * (0.55 + 0.45 * Math.sin(performance.now() / 240));   // Staggered: a faint violet pulse
+    if (hlI > 0.001 || this.flashI > 0.001 || stI > 0.001 || this.lastEm) {
       for (const m of this.mats) {
         m.emissive.copy(this.hlC).multiplyScalar(hlI).add(_c.copy(this.flashC).multiplyScalar(this.flashI * 0.45));
+        if (stI > 0.001) m.emissive.add(_c.copy(STAGGER_GLOW).multiplyScalar(stI));
         if (m.userData.baseEmissive) m.emissive.add(m.userData.baseEmissive);
       }
-      this.lastEm = hlI > 0.001 || this.flashI > 0.001;
+      this.lastEm = hlI > 0.001 || this.flashI > 0.001 || stI > 0.001;
     }
     this.ring.material.opacity = this.hl * (0.55 + 0.35 * pulse);
     this.ring.visible = this.hl > 0.01;
@@ -676,7 +743,7 @@ export class Actor {
     this.data.model.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose()); });
   }
 }
-const _c = new THREE.Color();
+const _c = new THREE.Color(), STAGGER_GLOW = new THREE.Color(0xb06bff);
 
 // the face's forward in the head bone's own frame, from the bind pose (every model faces +z when bound)
 function faceForward(model, head) {

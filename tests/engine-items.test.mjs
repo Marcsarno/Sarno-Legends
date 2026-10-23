@@ -105,7 +105,7 @@ test('Combo Counter: every 3rd Attack in a turn gives 1 Strength; Box Cutter: ev
   assert.equal(c.state.party.statuses.strength, 1, 'counter resets each turn');
   E(c, 1).statuses.vulnerable = 3;
   const hp = E(c, 1).hp;
-  const sk = hand(c, ['check_mag', 'check_mag', 'check_mag']);
+  const sk = hand(c, ['deep_breath', 'deep_breath', 'deep_breath']);
   c.takeEvents();
   for (const id of sk) c.playCard(id);
   assert.equal(E(c, 1).hp, hp - 5, 'Staggered does not boost it');

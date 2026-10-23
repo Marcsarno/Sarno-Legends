@@ -236,12 +236,22 @@ for (const [id, e] of Object.entries(ENEMIES)) {
   for (const [mid, m] of Object.entries(e.moves)) m.id = mid;
 }
 
-/** The first damage op of a move -> { damage (base per hit, for this zombie), hits }, or null. */
+/**
+ * A zombie's hit with its infection-level bonus (enemy.dmgUp = { flat, pct }, set by combat.js at spawn):
+ * n + flat + ceil(n * pct). Level 0 zombies have no dmgUp and hit for n.
+ */
+export function scaleHit(n, enemy) {
+  const up = enemy?.dmgUp;
+  if (!up || !(n > 0)) return n;
+  return n + (up.flat || 0) + Math.ceil(n * (up.pct || 0) - 1e-9);
+}
+
+/** The first damage op of a move -> { damage (base per hit, for this zombie, infection level included), hits }, or null. */
 export function moveDamage(move, enemy) {
   for (const op of move.effects || []) {
     if (op.op === 'damage') {
       const n = typeof op.n === 'function' ? op.n(enemy) : op.n;
-      return { damage: n, hits: op.times || 1 };
+      return { damage: scaleHit(n, enemy), hits: op.times || 1 };
     }
   }
   return null;

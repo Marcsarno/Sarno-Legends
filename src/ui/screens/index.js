@@ -17,8 +17,12 @@ import * as settings from './settings.js';
 import * as deck from './deck.js';
 import * as picker from './picker.js';
 import * as howto from './howto.js';
+import * as history from './history.js';
+import * as collection from './collection.js';
+import * as savecode from './savecode.js';
+import * as infection from './infection.js';
 
-export const SCREENS = { title, intro, map, reward, rest, shop, event, treasure, result, armory, settings, deck, picker, howto };
+export const SCREENS = { title, intro, map, reward, rest, shop, event, treasure, result, armory, settings, deck, picker, howto, history, collection, savecode, infection };
 
 /** Overlays sit on top of another screen (and of the battle) instead of replacing it. */
-export const OVERLAYS = new Set(['settings', 'deck', 'picker', 'reward', 'howto']);
+export const OVERLAYS = new Set(['settings', 'deck', 'picker', 'reward', 'howto', 'history', 'collection', 'savecode', 'infection']);

@@ -6,7 +6,11 @@
 // streams from a seed fixed when you enter the room, so a reload replays the same fight.
 //
 // Flow (run.screen, with run.pending saying what that screen is resolving):
-//   createRun({ seed, weapons, profile })      -> 'neow'   pending { kind: 'neow', options, picker? }   chooseNeow(run, i)
+//   createRun({ seed, weapons, profile, infection: 0..5, daily: 'YYYY-MM-DD' })
+//                                              -> 'neow'   pending { kind: 'neow', options, picker? }   chooseNeow(run, i)
+//     infection: the Infection level (infection.js; run.infection). daily: the Daily Run of that local date
+//     (run.daily): seed dailySeed(date), the free weapons and Infection 0 for everyone, so the family compares scores.
+//     dailySeed(date = new Date()) -> 'DAILY-2026-10-23'; scoreRun(run) -> points (scoreBreakdown(run) has the lines).
 //   availableNodes(run) / travel(run, nodeId)  -> 'combat' pending { kind: 'combat', room, encounter, seed, loot? }
 //                                                 'rest'   pending { kind: 'rest', heal, rested }
 //                                                 'shop'   run.shop { cards, relics, potions, removal } (pending { kind: 'shop' })
@@ -40,6 +44,7 @@ import { ENCOUNTERS, pickEncounter } from './content/encounters.js';
 import { ENEMIES } from './content/enemies.js';
 import { DEFAULT_WEAPONS, WEAPONS } from './content/weapons.js';
 import { EVENTS } from './content/events.js';
+import { infectionRules, infectionLevel } from './infection.js';
 
 export const RUN_VERSION = 1;
 
@@ -101,14 +106,20 @@ export function runRng(run, name) {
  * A new run. weapons default to the profile's equipped weapons, then the starter pair.
  * opts.neow === false skips Shift Change (straight to the map).
  */
-export function createRun({ seed, weapons, profile, neow = true } = {}) {
+export function createRun({ seed, weapons, profile, neow = true, infection = 0, daily = null } = {}) {
+  if (daily) {
+    daily = dailyDate(daily === true ? new Date() : daily);
+    seed = dailySeed(daily);
+    weapons = { ...DEFAULT_WEAPONS }; profile = null; infection = 0; // the same run for everyone that day
+  }
   seed = String(seed ?? newSeed());
+  const level = infectionLevel(infection);
   const equipped = { ...DEFAULT_WEAPONS, ...(profile?.equipped || {}), ...(weapons || {}) };
   for (const h of ['marc', 'yola']) if (!WEAPONS[equipped[h]] || WEAPONS[equipped[h]].hero !== h) equipped[h] = DEFAULT_WEAPONS[h];
   const streams = makeStreams(seed);
-  const map = generateMap(streams.map);
+  const map = generateMap(streams.map, level ? { odds: { elite: infectionRules(level).eliteOdds } } : {});
   const run = {
-    version: RUN_VERSION, seed, act: 1, floor: 0,
+    version: RUN_VERSION, seed, act: 1, floor: 0, infection: level, daily: daily || null,
     hp: START.hp, maxHp: START.hp, gold: START.gold,
     deck: makeStarterDeck(equipped),
     relics: STARTER_RELICS.map(id => ({ id, counter: 0 })),
@@ -409,7 +420,7 @@ function logCards(run, r, picked) {
 
 // ---------------------------------------------------------------- rest (Supply Closet)
 
-export const restAmount = run => Math.floor(run.maxHp * REST_HEAL);
+export const restAmount = run => Math.floor(run.maxHp * (run.infection ? infectionRules(run.infection).restHeal : REST_HEAL));
 
 export function restHeal(run) {
   const p = run.pending;
@@ -945,6 +956,8 @@ export function serialize(run) { return JSON.stringify(run); }
 export function deserialize(str) {
   const run = typeof str === 'string' ? JSON.parse(str) : JSON.parse(JSON.stringify(str));
   if (!run || typeof run !== 'object' || run.version !== RUN_VERSION) throw new Error('Not a Sarno Legends save (or an old version)');
+  run.infection = infectionLevel(run.infection); // saves from before Infection levels and the Daily Run
+  run.daily ??= null;
   const extra = [];
   const p = run.pending;
   if (p?.picker?.cards) extra.push(...p.picker.cards);
@@ -972,5 +985,48 @@ export function runSummary(run) {
     bestHit: S.bestHit.amount ? { ...S.bestHit } : null,
     killedBy: run.won ? null : killer, abandoned: S.cause === 'abandoned', seed: run.seed, deck: run.deck.map(c => ({ ...c })),
     relics: run.relics.map(r => r.id), weapons: { ...run.weapons }, hp: run.hp, maxHp: run.maxHp,
+    infection: run.infection || 0, daily: run.daily || null, score: scoreBreakdown(run),
   };
 }
+
+// ---------------------------------------------------------------- Daily Run and score
+
+/** 'YYYY-MM-DD' for a Date (local time) or a date string. */
+export function dailyDate(date = new Date()) {
+  if (typeof date === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim());
+    if (!m) throw new Error(`Not a YYYY-MM-DD date: ${date}`);
+    return m[0];
+  }
+  const d = date instanceof Date ? date : new Date(date);
+  const p2 = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
+}
+
+/** The Daily Run's seed for a local date (Date or 'YYYY-MM-DD'): the same map, fights, rewards and Shift Change for everyone. */
+export function dailySeed(date = new Date()) {
+  return `DAILY-${dailyDate(date)}`;
+}
+
+/** Points per thing a run did (scoreRun). No time component: a slow, careful turn never costs points. */
+export const SCORE = { floor: 10, kill: 2, elite: 10, boss: 50, win: 100, hpLeft: 1 };
+
+/**
+ * A run's score with its lines: 10 per floor reached (the boss is floor 16), 2 per zombie killed, 10 per elite and
+ * 50 for the boss beaten, and on a win 100 more plus 1 per HP left.
+ * -> { total, lines: [{ label, points }] }
+ */
+export function scoreBreakdown(run) {
+  const S = run.stats || {};
+  const lines = [];
+  const add = (label, points) => { if (points) lines.push({ label, points }); };
+  add(`Floors reached ×${run.floor || 0}`, (run.floor || 0) * SCORE.floor);
+  add(`Zombies killed ×${S.kills || 0}`, (S.kills || 0) * SCORE.kill);
+  add(`Elites beaten ×${S.elites || 0}`, (S.elites || 0) * SCORE.elite);
+  add('Boss beaten', (S.bosses || 0) * SCORE.boss);
+  if (run.won) { add('Floor cleared', SCORE.win); add(`HP left ×${run.hp}`, run.hp * SCORE.hpLeft); }
+  return { total: lines.reduce((t, l) => t + l.points, 0), lines };
+}
+
+/** The run's score (a number), for the Daily Run's best and for comparing any two runs. */
+export const scoreRun = run => scoreBreakdown(run).total;

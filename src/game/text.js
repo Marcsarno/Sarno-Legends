@@ -177,9 +177,11 @@ export const RARITY_LABELS = { starter: 'Starter', common: 'Common', uncommon: '
 
 // ---------------------------------------------------------------- relics, potions, statuses
 
-export function describeRelic(id) {
+/** describeRelic(id, run?): pass the run for text that depends on it (the Nurse's Kit at Infection 5). */
+export function describeRelic(id, run) {
   const r = RELICS[id];
-  return r ? highlightKeywords(r.text) : '';
+  if (!r) return '';
+  return highlightKeywords(run && r.textFor ? r.textFor(run) : r.text);
 }
 
 export function describePotion(id) {
