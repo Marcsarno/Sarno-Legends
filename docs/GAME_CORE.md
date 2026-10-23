@@ -112,6 +112,11 @@ Family, weapons and painted rooms are content. They serve the pillars rather tha
 
 ([TrueAchievements](https://i1.trueachievements.com/game/Slay-The-Spire/walkthrough/2)). We'd call them infection levels.
 
+**Built (2026-10-23): Infection 0–5** (`src/game/infection.js`). Level 0 is the family level (today's balance); each level
+unlocks by winning at the one below. 1 more elites; 2 normal zombies +20% damage, +10% HP; 3 elites +15% damage, +10% HP;
+4 boss +20% damage, +30 HP; 5 Nurse's Kit heals 4 and rest sites heal 25%. Careful-bot win rates: 99 / 98 / 98 / 89 / 73 / 60%.
+The **Daily Run** gives the whole family the same hospital for the day (Infection 0, free weapons) with a score to compare.
+
 ## Our spins (small, on purpose)
 
 1. **Two heroes, one deck, one HP bar.**
