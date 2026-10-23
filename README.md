@@ -6,11 +6,12 @@ A family roguelike deckbuilder in the style of Slay the Spire: Marc and Yola fig
 
 ## Docs
 
-- `docs/DECKBUILDER_PLAN.md`: the current direction, the card game. Start here.
+- `docs/GAME_CORE.md`: **start here.** The pitch, the three pillars, what's kept, cut and parked, and the paper test.
+- `docs/DECKBUILDER_PLAN.md`: the bigger card-game plan; most of it is parked until the core is proven.
 - `docs/COMBAT_DESIGN.md`: the earlier turn-based design (draft 3). Its intents, stagger/break, roles and zombies carry into the card game.
 - `docs/RESEARCH_NOTES.md`: what the research passes found, with sources, plus the critic's and verifier's review.
 - `docs/ASSETS.md`: the art we can reuse from Marc's other projects, and the licence notes.
-- `docs/ROADMAP.md`: what to focus on next, the milestones, and the open questions.
+- `docs/ROADMAP.md`: milestones from the turn-based phase; the next step is now the paper test in `GAME_CORE.md`.
 - `tools/balance-sim/`: the throwaway simulation behind the numbers in the combat design.
 
 ## Rules

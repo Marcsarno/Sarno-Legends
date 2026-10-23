@@ -1,5 +1,7 @@
 # Deckbuilder plan (the card-game direction)
 
+> **`GAME_CORE.md` now decides what the game is** (2026-10-23). Where this plan disagrees with it (break and finish split between the heroes, the duo rule, Second Wind and Help Up, the healing cap, the horde clock, family card sets), `GAME_CORE.md` wins. Most of this plan is parked until the paper test.
+
 Second draft, 2026-10-23.
 
 **Marc's direction:** a Slay the Spire-style roguelike deckbuilder.

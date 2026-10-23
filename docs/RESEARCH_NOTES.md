@@ -240,3 +240,68 @@ This pass led to the second draft of `DECKBUILDER_PLAN.md`. Page fetches failed 
 - **The only rest stop** was the pre-boss closet.
 - **Retargeting** when a hero is down was undefined.
 - **The boss** must be judged with the deck you'd have by then.
+
+## Pass 6: the core, standing out, fun and balance, plus a design-director audit
+
+The result is `GAME_CORE.md`. Page fetches were blocked again, so the findings come from search summaries, and the agents marked what came from memory.
+
+**How designers protect their core**
+- **Slay the Spire:** intents were not in the original design. Before them, "the monsters just did a random move. It kind of just felt too random." [Maintainers Anonymous](https://maintainersanonymous.com/games/)
+- **Balatro:**
+  - Poker was "slapped on top… mainly as an onboarding tool." [Rogueliker](https://rogueliker.com/balatro-interview/)
+  - LocalThunk refused a score preview: people would click it "and they're not going to experience the game that I wanted to create." [GMTK](https://gmtk.substack.com/p/balatros-cursed-design-problem)
+- **FTL:** started from a feeling used as a "guiding light". [Game Developer](https://gamedeveloper.com/design/designing-without-a-pitch---an-em-ftl-em-postmortem)
+- **Into the Breach:** "years of just banging our head against the wall" before the core was found. [Kotaku](https://kotaku.com/the-creators-of-into-the-breach-came-very-close-to-givi-1833498295)
+- **Inscryption:** grew from a game-jam theme, "Sacrifices Must Be Made". [Game Developer](https://www.gamedeveloper.com/design/how-game-jam-sacrifices-became-inscryption)
+- **Wildfrost:** its countdown timers were in the very first prototype. [MCV](https://mcvuk.com/?p=224506)
+- **Signs a design is drifting:**
+  - The pitch needs "and also".
+  - Research has replaced playing.
+  - Each new system needs another to fix it.
+  - The core decision gets harder to explain.
+  - Features serve the theme rather than the decision.
+
+**Standing out**
+- **Releases are climbing:** roguelike deckbuilders on Steam went from 17 (2020) to 224 (2025) and 316 by September 2026. [Steam Page Analyzer](https://www.steampageanalyzer.com/niches/roguelike-deckbuilder)
+- **Few break out:** one secondhand figure puts the genre's hit rate at about 5% (11 of 212). [Voxbooster](https://voxbooster.com/blog/indie-game-statistics-2026)
+- **The breakouts changed the player's verb, not the skin:** Balatro, Monster Train, Inscryption, Cobalt Core, Shogun Showdown, Wildfrost.
+- **Weak ones reskin Slay the Spire.**
+- **A relationship feels mechanical when:**
+  - one partner is useless without the other (It Takes Two, Brothers, Ico, Mario & Luigi)
+  - the partner's wellbeing is a cost
+  - it shows up in every turn
+  - it changes with shared history
+- **Five twists considered:**
+  - (A) nobody kills alone
+  - (B) the kill is the card
+  - (C) every action is loud (noise and ammo)
+  - (D) two settings with different rules
+  - (E) the weapon is the deck
+
+  A and B together fit best. E is the cheapest to build; C is the best theme hook; D is the most expensive.
+
+**Fun and balance**
+- **Fun drivers:**
+  - Readable turns (intents).
+  - Losses that are your own fault (Klei's Kevin Forbes).
+  - Interesting decisions (Sid Meier).
+  - Drafting tension.
+  - HP as currency.
+  - "I broke the game" combos left in on purpose.
+  - Learning patterns (Koster).
+  - Flow (Chen).
+  - Feeling capable and in control (Ryan, Rigby, Przybylski).
+- **What kills the fun:** bad-draw losses not traced to choices, sudden difficulty spikes, and disconnected systems. Klei scrapped an open-world Griftlands because "the whole was never better than the pieces." [uppercutcrit](https://uppercutcrit.com/?p=2431)
+- **How developers balance:**
+  - Mega Crit logged every decision from the first prototype: pick rate, what a card was picked over, presence in winning decks. They warned that the numbers mislead if read carelessly. [Game Developer](https://www.gamedeveloper.com/design/how-i-slay-the-spire-i-s-devs-use-data-to-balance-their-roguelike-deck-builder)
+  - Monster Train tracks pick rate, win rate per clan pairing, and median HP lost per battle. [Film Stories](https://filmstories.co.uk/gaming/monster-train-literally-a-train-full-of-monsters/)
+  - Bot simulations find outliers fast but don't judge fun. [Google Research](https://blog.research.google/2021/03/leveraging-machine-learning-for-game.html?hl=ko)
+
+**Design-director audit**
+- **The diagnosis:**
+  - Research replaced decisions.
+  - Critic findings were fixed by adding rules.
+  - Break became Slay the Spire's Vulnerable, so the finisher lost its job.
+  - The duo rule became a colour tax.
+  - ROADMAP was stale.
+- **Proposed:** the pitch, three pillars, keep / cut / park, and the paper test, all now in `GAME_CORE.md`.

@@ -1,5 +1,7 @@
 # Roadmap: what to focus on
 
+> **Update 2026-10-23:** the milestones below were written for the turn-based design. For the card game, step 0 is the paper test in `GAME_CORE.md`; milestone 1 becomes one card fight on the phone. The playtest and look sections still apply.
+
 From the third research pass (2026-10-23: prototyping and playtesting, battle presentation, story structure). Marc approves each step.
 
 ## The focus
