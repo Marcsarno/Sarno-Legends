@@ -8,9 +8,10 @@
 // shopping, event choices, Medkits on the map; pickers ask the bot; the result screen stops it. The sim bots change the
 // run directly, so those decisions are made on a copy of the run and then done here through the screens' own actions.
 import * as R from '../game/run.js';
-import { BOTS, cloneCombat, deckDpt } from '../../tools/sim/bots.mjs';
+import * as SIM from '../../tools/sim/bots.mjs';
 import { makeRng } from '../game/rng.js';
 
+const { BOTS, cloneCombat, deckDpt } = SIM;
 const BOT = BOTS.sensible;
 
 export function createAutoplay(app) {
@@ -50,6 +51,15 @@ export function createAutoplay(app) {
     const c = f.combat;
     if (c.over || c.state.phase !== 'player') return;
     if (!f.director.canAcceptInput()) return;
+    // a card asked for a choice: answer it the sim bot's way (through the fight, which closes the overlay)
+    if (c.state.choice) {
+      if (!f.director.idle()) return;
+      const ch = c.state.choice;
+      let uids = null;
+      try { uids = SIM.chooseFor?.(c); } catch (e) { console.warn('[autoplay] chooseFor', e); }
+      f.choose(uids || (ch.optional ? [] : ch.uids.slice(0, ch.n)));
+      return;
+    }
     const m = nextMove(c);
     if (m.kind === 'card') {
       const r = f.play(m.uid, m.target ?? f.targets()[0]);

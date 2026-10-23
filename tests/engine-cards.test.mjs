@@ -32,7 +32,8 @@ test('every card can be played (or is correctly unplayable), base and upgraded',
       const r = c.playCard(a, E(c).uid);
       if (view.keywords.includes('unplayable')) assert.deepEqual(r, { ok: false, reason: 'unplayable' }, id);
       else assert.ok(r.ok, `${id}${up ? '+' : ''}: ${JSON.stringify(r)}`);
-      c.endTurn();
+      if (c.state.choice) assert.ok(c.choose(c.state.choice.uids.slice(0, c.state.choice.min)).ok, `${id}: choice`);
+      assert.ok(c.over || c.endTurn().ok, id);
     }
   }
 });
@@ -81,7 +82,7 @@ test('Swing Guard: block per Attack this turn; Light on Feet: block per Skill; T
   c.playCard(ids[0]); c.playCard(ids[1], E(c).uid); c.playCard(ids[2], E(c).uid);
   assert.equal(P(c).block, 6);
   c.playCard(ids[3]); c.playCard(ids[4]);
-  assert.equal(P(c).block, 6 + 5 + 1);
+  assert.equal(P(c).block, 6 + 5 + 2);
   c.playCard(ids[5]);
   assert.equal(P(c).statuses.thick_skin, 3);
   c.takeEvents(); c.endTurn();
@@ -116,7 +117,7 @@ test('Marksman and Dead Eye: Staggered payoffs', () => {
   E(c).statuses.vulnerable = 3;
   c.takeEvents();
   c.playCard(ids[3], E(c).uid);
-  assert.deepEqual(dmgs(c), [Math.floor((3 + 3) * 1.5)]);
+  assert.deepEqual(dmgs(c), [Math.floor((4 + 3) * 1.5)]);
   c.playCard(ids[4], E(c).uid);
   c.playCard(ids[5], E(c).uid);
   assert.equal(c.state.hand.length, 2, 'two draws, then no more this turn');
@@ -146,7 +147,7 @@ test('Grit Teeth, Overdrive, Triage, Defibrillator, Adrenaline Shot', () => {
   c.playCard(ids[2]); c.playCard(ids[3]);
   assert.equal(P(c).hp, 41 + 4 + 12);
   c.playCard(ids[4]);
-  assert.equal(c.state.energy, 4 - 1 - 2 + 1);
+  assert.equal(c.state.energy, 4 - 0 - 2 + 1, 'Triage costs 0 (Bandage Up)');
   for (const id of ['overdrive', 'triage', 'defibrillator', 'adrenaline_shot']) assert.ok(c.state.exhaust.some(x => x.id === id), id);
 });
 

@@ -31,6 +31,8 @@ const EN = n => ({ op: 'energy', n });
 const HEAL = n => ({ op: 'heal', n });
 const LOSE = n => ({ op: 'loseHp', n });
 const IF = (cond, then, otherwise) => ({ op: 'if', cond, then, ...(otherwise ? { else: otherwise } : {}) });
+// a mid-fight card choice from the hand (combat.js: state.choice + choose(uids)); must be a top-level effect
+const CHOOSE = (kind, n = 1, x = {}) => ({ op: 'choose', kind, n, from: 'hand', ...x });
 
 const DEFS = {
   // ---------------------------------------------------------------- starter (11 cards)
@@ -60,8 +62,13 @@ const DEFS = {
     effects: [D(5, { times: 2 })], up: { effects: [D(7, { times: 2 })] } },
   hold_the_line: { name: 'Hold the Line', hero: 'marc', type: 'skill', rarity: 'common', cost: 1, anim: 'block',
     effects: [B(8), DRAW(1)], up: { effects: [B(11), DRAW(1)] } },
+  // Flex (StS +2 / +4 Strength this turn) plus a card, so it is never a dead draw in a hand without multi-hits
   deep_breath: { name: 'Deep Breath', hero: 'marc', type: 'skill', rarity: 'common', cost: 0, anim: 'buff',
-    effects: [{ op: 'tempStrength', n: 2 }], up: { effects: [{ op: 'tempStrength', n: 4 }] } },
+    effects: [{ op: 'tempStrength', n: 2 }, DRAW(1)], up: { effects: [{ op: 'tempStrength', n: 4 }, DRAW(1)] } },
+  // True Grit (StS 7 / 9). The spin: you pick the card even before the upgrade (StS: random until upgraded)
+  tough_it_out: { name: 'Tough It Out', hero: 'marc', type: 'skill', rarity: 'common', cost: 1, anim: 'block',
+    effects: [B(7), CHOOSE('exhaust', 1, { prompt: 'Exhaust a card.' })], up: { effects: [B(9), CHOOSE('exhaust', 1, { prompt: 'Exhaust a card.' })] },
+    text: v => `Gain ${v.b(0)} ${v.kw('Block')}. ${v.kw('Exhaust')} a card from your hand.` },
   kick_the_door: { name: 'Kick the Door', hero: 'marc', type: 'attack', rarity: 'common', cost: 1, anim: 'melee_light', kind: 'light',
     effects: [D(5), IF('targetStaggered', [EN(1), DRAW(1)])], up: { effects: [D(8), IF('targetStaggered', [EN(1), DRAW(1)])] },
     text: v => `Deal ${v.d(0)} damage. If the zombie is ${v.kw('Staggered')}, gain 1 energy and draw 1 card.` },
@@ -86,6 +93,10 @@ const DEFS = {
   dig_in: { name: 'Dig In', hero: 'marc', type: 'skill', rarity: 'uncommon', cost: 2, anim: 'block',
     effects: [{ op: 'doubleBlock' }], up: { cost: 1 },
     text: v => `Double your ${v.kw('Block')}.` },
+  // Flame Barrier (StS 12 Block, 4 back / 16, 6): Bulwark's uncommon payoff, Block that hits back
+  barbed_wire: { name: 'Barbed Wire', hero: 'marc', type: 'skill', rarity: 'uncommon', cost: 2, anim: 'block',
+    effects: [B(12), SELF('barbed', 4)], up: { effects: [B(16), SELF('barbed', 6)] },
+    text: v => `Gain ${v.b(0)} ${v.kw('Block')}. Until your next turn, whenever a zombie hits you, it takes ${v.n(v.e[1].n)} damage.` },
   thick_skin: { name: 'Thick Skin', hero: 'marc', type: 'power', rarity: 'uncommon', cost: 1, anim: 'buff',
     effects: [SELF('thick_skin', 3)], up: { effects: [SELF('thick_skin', 4)] },
     text: v => `At the end of your turn, gain ${v.n(v.e[0].n)} ${v.kw('Block')}.` },
@@ -114,6 +125,10 @@ const DEFS = {
   fortify: { name: 'Fortify', hero: 'marc', type: 'power', rarity: 'rare', cost: 3, anim: 'buff',
     effects: [SELF('fortify', 1)], up: { cost: 2 },
     text: v => `${v.kw('Block')} is no longer removed at the start of your turn.` },
+  // Juggernaut (StS 5 / 7): the Bulwark payoff
+  battering_ram: { name: 'Battering Ram', hero: 'marc', type: 'power', rarity: 'rare', cost: 2, anim: 'buff',
+    effects: [SELF('battering_ram', 5)], up: { effects: [SELF('battering_ram', 7)] },
+    text: v => `Whenever you gain ${v.kw('Block')}, deal ${v.n(v.e[0].n)} damage to a random zombie.` },
   make_it_count: { name: 'Make It Count', hero: 'marc', type: 'attack', rarity: 'rare', cost: 1, anim: 'melee_heavy', kind: 'heavy', keywords: ['exhaust'],
     effects: [D(10, { onKill: [{ op: 'maxHp', n: 3 }] })], up: { effects: [D(12, { onKill: [{ op: 'maxHp', n: 4 }] })] },
     text: v => `Deal ${v.d(0)} damage. If this kills, raise your Max HP by ${v.n(v.e[0].onKill[0].n)}.` },
@@ -122,13 +137,15 @@ const DEFS = {
     text: v => `Double your ${v.kw('Strength')}.` },
 
   // ---------------------------------------------------------------- Yola: commons
+  // was 4 x2 (a weaker Twin Strike than Marc's One-Two): now a two-shot cash-in, 6 plain / 18 on a Staggered zombie
   double_tap: { name: 'Double Tap', hero: 'yola', type: 'attack', rarity: 'common', cost: 1, anim: 'pistol_burst', kind: 'gun',
-    effects: [D(4, { times: 2 })], up: { effects: [D(6, { times: 2 })] } },
+    effects: [D(3, { times: 2, bonusStaggered: 3 })], up: { effects: [D(4, { times: 2, bonusStaggered: 4 })] } },
   aimed_shot: { name: 'Aimed Shot', hero: 'yola', type: 'attack', rarity: 'common', cost: 1, anim: 'pistol', kind: 'gun',
     effects: [D(8), IF('targetStaggered', [DRAW(1)])], up: { effects: [D(11), IF('targetStaggered', [DRAW(1)])] },
     text: v => `Deal ${v.d(0)} damage. If the zombie is ${v.kw('Staggered')}, draw 1 card.` },
+  // Sucker Punch (StS 7, 1 Weak / 9, 2); was 6 / 8
   kneecap: { name: 'Kneecap', hero: 'yola', type: 'attack', rarity: 'common', cost: 1, anim: 'pistol', kind: 'gun',
-    effects: [D(6), A('weak', 1)], up: { effects: [D(8), A('weak', 2)] } },
+    effects: [D(7), A('weak', 1)], up: { effects: [D(9), A('weak', 2)] } },
   suppressing_fire: { name: 'Suppressing Fire', hero: 'yola', type: 'attack', rarity: 'common', cost: 1, anim: 'pistol_burst', kind: 'gun',
     effects: [D(3, { to: 'all' }), A('weak', 1, 'all')], up: { effects: [D(5, { to: 'all' }), A('weak', 1, 'all')] },
     text: v => `Deal ${v.d(0)} damage and apply 1 ${v.kw('Weakened')} to ALL zombies.` },
@@ -137,19 +154,29 @@ const DEFS = {
     text: v => `Gain ${v.b(0)} ${v.kw('Block')}. If any zombie is ${v.kw('Staggered')}, draw 1 card.` },
   tuck_and_roll: { name: 'Tuck and Roll', hero: 'yola', type: 'skill', rarity: 'common', cost: 1, anim: 'dodge', clip: 'ual1_Roll',
     effects: [B(5), DRAW(2)], up: { effects: [B(8), DRAW(2)] } },
+  // Prepared-style filter with the in-fight choice (was 2 Block + draw 1 while the engine had no choice step)
   check_mag: { name: 'Check the Mag', hero: 'yola', type: 'skill', rarity: 'common', cost: 0, anim: 'buff', clip: 'pistol_reload',
-    effects: [B(2), DRAW(1)], up: { effects: [B(4), DRAW(1)] } },
+    effects: [DRAW(2), CHOOSE('discard', 1, { prompt: 'Discard a card.' })], up: { effects: [DRAW(3), CHOOSE('discard', 2, { prompt: 'Discard 2 cards.' })] },
+    text: v => `Draw ${v.n(v.e[0].n)} cards. Discard ${v.e[1].n === 1 ? 'a card' : v.n(v.e[1].n) + ' cards'}.` },
+  // Equilibrium's idea at common size, with the choice: keep the cash-in for the turn Marc staggers
+  wait_for_it: { name: 'Wait for It', hero: 'yola', type: 'skill', rarity: 'common', cost: 1, anim: 'dodge',
+    effects: [B(6), CHOOSE('retain', 2, { optional: true, prompt: 'Retain up to 2 cards.' })],
+    up: { effects: [B(9), CHOOSE('retain', 2, { optional: true, prompt: 'Retain up to 2 cards.' })] },
+    text: v => `Gain ${v.b(0)} ${v.kw('Block')}. ${v.kw('Retain')} up to 2 cards in your hand this turn.` },
+  // was 1 Weakened to ALL: 2 turns of Weakened is what makes a 1-energy defensive Skill worth a slot
   flare: { name: 'Flare', hero: 'yola', type: 'skill', rarity: 'common', cost: 1, anim: 'throw',
-    effects: [A('weak', 1, 'all'), DRAW(1)], up: { effects: [A('weak', 2, 'all'), DRAW(1)] } },
+    effects: [A('weak', 2, 'all'), DRAW(1)], up: { effects: [A('weak', 3, 'all'), DRAW(1)] } },
+  // was 3 / 5. A free shot measured strong already (docs/BALANCE.md card values); 4 / 7 reads less like filler
   quick_shot: { name: 'Quick Shot', hero: 'yola', type: 'attack', rarity: 'common', cost: 0, anim: 'pistol', kind: 'gun',
-    effects: [D(3)], up: { effects: [D(5)] } },
+    effects: [D(4)], up: { effects: [D(7)] } },
   cheap_shot: { name: 'Cheap Shot', hero: 'yola', type: 'attack', rarity: 'common', cost: 0, anim: 'pistol', kind: 'gun',
     effects: [D(3, { bonusStaggered: 4 })], up: { effects: [D(4, { bonusStaggered: 6 })] } },
 
   // ---------------------------------------------------------------- Yola: uncommons
   headshot: { name: 'Headshot', hero: 'yola', type: 'attack', rarity: 'uncommon', cost: 2, anim: 'pistol', kind: 'gun',
     effects: [D(10, { bonusStaggered: 10 })], up: { effects: [D(13, { bonusStaggered: 13 })] } },
-  triage: { name: 'Triage', hero: 'yola', type: 'skill', rarity: 'uncommon', cost: 1, anim: 'heal', keywords: ['exhaust'],
+  // Bandage Up (StS 0 cost, heal 4 / 6); was 1 energy
+  triage: { name: 'Triage', hero: 'yola', type: 'skill', rarity: 'uncommon', cost: 0, anim: 'heal', keywords: ['exhaust'],
     effects: [HEAL(4)], up: { effects: [HEAL(6)] } },
   adrenaline_shot: { name: 'Adrenaline Shot', hero: 'yola', type: 'skill', rarity: 'uncommon', cost: 0, anim: 'buff', keywords: ['exhaust'],
     effects: [EN(1), DRAW(1)], up: { effects: [EN(2), DRAW(1)] } },
@@ -161,7 +188,7 @@ const DEFS = {
   painkillers: { name: 'Painkillers', hero: 'yola', type: 'power', rarity: 'uncommon', cost: 1, anim: 'buff',
     effects: [SELF('dexterity', 2)], up: { effects: [SELF('dexterity', 3)] } },
   light_on_feet: { name: 'Light on Feet', hero: 'yola', type: 'power', rarity: 'uncommon', cost: 1, anim: 'buff',
-    effects: [SELF('light_feet', 1)], up: { effects: [SELF('light_feet', 2)] },
+    effects: [SELF('light_feet', 2)], up: { effects: [SELF('light_feet', 3)] }, // was 1 / 2 (Feel No Pain's 3 / 4 for a narrower trigger)
     text: v => `Whenever you play a Skill, gain ${v.n(v.e[0].n)} ${v.kw('Block')}.` },
   triple_tap: { name: 'Triple Tap', hero: 'yola', type: 'attack', rarity: 'uncommon', cost: 2, anim: 'pistol_burst', kind: 'gun',
     effects: [D(4, { times: 3, bonusStaggered: 2 })], up: { effects: [D(5, { times: 3, bonusStaggered: 3 })] } },

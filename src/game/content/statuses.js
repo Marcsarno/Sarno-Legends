@@ -33,6 +33,8 @@ export const STATUSES = {
   fortify:       { name: 'Dug In',        kind: 'power',  stack: 'intensity', color: '#a08f6a', text: 'Block is not removed at the start of your turn.', flag: true },
   marksman:      { name: 'Marksman',      kind: 'power',  stack: 'intensity', color: '#2fa39a', text: 'Attacks deal {n} more damage to Staggered zombies.' },
   light_feet:    { name: 'Light on Feet', kind: 'power',  stack: 'intensity', color: '#55c2b5', text: 'Whenever you play a Skill, gain {n} Block.' },
+  barbed:        { name: 'Barbed Wire',   kind: 'buff',   stack: 'intensity', color: '#9c7b4a', text: 'Until your next turn, whenever a zombie hits you, it takes {n} damage.' },
+  battering_ram: { name: 'Battering Ram', kind: 'power',  stack: 'intensity', color: '#c8483a', text: 'Whenever you gain Block, deal {n} damage to a random zombie.' },
   dead_eye:      { name: 'Dead Eye',      kind: 'power',  stack: 'intensity', color: '#e3b04b', text: 'The first {n} Attacks you play each turn on a Staggered zombie draw a card.' },
 };
 

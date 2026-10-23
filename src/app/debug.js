@@ -1,6 +1,7 @@
 // The debug / playtest API (BUILD_SPEC section 8) and the ?debug=1 overlay.
 //   window.__SL = { state(), app, newRun(seed?, opts?), goto(screen, opts?), combat(encounterId?, opts?), play(handIndex,
-//     targetIndex?), endTurn(), autoplay(on, speed?), setSpeed(x), win(), lose(), give({ relic, card, potion, gold }), seed }
+//     targetIndex?), endTurn(), autoplay(on, speed?), setSpeed(x), win(), lose(), give({ relic, card, potion, gold }), seed,
+//     choose(indexes | uids) (answer a card's open choice: indexes into choice.uids, or the uids), exportSave(), importSave(code) }
 // Every call that changes screens returns a promise that settles when the new screen is up. play / endTurn go through
 // the same path as the player's input (the fight's play -> director -> HUD).
 import * as R from '../game/run.js';
@@ -9,6 +10,7 @@ import { CARDS } from '../game/content/cards.js';
 import { POTIONS } from '../game/content/potions.js';
 import { ENCOUNTERS } from '../game/content/encounters.js';
 import { createAutoplay } from './autoplay.js';
+import { decodeSave } from './savecode.js';
 
 export function installDebug(app) {
   const bot = createAutoplay(app);
@@ -29,7 +31,8 @@ export function installDebug(app) {
           party: { hp: c.state.party.hp, block: c.state.party.block, statuses: { ...c.state.party.statuses } },
           hand: c.state.hand.map(k => k.id + (k.up ? '+' : '')), handUids: f.handUids(),
           enemies: c.state.enemies.map(e => ({ uid: e.uid, id: e.id, hp: e.hp, block: e.block, alive: e.alive, intent: e.intent?.type || null, statuses: { ...e.statuses } })),
-          directorIdle: f.director.idle(), canAct: f.director.canAcceptInput() } : null,
+          directorIdle: f.director.idle(), canAct: f.director.canAcceptInput(),
+          choice: c.state.choice ? { kind: c.state.choice.kind, n: c.state.choice.n, optional: c.state.choice.optional, uids: c.state.choice.uids.slice(), overlay: !!f.choice?.open } : null } : null,
         autoplay: bot.running, speed: app.settings().speed,
       };
     },
@@ -66,6 +69,14 @@ export function installDebug(app) {
       return f.play(uid, f.targets()[targetIndex] ?? f.targets()[0]);
     },
     endTurn() { return fight().endTurn(); },
+    choose(picks = [0]) {
+      const f = fight(), ch = f.combat.state.choice;
+      if (!ch) return { ok: false, reason: 'no_choice' };
+      const list = [].concat(picks).map(p => (typeof p === 'number' ? ch.uids[p] : p)).filter(Boolean);
+      return f.choose(list);
+    },
+    exportSave() { return app.exportSave(); },
+    async importSave(code) { const r = await decodeSave(code); if (r.ok) await app.restoreSave(r); return r.ok ? { ok: true, info: r.info } : r; },
     autoplay(on = true, speed = 2) { if (on) bot.start(speed); else { bot.stop(); app.setSpeedOverride(null); } return bot.running; },
     setSpeed(x) { app.setSpeedOverride(x); return app.settings().speed; },
     win() { fight().win(); },
@@ -109,6 +120,7 @@ function debugOverlay(app) {
       `${fps.toFixed(0)} fps  ${app.screen || '-'}${s.overlays.length ? ' +' + s.overlays.join('+') : ''}  x${s.speed}${s.autoplay ? ' AUTO' : ''}`,
       s.run ? `seed ${s.run.seed}  floor ${s.run.floor}  ${s.run.hp}/${s.run.maxHp} HP  ${s.run.gold} sup  deck ${s.run.deck}` : 'no run',
       c ? `${c.encounter} t${c.turn} ${c.phase} E${c.energy}  ${c.enemies.map(e => `${e.id}:${e.alive ? e.hp : 'x'}`).join(' ')}  ${c.directorIdle ? 'idle' : 'busy'}` : '',
+      ((q) => q ? `quality ${q.level}/${q.levels - 1}  px ${q.pixelRatio}  ${q.shadows ? 'shadows' : 'no shadows'}  ${q.frameMs || '-'} ms${q.auto ? ' auto' : ''}` : '')(app.stage?.quality),
     ].filter(Boolean).join('\n');
     setTimeout(loop, 250);
   };

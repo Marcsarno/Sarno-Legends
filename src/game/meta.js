@@ -5,11 +5,20 @@
 //   canUnlock(profile, 'nail_bat') -> { ok, reason: 'unknown'|'owned'|'requires'|'scrap', cost, requires }
 //   unlockWeapon(profile, id) / equip(profile, hero, id) / setSetting(profile, key, value)   -> { ok, reason? }
 //   scrapFor(run) -> { earned, lines: [{ label, amount }] }   (fight 8, elite 20, boss 40, act cleared +15; no toll)
-//   recordRun(profile, run) -> { scrap: { before, earned, after, lines }, unlocks: [{ weapon, text }], best }
+//   recordRun(profile, run) -> { scrap: { before, earned, after, lines }, unlocks: [{ weapon, text }], best,
+//                                infection: { level, unlocked, newlyUnlocked: n | null }, daily: { date, score, best, newBest } | null }
 //     adds the scrap and stats once per run (run.record remembers it, so a reload can show the same tally)
+//   profile.infection = { unlocked: 0..5 }: winning at your highest unlocked level unlocks the next (infection.js).
+//   profile.daily = { 'YYYY-MM-DD': bestScore }: the best Daily Run score per day (run.js scoreRun).
+//   canUseInfection(profile, level) -> bool
 // Weapons are the artifact system: content/weapons.js has the tree (cost in scrap, `requires` = the tier before).
 
 import { WEAPONS, DEFAULT_WEAPONS } from './content/weapons.js';
+import { MAX_INFECTION, infectionLevel } from './infection.js';
+import { scoreRun } from './run.js';
+
+export { INFECTION_LEVELS, MAX_INFECTION } from './infection.js';
+export const MAX_DAILY_DAYS = 90; // profile.daily keeps the latest 90 days
 
 export const PROFILE_VERSION = 1;
 export const SCRAP = { fight: 8, elite: 20, boss: 40, actCleared: 15 };
@@ -36,6 +45,8 @@ export function createProfile() {
       scrapEarned: 0, scrapSpent: 0, streak: 0, bestStreak: 0 },
     runs: [],
     settings: { ...DEFAULT_SETTINGS },
+    infection: { unlocked: 0 },
+    daily: {},
   };
 }
 
@@ -54,6 +65,11 @@ export function loadProfile(data) {
   }
   p.stats = { ...base.stats, ...(data.stats || {}) };
   p.runs = Array.isArray(data.runs) ? data.runs.slice(-MAX_RUN_LOGS) : [];
+  p.infection = { unlocked: infectionLevel(data.infection?.unlocked) };
+  p.daily = {};
+  for (const [k, v] of Object.entries(data.daily && typeof data.daily === 'object' ? data.daily : {})) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(k) && Number.isFinite(Number(v))) p.daily[k] = Number(v);
+  }
   p.settings = { ...DEFAULT_SETTINGS };
   for (const [k, v] of Object.entries(data.settings || {})) if (SETTINGS[k]?.(v)) p.settings[k] = v;
   return p;
@@ -90,6 +106,9 @@ export function equip(profile, hero, id) {
 
 export const isUnlocked = (profile, id) => profile.unlocked.includes(id);
 
+/** Can a new run start at this Infection level? (0 always; higher once unlocked) */
+export const canUseInfection = (profile, level) => infectionLevel(level) === level && level <= (profile.infection?.unlocked || 0);
+
 /** Weapons you could unlock right now (requirement met and enough scrap), cheapest first. */
 export function affordableWeapons(profile) {
   return Object.values(WEAPONS).filter(w => canUnlock(profile, w.id).ok).sort((a, b) => a.cost - b.cost).map(w => w.id);
@@ -122,6 +141,7 @@ export function runLog(run, now = Date.now()) {
   const S = run.stats || {};
   return {
     seed: run.seed, at: now, won: !!run.won, floor: run.floor, hp: run.hp, maxHp: run.maxHp, gold: run.gold,
+    infection: run.infection || 0, daily: run.daily || null, score: scoreRun(run),
     weapons: { ...run.weapons }, deck: run.deck.map(c => c.id + (c.up ? '+' : '')), relics: run.relics.map(r => r.id),
     kills: S.kills, finishers: S.finishers, turns: S.turns, damageTaken: S.damageTaken, cause: S.cause || null,
     fights: (S.log || []).filter(e => e.t === 'fight').map(e => ({ floor: e.floor, encounter: e.encounter, won: e.won, turns: e.turns,
@@ -151,6 +171,24 @@ export function recordRun(profile, run, { now = Date.now() } = {}) {
   if (profile.runs.length > MAX_RUN_LOGS) profile.runs.splice(0, profile.runs.length - MAX_RUN_LOGS);
   const unlocks = affordableWeapons(profile).filter(id => !affordableBefore.has(id))
     .map(id => ({ weapon: id, text: `You can afford the ${WEAPONS[id].name}.` }));
-  run.record = { scrap: { before, earned, after: profile.scrap, lines }, unlocks, best };
+
+  // Infection: a win at your highest unlocked level opens the next one
+  const inf = (profile.infection ||= { unlocked: 0 });
+  const level = infectionLevel(run.infection);
+  let newlyUnlocked = null;
+  if (run.won && level >= inf.unlocked && inf.unlocked < MAX_INFECTION) newlyUnlocked = inf.unlocked = Math.min(MAX_INFECTION, level + 1);
+  // Daily Run: keep the day's best score
+  let daily = null;
+  if (run.daily) {
+    const score = scoreRun(run);
+    const prev = (profile.daily ||= {})[run.daily];
+    const newBest = prev === undefined || score > prev;
+    if (newBest) profile.daily[run.daily] = score;
+    const days = Object.keys(profile.daily).sort();
+    for (const d of days.slice(0, Math.max(0, days.length - MAX_DAILY_DAYS))) if (d !== run.daily) delete profile.daily[d];
+    daily = { date: run.daily, score, best: profile.daily[run.daily], newBest };
+  }
+  run.record = { scrap: { before, earned, after: profile.scrap, lines }, unlocks, best,
+    infection: { level, unlocked: inf.unlocked, newlyUnlocked }, daily };
   return run.record;
 }

@@ -12,6 +12,7 @@ import { Actor, CLIP_TIMING, HERO_ANIMS, STANCE_YAW } from './actor.js';
 import { character, preload } from './assets.js';
 import { SLOTS } from './camera.js';
 import { createRiotShield } from './weapons.js';
+import { applyLook } from './looks.js';
 
 // ---- which clip plays what ----
 // card id -> Marc's clip (beats the anim's default); the engine may also send card.clip
@@ -149,7 +150,7 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     later(0, () => {}, 'ret:' + hero.id);
     hero.dashTo(dest, P.dash * 1000);
     hero.turnTo((T.yaw ?? Math.PI / 2) + Math.atan2(dir.x, dir.z) - Math.PI / 2, 120);
-    hero.lookTarget = near;
+    hero.lookTarget = near; hero.strikeTarget = near;
     hero.strike(clip, { hitIn: P.lead, snap: P.snap, hold: P.hold, recover: P.recover, lean: P.lean });
     later(Math.max(0, P.lead - P.snap - 0.04), () => fx?.trail?.(hero, true), 'trailOn:' + hero.id);
     later(P.lead + 0.12, () => fx?.trail?.(hero, false), 'trailOff:' + hero.id);
@@ -428,6 +429,7 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
       }, after: 0.08 };
     },
     status(e) {
+      if (e.status === 'vulnerable' && e.target !== 'party') { const z = A.enemies.get(e.target); if (z) z.staggered = (e.total || 0) > 0; }
       if (e.quiet || !(e.delta > 0)) return {};
       return { land: () => {
         const color = STATUS_COLOR[e.status] || (DEBUFF.has(e.status) ? 0xb06bff : 0xffd166);
@@ -681,6 +683,8 @@ export async function createEnemyActor(stage, snap, home) {
   const data = await character(snap.model || 'z_romero');
   const a = new Actor(stage, data, { kind: 'enemy', id: snap.model, uid: snap.uid, scale: snap.scale || 1, home });
   a.enemyId = snap.id; a.slot = snap.slot;
+  applyLook(a, snap.id);
+  a.staggered = (snap.statuses?.vulnerable || 0) > 0;
   if (snap.pose === 'lying' || (snap.statuses && snap.statuses.asleep)) await a.lieDown(true, { bed: true });
   if (snap.model === 'z_guard') a.attach(createRiotShield(), 'LeftForeArm', SHIELD_FIT);
   return a;

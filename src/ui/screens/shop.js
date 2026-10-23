@@ -51,6 +51,7 @@ export function mount(root, ctx) {
     const shop = ctx.shop || {};
     shelf.replaceChildren();
     (shop.cards || []).forEach((it, i) => shelf.append(cardSlot(it, i)));
+    requestAnimationFrame(() => fitNames(shelf));
     relics.replaceChildren();
     (shop.relics || []).forEach((it, i) => relics.append(itemSlot('relic', it, i)));
     potions.replaceChildren();
@@ -188,4 +189,15 @@ export function mount(root, ctx) {
     unmount() { picker?.unmount(); bar?.destroy(); s.unmount(); },
     update(next) { if (next) Object.assign(ctx, next); bar?.update(); if (!g.busy) render(); },
   };
+}
+
+/** Shelf card names keep a 12 px floor on phones (screens-extra.css): the few long ones are narrowed, not shrunk. */
+function fitNames(host) {
+  for (const n of host.querySelectorAll('.card__name')) {
+    const sp = n.querySelector('span');
+    if (!sp) continue;
+    sp.style.transform = ''; sp.style.display = 'inline-block';
+    const over = sp.scrollWidth / Math.max(1, n.clientWidth - 2);
+    if (over > 1) { sp.style.transform = `scaleX(${(1 / over).toFixed(3)})`; sp.style.transformOrigin = 'center'; }
+  }
 }

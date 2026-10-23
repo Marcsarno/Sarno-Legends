@@ -18,6 +18,15 @@ Goal (Marc): "a fully playable loop start to finish like act one of slay the spi
 > - Potion prices: common 48–53, uncommon 71–79.
 > - Finishers only count when a hero's attack lands the kill (not Bleed, potions or relics).
 
+> **Card pass 8 (2026-10-23)**, "every card should have a place" (details and sim numbers in `BALANCE.md` Pass 8):
+> Check the Mag draw 2, discard 1 (+ draw 3, discard 2) via the new mid-fight choice step (`combat.state.choice` /
+> `combat.choose(uids)`); Double Tap 3×2 +3 each if Staggered (4×2 +4); Kneecap 7 + 1 Weakened (9, 2); Quick Shot 4 (7);
+> Flare 2 Weakened to ALL, draw 1 (3); Deep Breath also draws 1; Triage costs 0; Light on Feet 2 block per Skill (3).
+> New: **Tough It Out** (Marc common: 7 block, exhaust a card you choose; 9), **Wait for It** (Yola common: 6 block,
+> retain up to 2 cards; 9), **Barbed Wire** (Marc uncommon: 12 block, zombies that hit you take 4; 16/6), **Battering
+> Ram** (Marc rare power: whenever you gain block, 5 damage to a random zombie; 7). Infection levels and the daily run
+> are in GAME_CORE "Ascension ladder".
+
 ## 0. Ground rules for everyone building
 
 - **Copy mechanics, never Slay the Spire's names, text or art.** All names below are ours.

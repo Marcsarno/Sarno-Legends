@@ -137,6 +137,13 @@ const P = {
   ritual: FLAME + cut('<path d="M12 21a2.8 2.8 0 0 1-2.8-2.8c0-1.6 1.3-2.6 2.2-3.8.4 1 1.2 1.6 2 2 .9.5 1.4 1.2 1.4 1.8A2.8 2.8 0 0 1 12 21z"/>', '.35'),
   plating: '<rect x="3.5" y="3.5" width="17" height="17" rx="3.2"/>' + cut('<circle cx="7" cy="7" r="1.2"/><circle cx="17" cy="7" r="1.2"/><circle cx="7" cy="17" r="1.2"/><circle cx="17" cy="17" r="1.2"/>', '.5') + '<path d="M5.5 10.5 10.5 5.5h3l-8 8z" fill="#fff" fill-opacity=".25"/>',
   thorns: star(12, 12, 11, 5, 8, -90) + cut('<circle cx="12" cy="12" r="2.6"/>', '.35'),
+  // Barbed Wire: two twisted strands with two barbs
+  barbed: line('M1.5 12c1.9-3.6 4.2-3.6 6 0s4.1 3.6 6 0 4.1-3.6 6 0 2.1 2.4 3 2.2', 1.6) + line('M1.5 12c1.9 3.6 4.2 3.6 6 0s4.1-3.6 6 0 4.1 3.6 6 0 2.1-2.4 3-2.2', 1.6)
+    + line('M5 8.6l5 6.8M10 8.6l-5 6.8M14 8.6l5 6.8M19 8.6l-5 6.8', 1.3),
+  // Battering Ram: a log driven into a shield, with the knock
+  battering_ram: g('translate(13.2 4.2) scale(.46)', `<path d="${SHIELD}"/>`)
+    + g('rotate(-14 7 14)', '<rect x="0.4" y="11" width="11.6" height="6" rx="2.4"/>' + cutLine('M4 11.6v4.8M7.6 11.6v4.8', 1.1))
+    + line('M12.6 8.2l-1.2-2M12.4 17.6l-.8 2.2', 1.3),
   enrage: [0, 90, 180, 270].map(r => g(`rotate(${r} 12 12)`, '<path d="M2.6 10.2c2.6.2 4.8-1.3 5.4-4h3c-.6 4.3-4 7.3-8.4 7.2z"/>')).join(''),
   hunch: line('M12 12m-1.4 0a1.4 1.4 0 1 1 2.8 0a2.8 2.8 0 1 1-5.6 0a4.4 4.4 0 1 1 8.8 0a6 6 0 1 1-12 0a7.6 7.6 0 1 1 15.2 0', 2.2),
   immune: `<path d="${SHIELD}"/>` + cutLine('m8 11.8 3 3 5.4-5.6', 2.2),

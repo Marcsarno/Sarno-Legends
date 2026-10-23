@@ -3,8 +3,9 @@
 // the 3D stage) and steps aside while the target is gone. Never modal: only the bubble itself takes taps.
 //   const c = createCallout({ onGotIt(id), onSkip(id) })
 //   c.show({ id, title, sub?, target: () => Element | DOMRect | null, side?: 'top'|'bottom'|'left'|'right'|'auto',
-//            ring?: true, pad?: 6, swipe?: false, width? })  replaces whatever is shown; swipe: an arrow rises out of it;
-//                                                          width: a narrower bubble (px) that fits beside a panel
+//            ring?: true, pad?: 6, swipe?: false, width?, avoid?: () => [DOMRect] })  replaces whatever is shown; swipe: an
+//            arrow rises out of it; width: a narrower bubble (px) that fits beside a panel; avoid: rects the bubble must
+//            not cover (the party's HP bar, the card being played), checked every frame
 //   c.hide()     c.quiet(bool)  (faded and click-through, e.g. while a card is dragged)     c.shown -> id | null
 //   c.destroy()
 // A tap anywhere on the bubble is "Got it"; "Skip tips" turns the coach off (Settings > Tips turns it back on).
@@ -102,19 +103,48 @@ export function createCallout({ onGotIt, onSkip } = {}) {
     const box = { l: S.left + m, t: S.top + m, r: (S.right || vw) - m, b: (S.bottom || vh) - m };
     const room = { top: r.top - box.t, bottom: box.b - r.bottom, left: r.left - box.l, right: box.r - r.right };
     const fits = s => (s === 'top' || s === 'bottom') ? room[s] >= bh + gap : room[s] >= bw + gap;
+    const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+    const at = sd => {
+      let x, y;
+      if (sd === 'top') { x = cx - bw / 2; y = r.top - gap - bh; }
+      else if (sd === 'bottom') { x = cx - bw / 2; y = r.bottom + gap; }
+      else if (sd === 'left') { x = r.left - gap - bw; y = cy - bh / 2; }
+      else { x = r.right + gap; y = cy - bh / 2; }
+      return { x: clamp(x, box.l, Math.max(box.l, box.r - bw)), y: clamp(y, box.t, Math.max(box.t, box.b - bh)) };
+    };
     let side = cur.side;
     if (side === 'auto' || !fits(side)) {
       const order = side === 'auto' ? ['top', 'bottom', 'right', 'left'] : [side, side === 'top' ? 'bottom' : side === 'bottom' ? 'top' : side === 'left' ? 'right' : 'left', 'top', 'bottom', 'right', 'left'];
       side = order.find(fits) || Object.entries(room).sort((a, b) => b[1] - a[1])[0][0];
     }
-    const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
-    let x, y;
-    if (side === 'top') { x = cx - bw / 2; y = r.top - gap - bh; }
-    else if (side === 'bottom') { x = cx - bw / 2; y = r.bottom + gap; }
-    else if (side === 'left') { x = r.left - gap - bw; y = cy - bh / 2; }
-    else { x = r.right + gap; y = cy - bh / 2; }
-    x = clamp(x, box.l, Math.max(box.l, box.r - bw));
-    y = clamp(y, box.t, Math.max(box.t, box.b - bh));
+    let { x, y } = at(side);
+    // keep off what must stay readable (the party's HP bar, the card being played): slide along the side, or change side
+    let avoid = [];
+    try { avoid = (cur.avoid?.() || []).filter(a => a && a.right - a.left > 1 && a.bottom - a.top > 1); } catch { avoid = []; }
+    if (avoid.length) {
+      const hit = (px, py) => avoid.reduce((t, a) => t + Math.max(0, Math.min(px + bw, a.right + 4) - Math.max(px, a.left - 4)) * Math.max(0, Math.min(py + bh, a.bottom + 4) - Math.max(py, a.top - 4)), 0);
+      if (hit(x, y) > 0) {
+        const pref = [side, ...['top', 'bottom', 'right', 'left'].filter(sd => sd !== side)];
+        let best = { x, y, side, cost: hit(x, y) + 1e9 };
+        for (const sd of pref) {
+          const p0 = at(sd), fitPen = fits(sd) ? 0 : 5e5;
+          const tries = [p0];
+          for (const a of avoid) {
+            if (sd === 'top' || sd === 'bottom') tries.push({ x: a.right + 8, y: p0.y }, { x: a.left - 8 - bw, y: p0.y });
+            else tries.push({ x: p0.x, y: a.bottom + 8 }, { x: p0.x, y: a.top - 8 - bh });
+          }
+          for (const t of tries) {
+            const q = { x: clamp(t.x, box.l, Math.max(box.l, box.r - bw)), y: clamp(t.y, box.t, Math.max(box.t, box.b - bh)) };
+            // the bubble has to stay next to its target: the arrow must still reach it
+            const reach = (sd === 'top' || sd === 'bottom') ? (q.x + bw - 18 >= r.left && q.x + 18 <= r.right) : (q.y + bh - 16 >= r.top && q.y + 16 <= r.bottom);
+            const cost = hit(q.x, q.y) * 10 + fitPen + (reach ? 0 : 2e5) + Math.hypot(q.x - p0.x, q.y - p0.y);
+            if (cost < best.cost) best = { ...q, side: sd, cost };
+          }
+          if (best.cost < 1e3) break;
+        }
+        ({ x, y, side } = best);
+      }
+    }
     // the arrow sits on the edge facing the target, lined up with its centre
     const ax = side === 'top' || side === 'bottom' ? clamp(cx - x, 18, bw - 18) : null;
     const ay = side === 'left' || side === 'right' ? clamp(cy - y, 16, bh - 16) : null;

@@ -2,7 +2,7 @@
 // reads them. The real numbers come from `node tools/sim/run.mjs --runs 300 --bot all` (docs/BALANCE.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BOTS } from '../tools/sim/bots.mjs';
+import { BOTS, withArchetype } from '../tools/sim/bots.mjs';
 import { playRun } from '../tools/sim/play.mjs';
 import { summarize, formatReport } from '../tools/sim/report.mjs';
 import { serialize } from '../src/game/run.js';
@@ -38,6 +38,17 @@ test('the sim is deterministic: same bot, same seed, same run', () => {
   for (const name of ['random', 'greedy', 'sensible']) {
     assert.equal(serialize(playRun(BOTS[name], { seed: 'DET' })), serialize(playRun(BOTS[name], { seed: 'DET' })));
   }
+});
+
+test('archetype drafts and Infection levels play through; the bots answer card choices', () => {
+  for (const a of ['bulwark', 'strength', 'stagger']) {
+    const run = playRun(withArchetype(BOTS.sensible, a), { seed: `ARCH-${a}`, infection: 3 });
+    assert.ok(run.over);
+    assert.equal(run.infection, 3);
+  }
+  const run = playRun(BOTS.expert, { seed: 'CHOICE-X', addCards: ['check_mag', 'tough_it_out', 'wait_for_it'] });
+  assert.ok(run.over);
+  assert.throws(() => withArchetype(BOTS.sensible, 'nope'));
 });
 
 test('weapon loadouts play through', () => {

@@ -3,7 +3,9 @@
 // you can now afford, the deck and relics you ended with. Buttons: Armory, Title.
 //   ctx.summary: { won, floor, kills, turns, fights?, elites?, cardsPlayed?, damageTaken?, bestHit?: { amount, card },
 //                  killedBy?, seed?, deck: [CardInst], relics: [id], weapons?: { marc, yola },
-//                  scrap: { before, earned, lines: [{ label, amount }] }, unlocks?: [{ weapon, text }] }
+//                  scrap: { before, earned, lines: [{ label, amount }] }, unlocks?: [{ weapon, text }],
+//                  daily?: { label, score, best, newBest }, infection?: { level, name } (the run's, when above 0),
+//                  infectionUnlocked?: { level, name, desc } }
 //   act: armory(), title()
 
 import { shell, backdrop, itemIcon, countUp, hoverSounds, ui, enter, h, icon, wait } from './common.js';
@@ -42,6 +44,17 @@ export function mount(root, ctx) {
     ? 'The elevator doors open. Floor 2 is coming soon.'
     : `${sum.killedBy ? `Brought down by the ${sum.killedBy}` : 'Brought down'} on floor ${sum.floor ?? '?'}.`;
 
+  // the daily run's score and the Infection level, under the subtitle
+  function tagsRow() {
+    const d = sum.daily, inf = sum.infection;
+    if (!d && !inf) return null;
+    return h('div.res-tags',
+      inf?.level ? h('span.res-tag.res-tag--inf', `Infection ${inf.level}${inf.name ? ' · ' + inf.name : ''}`) : null,
+      d ? h('span.res-tag.res-tag--daily', h('span', { html: icon('star') }), `Daily Run · ${d.label || 'Today'}`,
+        h('b', `Score ${d.score ?? 0}`),
+        d.newBest ? h('em', 'New best!') : d.best != null ? h('small', `Best ${d.best}`) : null) : null);
+  }
+
   const motes = h('div.res-motes');
   for (let i = 0; i < (won ? 30 : 12); i++) motes.append(h('i', { style: `left:${(Math.random() * 100).toFixed(1)}%;top:${(50 + Math.random() * 50).toFixed(1)}%;animation-duration:${(7 + Math.random() * 8).toFixed(1)}s;animation-delay:${(-Math.random() * 14).toFixed(1)}s;--dx:${((Math.random() - .5) * 80).toFixed(0)}px` }));
   s.el.append(
@@ -52,7 +65,8 @@ export function mount(root, ctx) {
         h('div.scr-kicker', won ? 'Act 1 · The hospital' : 'Run over'),
         h('h1.res-title', won ? 'Floor Cleared' : 'You Were Overrun'),
         h('div.res-ecg', { html: ecg(won) }),
-        h('p.res-sub', subtitle)),
+        h('p.res-sub', subtitle),
+        tagsRow()),
       h('div.res-mid',
         h('section.res-panel.res-run',
           h('h3.res-h', 'The run'),
@@ -100,6 +114,15 @@ export function mount(root, ctx) {
     if (running !== end) await countUp(total, running, end, 300);
     if (!(scrap.lines || []).length && scrap.earned) lines.append(h('div.res-line', h('span', 'Earned'), h('b', `+${scrap.earned}`)));
     total.parentElement.classList.add('res-scrap__total--done');
+    if (sum.infectionUnlocked && !s.gone) {
+      const u = sum.infectionUnlocked;
+      const hint = h('div.res-hint.res-hint--inf', h('span.res-hint__ico', { html: icon('flame') }),
+        h('span', h('b', `Infection ${u.level} unlocked`), u.name ? ` · ${u.name}` : '', u.desc ? h('small', u.desc) : null));
+      hints.append(hint);
+      ui(ctx, 'upgrade');
+      enter(hint, [{ transform: 'scale(.8)', opacity: 0 }, { transform: 'none', opacity: 1 }], 360, 'back');
+      await wait(200);
+    }
     for (const [k, u] of (sum.unlocks || []).entries()) {
       const w = WEAPONS[u.weapon];
       const hint = h('button.res-hint', { onclick: () => { ui(ctx, 'click'); act.armory?.(); } },

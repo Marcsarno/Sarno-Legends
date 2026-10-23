@@ -76,7 +76,7 @@ export function createCoach(app) {
     S.perScreen++;
     markSeen(id);
     const sub = typeof t.sub === 'function' ? t.sub(info) : t.sub;
-    callout.show({ id, title: t.title, sub, side: t.side || 'auto', ring: t.ring !== false, swipe: !!t.swipe, width: t.width, target });
+    callout.show({ id, title: t.title, sub, side: t.side || 'auto', ring: t.ring !== false, swipe: !!t.swipe, width: t.width, target, avoid: keepClear });
     if (t.tapAway) {
       // screens: any tap elsewhere (after a moment to read) closes it; the tap still does its job
       const fn = e => { if (now() - S.shownAt > 900 && !e.target.closest?.('.coach__bubble')) close(false); };
@@ -91,6 +91,18 @@ export function createCoach(app) {
     S.active = null;
     S.closedAt = now();
     callout.hide();
+  }
+
+  // in a fight the bubble never covers the party's HP bar, nor the card being played (while one is out, or being dragged)
+  function keepClear() {
+    if (S.screen !== 'combat' || !S.fight || app.fight !== S.fight) return [];
+    const out = [];
+    for (const el of S.fight.ui?.el?.querySelectorAll('.ehud--party, .ehud--party .ehud__inc--on') || []) { const r = el.getBoundingClientRect(); if (r.width) out.push(r); }
+    const hand = S.fight.ui?.hand;
+    const playing = document.querySelector('.hand-card--out');
+    if (playing && hand?.playRect) out.push(hand.playRect());
+    for (const el of document.querySelectorAll('.hand-card--out')) { const r = el.getBoundingClientRect(); if (r.width > 20 && r.bottom > 0 && r.top < innerHeight) out.push(r); }
+    return out;
   }
 
   // ---------------------------------------------------------------- what is going on right now

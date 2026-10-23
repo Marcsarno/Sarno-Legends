@@ -607,6 +607,8 @@ export function createHand(o) {
     get hovered() { return hovered; },
     /** y of the top of the resting hand (the HUD keeps world bars above it) */
     restTop: () => G.vh - G.sab - G.H * (1 - G.sink),
+    /** where a played card stops and shows (screen px): the coach keeps its bubbles off it */
+    playRect: () => { const p = playSpot(), w = G.W * 0.58, hh = G.H * 0.58; return { left: p.x - w, right: p.x + w, top: p.y - hh, bottom: p.y + hh }; },
     elOf: uid => cards.get(uid)?.el || null,
     /** test hooks (labs / playtests): put a card in a pose without the pointer */
     debugPose(uid, pose, opts = {}) {

@@ -1,6 +1,7 @@
 // Map generation for one act (one hospital floor), Slay the Spire's algorithm. Pure: runs in node and the browser.
 //
-//   const map = generateMap(rng)     // rng: a makeRng stream (run.rng.map restored) or a seed string
+//   const map = generateMap(rng, { odds? })   // rng: a makeRng stream (run.rng.map restored) or a seed string;
+//                                              // odds overrides ROOM_ODDS shares (e.g. { elite: 0.128 })
 //   map = { rows: 15, width: 7, nodes: { [id]: { id, row, col, x, y, type, next: [id] } }, starts: [id], boss: 'boss' }
 //
 // How it is built (StS, BUILD_SPEC section 5 + docs/STS_NUMBERS_CHECK.md):
@@ -40,6 +41,7 @@ export function generateMap(rng, opts = {}) {
   const rows = opts.rows || MAP_ROWS;
   const width = opts.width || MAP_WIDTH;
   const paths = opts.paths || MAP_PATHS;
+  const roomOdds = { ...ROOM_ODDS, ...(opts.odds || {}) }; // Infection 1 raises the elite share (infection.js)
 
   // ---- 1. paths
   const cells = new Map(); // id -> { row, col, next: Set }
@@ -85,7 +87,7 @@ export function generateMap(rng, opts = {}) {
   const total = Object.keys(nodes).length;
   const open = Object.values(nodes).filter(n => !n.type).sort((a, b) => a.row - b.row || a.col - b.col);
   const list = [];
-  for (const [type, share] of Object.entries(ROOM_ODDS)) for (let i = 0; i < Math.round(total * share); i++) list.push(type);
+  for (const [type, share] of Object.entries(roomOdds)) for (let i = 0; i < Math.round(total * share); i++) list.push(type);
   while (list.length < open.length) list.push('fight');
   rng.shuffle(list);
 

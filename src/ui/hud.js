@@ -13,7 +13,8 @@
 //   'card' 'deny' 'hover' 'click' 'end_turn'); autoNumbers (make floating numbers from events when no director sends
 //   them); autoBanners (turn / encounter / finisher banners from events; default true, repeats from the director are
 //   merged); onTarget(uid|null) (highlight the 3D zombie); onDeny(reason, uid); onLowHp(bool) (heartbeat audio);
-//   onDiscardPotion(slot) (else onPotion(slot, null, 'discard')).
+//   onDiscardPotion(slot) (else onPotion(slot, null, 'discard')); warnEndTurn() -> bool (ask "End turn with energy left?"
+//   when a card in hand could still be played; onWarnOff() is its "Don't ask again").
 // The HUD keeps its own model, moved only by events, because the engine resolves instantly and runs ahead of the show.
 
 import { STATUSES, isPositive } from '../game/content/statuses.js';
@@ -41,7 +42,7 @@ export function createCombatUI(opts) {
     root, stage = null, studio = null, getRun = () => null,
     onPlay, onEndTurn, onPotion, onOpenDeck, onOpenMap, onSettings,
     anchor = null, audio = null, autoNumbers = false, autoBanners = true,
-    onTarget = null, onDeny = null, onLowHp = null, onDiscardPotion = null,
+    onTarget = null, onDeny = null, onLowHp = null, onDiscardPotion = null, warnEndTurn = null, onWarnOff = null,
   } = opts;
   let C = opts.combat;
 
@@ -133,6 +134,7 @@ export function createCombatUI(opts) {
     canAct: () => M.phase === 'player' && !M.over,
     inputOpen: () => inputOpen,
     onPlay: (uid, t) => {
+      closeAsk();
       const i = M.hand.indexOf(uid);
       if (i >= 0) M.hand.splice(i, 1);
       // spend the energy on screen now; the engine's energy event confirms it
@@ -534,14 +536,36 @@ export function createCombatUI(opts) {
   }
 
   function setEndTurn(state) {
+    if (state !== 'ready') closeAsk();
     endBtn.dataset.state = state;
     endBtn.disabled = state !== 'ready';
     endLabel.textContent = state === 'enemy' ? 'Zombies’ Turn' : state === 'over' ? (M.phase === 'won' ? 'Cleared' : '—') : state === 'wait' ? 'Ending…' : 'End Turn';
     refreshPlayable();
   }
 
-  function endTurn() {
+  // "End turn with energy left?": a small card above End Turn, only when a card in hand could still be played
+  let ask = null;
+  function closeAsk() { if (!ask) return; const a = ask; ask = null; endBtn.classList.remove('endturn--asking'); anim(a, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(6px)' }], 140).then(() => a.remove()); }
+  function askEndTurn() {
+    const left = M.hand.filter(playableNow).length;
+    ask = h('div.et-ask', { role: 'alertdialog', 'aria-label': 'End turn?' },
+      h('b', `${M.energy} energy left`),
+      h('span', left === 1 ? 'You can still play a card.' : `You can still play ${left} cards.`),
+      h('div.et-ask__btns',
+        h('button.et-ask__keep', { type: 'button', onclick: () => { audio?.ui?.('click'); closeAsk(); } }, 'Keep playing'),
+        h('button.et-ask__end', { type: 'button', onclick: () => { closeAsk(); endTurn(true); } }, 'End turn')),
+      onWarnOff ? h('button.et-ask__off', { type: 'button', onclick: () => { onWarnOff(); closeAsk(); endTurn(true); } }, 'Don’t ask again') : null);
+    for (const ev of ['pointerdown', 'pointerup']) ask.addEventListener(ev, e => e.stopPropagation());
+    endBtn.parentElement.append(ask);
+    endBtn.classList.add('endturn--asking');
+    audio?.ui?.('deny');
+    anim(ask, [{ opacity: 0, transform: 'translateY(8px) scale(.96)' }, { opacity: 1, transform: 'none' }], 200, 'out');
+  }
+
+  function endTurn(sure = false) {
     if (M.phase !== 'player' || M.over || endBtn.disabled) return;
+    if (ask) closeAsk();   // End Turn tapped again: that's a yes
+    else if (sure !== true && warnEndTurn?.() && M.energy > 0 && M.hand.some(playableNow)) { hand.cancel(); hideTip(); askEndTurn(); return; }
     hand.cancel();
     hideTip();
     audio?.ui?.('end_turn');
@@ -845,6 +869,7 @@ export function createCombatUI(opts) {
   const onKey = e => {
     if (e.target.closest?.('input, textarea')) return;
     if ((e.key === 'e' || e.key === 'E') && !e.ctrlKey && !e.metaKey) { e.preventDefault(); endTurn(); }
+    else if (e.key === 'Escape' && ask) { e.preventDefault(); closeAsk(); }
   };
   addEventListener('keydown', onKey);
 

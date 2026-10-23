@@ -32,7 +32,8 @@ export const RELICS = {
   nurses_kit: {
     name: "Nurse's Kit", rarity: 'starter', model: 'items/medkit',
     text: 'At the end of each fight, heal 6 HP.',
-    onCombatEnd(ctx, r, won) { if (won) { ctx.flash(r.id); ctx.heal(6); } },
+    textFor: run => `At the end of each fight, heal ${(run?.infection || 0) >= 5 ? 4 : 6} HP.`, // Infection 5 (infection.js)
+    onCombatEnd(ctx, r, won) { if (won) { ctx.flash(r.id); ctx.heal(ctx.rules?.kitHeal ?? 6); } },
   },
 
   // ---------------------------------------------------------------- common

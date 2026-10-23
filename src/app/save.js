@@ -2,7 +2,7 @@
 //   const saves = createSaves({ persist })   persist false keeps everything in memory (?shot= scenes, playtests)
 //   saves.loadProfile() -> profile (meta.js loadProfile fills gaps)      saves.saveProfile(profile)
 //   saves.loadRun() -> run | null (a finished or unreadable save is dropped)   saves.saveRun(run)   saves.clearRun()
-//   saves.runInfo() -> { floor, hp, maxHp } | null   (the title screen's Continue note)
+//   saves.runInfo() -> { floor, hp, maxHp, daily, infection } | null   (the title screen's Continue note)
 // The run is plain JSON (run.js serialize), saved after every room entry and every resolved choice. A reload in the
 // middle of a fight continues from the start of that fight (its seed is in run.pending), as in Slay the Spire.
 import { loadProfile } from '../game/meta.js';
@@ -53,7 +53,7 @@ export function createSaves({ persist = true } = {}) {
     runInfo() {
       const s = get(KEYS.run);
       if (!s) return null;
-      try { const r = JSON.parse(s); return r && !r.over ? { floor: r.floor || 0, hp: r.hp, maxHp: r.maxHp } : null; } catch { return null; }
+      try { const r = JSON.parse(s); return r && !r.over ? { floor: r.floor || 0, hp: r.hp, maxHp: r.maxHp, daily: !!r.daily, infection: r.infection || 0 } : null; } catch { return null; }
     },
   };
 }

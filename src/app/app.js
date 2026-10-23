@@ -16,6 +16,7 @@ import '../ui/styles/screens-map.css';
 import '../ui/styles/screens-rooms.css';
 import '../ui/styles/screens-meta.css';
 import '../ui/styles/app.css';
+import '../ui/styles/screens-extra.css';
 import * as THREE from 'three';
 import { createStage } from '../render/stage.js';
 import { createStudio } from '../render/studio.js';
@@ -25,6 +26,7 @@ import { SLOTS } from '../render/camera.js';
 import { resetFinishers } from '../render/director.js';
 import { createAudio } from '../audio/audio.js';
 import { setSpeed as setUiSpeed } from '../ui/tween.js';
+import { setTipRun } from '../ui/tooltip.js';
 import { SCREENS } from '../ui/screens/index.js';
 import * as R from '../game/run.js';
 import * as M from '../game/meta.js';
@@ -37,6 +39,9 @@ import { openCombat } from './combat.js';
 import { createBoot } from './loading.js';
 import { createCoach } from './coach.js';
 import { showError } from './errors.js';
+import { encodeSave, decodeSave } from './savecode.js';
+import { noteSeen, seenOf, uiOf, warnEndTurn, isIOSSafariTab } from './extras.js';
+import { createGameApi } from './gameapi.js';
 
 export const VERSION = '0.2.0';
 const BOSS_NAME = 'Shield Guard';
@@ -57,16 +62,24 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   // ---- the shared renderer and friends
   const stage = createStage(canvas, { maxPixelRatio: 1.75 });
   const studio = createStudio(stage.renderer);
-  const audio = createAudio({ volume: { music: profile.settings.music, sfx: profile.settings.sfx }, settings: () => app.settings() });
+  // the sounds' bytes (1.5 MB) wait until the first fight's models are in (app.openAudioGate, from warmUp or the first
+  // fight): createAudio reads `preload` once at creation (false: no idle prefetch at boot) and again on the first tap
+  // (true: decode everything then, as before)
+  let audioMade = false;
+  const audio = createAudio({ volume: { music: profile.settings.music, sfx: profile.settings.sfx }, settings: () => app.settings(), get preload() { return audioMade; } });
+  audioMade = true;
   const rooms = createRooms(stage);
 
   const app = {
     version: VERSION, params, stage, studio, audio, rooms, saves, uiRoot,
     get profile() { return profile; },
-    run: null, fight: null, screen: null, busy: false,
+    run: null, fight: null, screen: null, busy: false, audioGate: false,
     settings: () => ({ ...profile.settings, ...(over.speed ? { speed: over.speed } : {}) }),
     setSpeedOverride(x) { over.speed = x || null; applySettings(); },
   };
+  setTipRun(() => app.run);   // relic tooltips read the run (the Nurse's Kit at Infection 5)
+  const G = createGameApi(() => profile);   // the engine's daily run and Infection levels (src/app/gameapi.js)
+  app.game = G;
 
   // ---------------------------------------------------------------- settings
   function applySettings() {
@@ -78,8 +91,28 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   }
   applySettings();
   const saveProfile = () => saves.saveProfile(profile);
-  const saveRun = () => { if (app.run && !app.run.over) saves.saveRun(app.run); };
+  const saveRun = () => {
+    if (!app.run) return;
+    if (noteSeen(profile, app.run)) saveProfile();   // the Collection: everything offered, found or owned
+    if (!app.run.over) saves.saveRun(app.run);
+  };
   app.saveProfile = saveProfile;
+  // the sounds prefetch once the first fight's models are in (idle time, a bank at a time, so the other zombies still load)
+  app.openAudioGate = () => {
+    if (app.audioGate) return;
+    app.audioGate = true;
+    if (audio.unlocked) return;   // the first tap already started the full preload (fetch + decode)
+    const banks = audio.keys?.().banks || [];
+    const next = () => { const k = banks.shift(); if (!k || audio.unlocked) return; audio.preload(k); setTimeout(() => idle(next, 1000), 120); };
+    idle(next, 1000);
+  };
+  setTimeout(() => app.openAudioGate(), 45000);   // a slow connection still gets its sounds
+  // ask the browser to keep our storage (Safari's 7-day wipe, storage pressure): once, after the first tap
+  const persistOnce = () => {
+    removeEventListener('pointerdown', persistOnce, true); removeEventListener('keydown', persistOnce, true);
+    if (persist && navigator.storage?.persist) navigator.storage.persisted?.().then(p => p || navigator.storage.persist()).catch(() => {});
+  };
+  addEventListener('pointerdown', persistOnce, true); addEventListener('keydown', persistOnce, true);
   // the first-run tips (src/app/coach.js): told about every screen and fight below
   const coach = createCoach(app);
   app.coach = coach;
@@ -219,13 +252,15 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   app.openSettings = () => {
     const ex = topOverlay('settings'); if (ex) return closeOverlay(ex);
     const o = openOverlay('settings', {
-      settings: { ...profile.settings, tips: coach.on }, inRun: !!(app.run && !app.run.over), version: VERSION, audio,
+      settings: { ...profile.settings, tips: coach.on, warnEndTurn: warnEndTurn(profile) }, inRun: !!(app.run && !app.run.over), version: VERSION, audio,
       act: {
         set: (k, v) => {
           if (k === 'tips') { coach.setOn(v); return; }
+          if (k === 'warnEndTurn') { uiOf(profile).warnEndTurn = !!v; saveProfile(); return; }
           const r = M.setSetting(profile, k, v); if (r.ok) { saveProfile(); applySettings(); }
         },
         howTo: () => { closeOverlay(o); app.openHowTo(); },
+        saveCode: () => { closeOverlay(o); app.openSaveCode(); },
         close: () => closeOverlay(o),
         abandonRun: () => { closeOverlay(o); abandonRun(); },
         resetProfile: () => { closeOverlay(o); resetProfile(); },
@@ -239,6 +274,45 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     const o = openOverlay('howto', { audio, act: { close: () => closeOverlay(o), replayTips: () => coach.reset() } });
   };
 
+  app.openHistory = () => {
+    const ex = topOverlay('history'); if (ex) return closeOverlay(ex);
+    audio.ui('open');
+    const o = openOverlay('history', { runs: profile.runs || [], stats: profile.stats, studio, audio, infection: G.levels(), act: { close: () => closeOverlay(o) } });
+  };
+  app.openCollection = () => {
+    const ex = topOverlay('collection'); if (ex) return closeOverlay(ex);
+    audio.ui('open');
+    if (app.run) noteSeen(profile, app.run);
+    const o = openOverlay('collection', { seen: seenOf(profile), studio, audio, act: { close: () => closeOverlay(o) } });
+  };
+
+  // ---------------------------------------------------------------- the save code (Settings): a backup of the profile and the run
+  app.exportSave = () => encodeSave({ profile, run: app.run && !app.run.over ? app.run : saves.loadRun() });
+  app.openSaveCode = (mode = 'export') => {
+    const ex = topOverlay('savecode'); if (ex) return closeOverlay(ex);
+    audio.ui('open');
+    let checked = null;
+    const o = openOverlay('savecode', {
+      mode, inRun: !!(app.run && !app.run.over) || !!saves.runInfo(), audio,
+      act: {
+        exportCode: () => app.exportSave(),
+        check: async code => { const r = await decodeSave(code); checked = r.ok ? r : null; return r; },
+        restore: () => { if (!checked) return; closeOverlay(o); app.restoreSave(checked); },
+        close: () => closeOverlay(o),
+      },
+    });
+  };
+  /** Replace this device's profile (and run) with a decoded save code, then back to the title. */
+  app.restoreSave = ({ profile: p, run }) => {
+    disposeFight();
+    profile = p;
+    saveProfile();
+    if (run) saves.saveRun(run); else saves.clearRun();
+    app.run = null;
+    applySettings();
+    return app.toTitle();
+  };
+
   // ---------------------------------------------------------------- title, armory
   app.toTitle = () => go(async () => {
     disposeFight();
@@ -250,12 +324,18 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     const info = saves.runInfo();
     mountMain('title', {
       hasSave: !!info, save: info, profile, version: VERSION, rooms, audio, studio,
+      daily: G.dailyInfo(),
+      a2hs: (isIOSSafariTab() || params.get('a2hs') === '1') && uiOf(profile).a2hs !== 'dismissed' && !params.get('shot'),
       act: {
         continue: () => app.continueRun(),
-        newRun: () => app.newRun(),
+        newRun: () => app.startNewRun(),
+        daily: () => app.newRun({ daily: true }),
         armory: () => app.toArmory(),
         settings: () => app.openSettings(),
         howTo: () => app.openHowTo(),
+        history: () => app.openHistory(),
+        collection: () => app.openCollection(),
+        dismissA2hs: () => { uiOf(profile).a2hs = 'dismissed'; saveProfile(); },
       },
     });
     audio.music('menu');
@@ -276,11 +356,29 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   });
 
   // ---------------------------------------------------------------- runs
-  app.newRun = ({ seed, neow = true, weapons } = {}) => go(async () => {
+  /** The title's New Run: after the first win, the Infection picker comes first. */
+  app.startNewRun = () => {
+    const levels = G.levels();
+    if (!levels.length || !G.canPickInfection()) return app.newRun();
+    const ex = topOverlay('infection'); if (ex) closeOverlay(ex);
+    audio.ui('open');
+    const o = openOverlay('infection', {
+      levels, unlocked: G.unlocked(), selected: uiOf(profile).infection ?? G.unlocked(), audio,
+      act: {
+        start: level => { uiOf(profile).infection = level; saveProfile(); closeOverlay(o); app.newRun({ infection: level }); },
+        close: () => closeOverlay(o),
+      },
+    });
+  };
+
+  app.newRun = ({ seed, neow = true, weapons, daily = false, infection = 0 } = {}) => go(async () => {
     const old = saves.loadRun();
     if (old && !old.over) { R.abandonRun(old); M.recordRun(profile, old); saveProfile(); }   // a new run abandons the saved one
     disposeFight();
-    const run = R.createRun({ seed: seed ?? params.get('seed') ?? undefined, profile, weapons, neow });
+    const opts = { seed: seed ?? params.get('seed') ?? undefined, profile, weapons, neow };
+    if (daily && G.dailySeed) Object.assign(opts, { daily: typeof daily === 'string' ? daily : G.today(), infection: 0 });   // run.js: the day's seed, free weapons
+    else if (infection > 0) opts.infection = Math.min(infection, G.unlocked());
+    const run = R.createRun(opts);
     app.run = run;
     resetFinishers();
     saveRun();
@@ -390,6 +488,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     stageMode('battle');
     const fight = await openCombat(app, { onOver: f => fightOver(f) });
     app.fight = fight;
+    app.openAudioGate();   // this fight's models are in
     main = { name: 'combat', handle: { unmount() {}, update() {} }, ctx: {} };
     app.screen = 'combat';
     document.body.dataset.screen = 'combat';
@@ -525,7 +624,18 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   function bankRun() {
     const run = app.run;
     if (!run?.over) return null;
+    if (run.record) return run.record;
     const rec = M.recordRun(profile, run);
+    // the run log keeps the scrap it banked (the Run History screen)
+    const log = profile.runs?.[profile.runs.length - 1];
+    if (log && log.seed === run.seed && log.scrap == null) log.scrap = rec.scrap?.earned ?? 0;
+    // what the result screen shows beyond the scrap: the daily score, a newly opened Infection level
+    const d = rec.daily, inf = rec.infection, L = G.levels();
+    rec.app = {
+      daily: d ? { label: G.dateLabel(d.date), score: d.score, best: d.best, newBest: !!d.newBest } : null,
+      infection: inf?.level ? { level: inf.level, name: L.find(l => l.level === inf.level)?.name || '' } : null,
+      infectionUnlocked: inf?.newlyUnlocked ? (L.find(l => l.level === inf.newlyUnlocked) || { level: inf.newlyUnlocked }) : null,
+    };
     saveProfile();
     saves.clearRun();
     return rec;
@@ -537,7 +647,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     const rec = bankRun();
     mountMain('result', {
       run, profile, studio, audio, rooms, topbar: false, version: VERSION,
-      summary: { ...R.runSummary(run), ...rec },
+      summary: { ...R.runSummary(run), ...rec, ...(rec?.app || {}) },
       act: {
         armory: () => { app.run = null; app.toArmory(); },
         title: () => { app.run = null; app.toTitle(); },
@@ -607,7 +717,8 @@ export function idle(fn, timeout = 1500) {
 /** After the title is up: what the first fight needs (its room, the portraits, the deck's card art, the first fights'
  *  zombies), then every other zombie, one job per idle slot so input never waits on it. Baked art (public/assets/baked) is
  *  a few small downloads, fetched all at once before the zombies; art the studio has to render live is GPU work, so it
- *  goes one picture per idle slot after the first zombies, as before. */
+ *  goes one picture per idle slot after the first zombies, as before. The sounds start downloading once the first fights'
+ *  zombies are in (app.openAudioGate). */
 export function warmUp(app) {
   const run = app.saves.loadRun();
   const ids = [...new Set([...(run?.deck || []).map(c => c.id), ...STARTER, 'nail_swing', 'pry_loose', 'buckshot'])].filter(id => CARDS[id]);
@@ -632,8 +743,9 @@ export function warmUp(app) {
     };
     next();
   };
+  const gate = () => app.openAudioGate?.();   // the first fights' zombies are in: the sounds may download now
   const atOnce = fns => () => Promise.race([Promise.all(fns.map(f => Promise.resolve().then(f).catch(() => {}))), new Promise(r => setTimeout(r, 8000))]);
   app.studio.baked().catch(() => false).then(baked => queue(baked
-    ? [atOnce(art), ...firstSet.map(model), ...rest.map(model)]
-    : [...firstSet.map(model), ...art, ...rest.map(model)]));
+    ? [atOnce(art), ...firstSet.map(model), gate, ...rest.map(model)]
+    : [...firstSet.map(model), gate, ...art, ...rest.map(model)]));
 }

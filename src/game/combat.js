@@ -13,9 +13,26 @@
 // rng: the run's named streams (rng.js makeStreams), a single makeRng, a saved streams state, or a seed string.
 // It uses the shuffle (draw pile), ai (zombie moves) and misc (zombie HP, random targets) streams.
 //
-// Public: start(), canPlay(uid, target?), playCard(uid, target?), needsTarget(uid), costOf(uid), hasPlayable(),
+// Public: start(), canPlay(uid, target?), playCard(uid, target?), choose(uids), needsTarget(uid), costOf(uid), hasPlayable(),
 //   usePotion(slot, target?), discardPotion(slot), endTurn(), previewCard(uid|inst, target?), intentOf(uid),
-//   takeEvents(), result(), forceWin(), forceLose(); getters over, won, party, turn.
+//   takeEvents(), result(), forceWin(), forceLose(); getters over, won, party, turn, choosing.
+//
+// ---- Mid-fight card choices ("Discard a card", "Exhaust a card", "Retain up to 2 cards"...)
+// A card whose effects include { op: 'choose', kind, n, optional?, from: 'hand', prompt? } stops there and asks:
+//   c.state.choice = { kind: 'discard'|'exhaust'|'upgrade'|'retain', n, min, optional, from: 'hand',
+//                      uids: [the hand cards you may pick], prompt: 'Discard a card.', source: { uid, id, name } | null }
+//   event { t: 'choice', ...the same fields }   (the UI opens its picker on this event, or whenever state.choice is set)
+//   c.choose(uids) -> { ok: true } | { ok: false, reason: 'no_choice'|'card'|'count' }
+//     uids: an array (or one uid) from choice.uids, between min and n of them (min = n, or 0 when optional).
+//     It applies the choice, emits { t: 'choice_made', kind, uids }, then the card finishes resolving (its remaining
+//     effects, then it goes to the discard / exhaust pile as usual) and the normal events follow.
+//   While a choice is open: canPlay / playCard / usePotion / endTurn answer { ok: false, reason: 'choice' },
+//   hasPlayable() is false and c.choosing is true. state.phase stays 'player'.
+//   The card being played sits in state.limbo (not in any pile) until the choice is made.
+//   No choice opens when nobody can be picked; when the pick is forced (not optional and the hand has n cards or
+//   fewer that fit), it resolves at once without asking (Slay the Spire does the same).
+//   Kinds: discard (hand -> discard pile), exhaust (hand -> exhaust pile), upgrade (upgraded for this fight; event
+//   { t: 'card_upgraded', uid, id }), retain (stays in hand at the end of this turn).
 // c.state (read-only for callers):
 //   { turn, phase: 'player'|'enemy'|'won'|'lost', energy, maxEnergy, energyNext (gained on the zombies' turn, for the next turn),
 //     hand/draw/discard/exhaust/powers: [{ uid, id, up, cost (printed), costTurn (this turn's override), bonus }]
@@ -29,7 +46,8 @@
 
 import { CARDS, cardView } from './content/cards.js';
 import { STATUSES, TURN_STATUSES, isDebuff } from './content/statuses.js';
-import { ENEMIES, moveDamage } from './content/enemies.js';
+import { ENEMIES, moveDamage, scaleHit } from './content/enemies.js';
+import { infectionRules } from './infection.js';
 import { ENCOUNTERS } from './content/encounters.js';
 import { RELICS, weaponRelics } from './content/relics.js';
 import { POTIONS } from './content/potions.js';
@@ -58,6 +76,12 @@ function resolveEncounter(encounter) {
 }
 
 const clone = o => JSON.parse(JSON.stringify(o));
+const CHOICE_PROMPTS = {
+  discard: n => (n === 1 ? 'Discard a card.' : `Discard ${n} cards.`),
+  exhaust: n => (n === 1 ? 'Exhaust a card.' : `Exhaust ${n} cards.`),
+  upgrade: n => (n === 1 ? 'Upgrade a card for this fight.' : `Upgrade ${n} cards for this fight.`),
+  retain: n => (n === 1 ? 'Retain a card this turn.' : `Retain up to ${n} cards this turn.`),
+};
 
 export class Combat {
   constructor({ run, encounter, rng, opts = {} }) {
@@ -72,6 +96,7 @@ export class Combat {
     this.tempSeq = 0;
     this.killOrder = [];
     this.lastIntentShown = new Map();
+    this.rules = infectionRules(run?.infection || 0);
 
     // relics: the equipped weapons first, then run.relics (weapon relics already in run.relics are not doubled)
     const rel = [];
@@ -91,6 +116,7 @@ export class Combat {
       maxEnergy: BASE_ENERGY,
       energyNext: 0, // energy gained during the zombies' turn, added at the next refill
       hand: [], draw: [], discard: [], exhaust: [], powers: [],
+      choice: null, limbo: null, infection: this.rules.level,
       party: { hp: run.hp ?? 80, maxHp: run.maxHp ?? 80, block: 0, statuses: {}, flags: {} },
       enemies: [],
       counters: {
@@ -111,6 +137,7 @@ export class Combat {
   get turn() { return this.state.turn; }
   get over() { return this.state.phase === 'won' || this.state.phase === 'lost'; }
   get won() { return this.state.phase === 'won'; }
+  get choosing() { return !!this.state.choice; }
 
   start() {
     if (this.started) return this;
@@ -138,10 +165,11 @@ export class Combat {
     return this;
   }
 
-  /** { ok, reason: 'energy'|'unplayable'|'target'|'phase'|'missing' } */
+  /** { ok, reason: 'energy'|'unplayable'|'target'|'phase'|'missing'|'choice' } */
   canPlay(uid, targetUid) {
     const S = this.state;
     if (S.phase !== 'player') return { ok: false, reason: 'phase' };
+    if (S.choice) return { ok: false, reason: 'choice' };
     const card = S.hand.find(c => c.uid === uid);
     if (!card) return { ok: false, reason: 'missing' };
     const view = cardView(card);
@@ -201,12 +229,58 @@ export class Combat {
       target: target ? target.uid : null, anim: view.anim, clip: view.clip || null, cost, up: !!card.up, to });
     this.emit({ t: 'energy', energy: S.energy, max: S.maxEnergy });
 
-    const info = { target, hero: view.hero || null, uid };
-    const cardRef = { ...view, uid, inst: card };
-    this.hook('onCardPlay', cardRef, info);
+    this.hook('onCardPlay', { ...view, uid, inst: card }, { target, hero: view.hero || null, uid });
 
-    const scope = { source: 'party', card: view, inst: card, hero: view.hero || null, target, pre, killed: false, hitTargets: [], uid };
-    runEffects(this, view.effects, scope);
+    // the card waits in limbo while it resolves (and while a choice it asks for is open)
+    S.limbo = { uid, card, to, targetUid: target ? target.uid : null, pre, killed: false, hitTargets: [], exhaust: false, next: 0 };
+    this.resolveLimbo();
+    return S.choice ? { ok: true, choice: S.choice } : { ok: true };
+  }
+
+  /**
+   * Answer the open choice (see the header). uids: an array of hand uids from state.choice.uids (or one uid).
+   * -> { ok: true, choice? (a further choice the card asks for) } | { ok: false, reason: 'no_choice'|'card'|'count' }
+   */
+  choose(uids) {
+    const S = this.state;
+    const ch = S.choice;
+    if (!ch) return { ok: false, reason: 'no_choice' };
+    const list = Array.isArray(uids) ? uids.slice() : (uids === null || uids === undefined ? [] : [uids]);
+    if (new Set(list).size !== list.length || list.some(u => !ch.uids.includes(u))) return { ok: false, reason: 'card' };
+    if (list.length < ch.min || list.length > ch.n) return { ok: false, reason: 'count' };
+    const pile = S[ch.from] || S.hand;
+    const cards = list.map(u => pile.find(c => c.uid === u)).filter(Boolean);
+    S.choice = null;
+    this.emit({ t: 'choice_made', kind: ch.kind, uids: list });
+    this.resolveChoice(ch.kind, cards, ch.from);
+    if (S.limbo) this.resolveLimbo();
+    return S.choice ? { ok: true, choice: S.choice } : { ok: true };
+  }
+
+  /** Run the card in limbo from where it stopped; it pauses again on a choice that has to ask. */
+  resolveLimbo() {
+    const S = this.state;
+    const L = S.limbo;
+    if (!L) return;
+    const card = L.card;
+    const view = cardView(card);
+    const target = L.targetUid ? this.enemyByUid(L.targetUid) : null;
+    const scope = { source: 'party', card: view, inst: card, hero: view.hero || null, target, pre: L.pre, killed: L.killed,
+      hitTargets: L.hitTargets.map(u => this.enemyByUid(u)).filter(Boolean), uid: L.uid, exhaust: L.exhaust };
+    const effects = view.effects;
+    for (let i = L.next; i < effects.length; i++) {
+      const op = effects[i];
+      if (op.op === 'choose') {
+        if (this.isLost()) break;
+        if (this.beginChoice(op, scope)) {
+          Object.assign(L, { next: i + 1, killed: scope.killed, hitTargets: scope.hitTargets.map(e => e.uid), exhaust: !!scope.exhaust });
+          return;
+        }
+        continue;
+      }
+      runEffects(this, [op], scope);
+    }
+    S.limbo = null;
 
     // Momentum-style growth stays on this copy of the card for the rest of the fight
     for (const op of view.effects) if (op.op === 'damage' && op.grow) card.bonus = (card.bonus || 0) + op.grow;
@@ -214,19 +288,67 @@ export class Combat {
     // the card leaves play (quietly if the card itself lost the fight: nothing is emitted after combat_end)
     card.costTurn = undefined;
     const quiet = this.over;
+    const to = L.to;
     if (to === 'power') S.powers.push(card);
-    else if (to === 'exhaust' || scope.exhaust) { S.exhaust.push(card); if (!quiet) this.emit({ t: 'exhaust', uid }); }
-    else { S.discard.push(card); if (!quiet) this.emit({ t: 'discard', uids: [uid] }); }
+    else if (to === 'exhaust' || scope.exhaust) { S.exhaust.push(card); if (!quiet) this.emit({ t: 'exhaust', uid: L.uid }); }
+    else { S.discard.push(card); if (!quiet) this.emit({ t: 'discard', uids: [L.uid] }); }
 
-    if (!this.over) this.afterCardPlayed(cardRef, view, { ...info, killed: scope.killed, hitTargets: scope.hitTargets, pre });
+    const info = { target, hero: view.hero || null, uid: L.uid };
+    if (!this.over) this.afterCardPlayed({ ...view, uid: L.uid, inst: card }, view, { ...info, killed: scope.killed, hitTargets: scope.hitTargets, pre: L.pre });
     this.finishIfWon();
     if (!this.over) this.refreshIntents();
-    return { ok: true };
+  }
+
+  /**
+   * Open a choice for a 'choose' op (or resolve it at once when it is forced). -> true if the play must wait for choose().
+   * op: { kind, n, optional?, from?: 'hand', prompt? }; scope: the card's scope (for choice.source).
+   */
+  beginChoice(op, scope = {}) {
+    const S = this.state;
+    if (this.blocked()) return false;
+    const from = op.from || 'hand';
+    const pile = S[from] || [];
+    const fits = c => (op.kind === 'upgrade' ? !!CARDS[c.id]?.upgradable && !c.up
+      : op.kind === 'retain' ? !c.retainTurn && !cardView(c).keywords.includes('retain') : true);
+    const cands = pile.filter(fits);
+    const n = Math.max(1, op.n || 1);
+    if (!cands.length) return false;
+    if (!op.optional && cands.length <= n) { this.resolveChoice(op.kind, cands, from); return false; }
+    S.choice = {
+      kind: op.kind, n, min: op.optional ? 0 : n, optional: !!op.optional, from, uids: cands.map(c => c.uid),
+      prompt: op.prompt || CHOICE_PROMPTS[op.kind](n),
+      source: scope.uid ? { uid: scope.uid, id: scope.card?.id || null, name: scope.card?.name || null } : null,
+    };
+    this.emit({ t: 'choice', ...clone(S.choice) });
+    return true;
+  }
+
+  /** Apply a choice to the picked cards. */
+  resolveChoice(kind, cards, from = 'hand') {
+    const S = this.state;
+    const pile = S[from] || S.hand;
+    const take = c => { const i = pile.indexOf(c); if (i >= 0) pile.splice(i, 1); c.costTurn = undefined; };
+    if (kind === 'discard') {
+      for (const c of cards) { take(c); S.discard.push(c); }
+      if (cards.length) this.emit({ t: 'discard', uids: cards.map(c => c.uid) });
+    } else if (kind === 'exhaust') {
+      for (const c of cards) { take(c); S.exhaust.push(c); this.emit({ t: 'exhaust', uid: c.uid }); }
+    } else if (kind === 'upgrade') {
+      for (const c of cards) {
+        if (c.up || !CARDS[c.id]?.upgradable) continue;
+        c.up = true;
+        c.cost = cardView(c).cost;
+        this.emit({ t: 'card_upgraded', uid: c.uid, id: c.id });
+      }
+    } else if (kind === 'retain') {
+      for (const c of cards) c.retainTurn = true;
+    } else throw new Error(`Unknown choice kind: ${kind}`);
   }
 
   usePotion(slot, targetUid) {
     const S = this.state;
     if (S.phase !== 'player') return { ok: false, reason: 'phase' };
+    if (S.choice) return { ok: false, reason: 'choice' };
     const id = S.potions[slot];
     const def = POTIONS[id];
     if (!def) return { ok: false, reason: 'empty' };
@@ -252,6 +374,7 @@ export class Combat {
   endTurn() {
     const S = this.state;
     if (S.phase !== 'player') return { ok: false, reason: 'phase' };
+    if (S.choice) return { ok: false, reason: 'choice' };
     this.endPlayerTurn();
     if (this.over) return { ok: true };
     this.enemyTurn();
@@ -285,6 +408,10 @@ export class Combat {
       } else if (op.op === 'block') {
         const v = this.calcCardBlock(op.n, { raw: !!op.raw });
         ops.push({ index, op: 'block', base: op.n, value: v });
+        block += v;
+      } else if (op.op === 'doubleBlock') { // Dig In: the Block it would add now (block from earlier ops of this card not counted)
+        const v = this.party.block;
+        ops.push({ index, op: 'block', base: v, value: v });
         block += v;
       }
     });
@@ -355,6 +482,7 @@ export class Combat {
       const c = pile.find(x => x.uid === uid);
       if (c) return c;
     }
+    if (S.limbo?.card?.uid === uid) return S.limbo.card;
     return null;
   }
 
@@ -374,6 +502,16 @@ export class Combat {
     if (amount <= 0) return;
     this.party.block += amount;
     this.emit({ t: 'block', target: 'party', amount, block: this.party.block });
+    const ram = this.party.statuses.battering_ram || 0;
+    if (ram > 0 && !this.ramming) { // Battering Ram (Juggernaut): not an attack, so no Strength, Staggered or finisher
+      const e = this.rng.pick(this.alive());
+      if (!e) return;
+      this.ramming = true;
+      this.emit({ t: 'attack', by: 'marc', target: e.uid, anim: 'melee_heavy', hits: 1, cardId: null, power: 'battering_ram' });
+      this.hitEnemy(e, ram, { kind: 'heavy', by: 'marc', cardId: null, source: 'marc', attack: false });
+      this.ramming = false;
+      if (this.allDead()) this.finishIfWon();
+    }
   }
 
   gainEnergy(n) {
@@ -577,6 +715,7 @@ export class Combat {
     Object.assign(S.counters, { attacksThisTurn: 0, skillsThisTurn: 0, powersThisTurn: 0, cardsThisTurn: 0, deadEyeThisTurn: 0 });
     this.emit({ t: 'turn_start', side: 'player', turn: S.turn });
 
+    if (P.statuses.barbed) this.setStatus(P, 'barbed', 0); // Barbed Wire lasts until the start of your next turn
     if (S.turn > 1 && P.block > 0 && !(P.statuses.fortify > 0)) {
       const was = P.block;
       P.block = 0;
@@ -621,6 +760,7 @@ export class Combat {
     for (const c of S.hand.slice()) {
       const kws = cardView(c).keywords;
       c.costTurn = undefined;
+      if (c.retainTurn) { c.retainTurn = false; continue; } // retained by a choice (Wait for It) for this turn
       if (kws.includes('retain')) continue;
       S.hand.splice(S.hand.indexOf(c), 1);
       if (kws.includes('fleeting')) { S.exhaust.push(c); this.emit({ t: 'exhaust', uid: c.uid, fleeting: true }); }
@@ -737,8 +877,16 @@ export class Combat {
     return true;
   }
 
+  /** A fight that ends with a choice open (debug win/lose): the waiting card goes to the discard pile. */
+  clearChoice() {
+    const S = this.state;
+    S.choice = null;
+    if (S.limbo) { S.discard.push(S.limbo.card); S.limbo = null; }
+  }
+
   win() {
     const S = this.state;
+    this.clearChoice();
     S.phase = 'won';
     S.endHp = S.party.hp;
     for (const s of ['temp_strength']) delete S.party.statuses[s];
@@ -749,6 +897,7 @@ export class Combat {
   lose(killedBy) {
     const S = this.state;
     if (this.over) return;
+    this.clearChoice();
     S.phase = 'lost';
     S.endHp = 0;
     S.killedBy = killedBy ?? S.killedBy;
@@ -918,7 +1067,7 @@ export class Combat {
   /** A zombie's damage op against the party. */
   enemyAttack(e, op, s) {
     if (!e.alive) return;
-    const base = value(op.n, s);
+    const base = scaleHit(value(op.n, s), e);
     const hits = op.times || 1;
     const hero = e.slot % 2 === 0 ? 'marc' : 'yola';
     const kind = s.move?.anim === 'melee_heavy' ? 'heavy' : 'light';
@@ -927,6 +1076,8 @@ export class Combat {
       if (!e.alive || this.over) return;
       const dmg = this.calcEnemyAttack(e, base);
       this.damageParty(dmg, { source: e.uid, kind, hero, hit: h + 1, hits });
+      const barbed = this.party.statuses.barbed || 0;  // Barbed Wire (Flame Barrier): each hit is answered, through Block
+      if (barbed > 0 && !this.over && e.alive) this.hitEnemy(e, barbed, { kind: 'thorns', by: 'marc', cardId: null, source: 'marc', attack: false });
     }
   }
 
@@ -1048,12 +1199,17 @@ export class Combat {
   spawnEnemy(id, slot) {
     const def = ENEMIES[id];
     if (!def) throw new Error(`Unknown enemy: ${id}`);
-    const hp = this.rng.range(def.hp[0], def.hp[1]);
+    let hp = this.rng.range(def.hp[0], def.hp[1]);
+    // infection levels (infection.js): tougher zombies by tier
+    const up = this.rules[def.tier === 'boss' ? 'boss' : def.tier === 'elite' ? 'elite' : 'normal'];
+    if (up.hpPct) hp = Math.round(hp * (1 + up.hpPct));
+    if (up.hp) hp += up.hp;
     const e = {
       uid: `e${slot + 1}`, id, name: def.name, hp, maxHp: hp, block: 0, statuses: {}, alive: true, slot,
       intent: null, history: [], vars: {}, flags: {},
       model: def.model, scale: def.scale, size: def.size, tier: def.tier, pose: def.pose || null,
     };
+    if (up.flat || up.pct) e.dmgUp = { flat: up.flat || 0, pct: up.pct || 0 };
     if (def.onSpawn) def.onSpawn(this, e);
     return e;
   }

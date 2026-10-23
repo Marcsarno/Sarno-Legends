@@ -6,6 +6,8 @@
 //   draw { n }   energy { n }   heal { n | pct }   loseHp { n }   maxHp { n }   addCard { id, n, to }
 //   exhaustSelf   if { cond, then, else? }   custom { fn(cx, scope) }
 //   tempStrength { n }  doubleBlock  doubleStatus { status }  slowMotion
+//   choose { kind: 'discard'|'exhaust'|'upgrade'|'retain', n, optional?, from: 'hand', prompt? }  a card choice; in a card
+//     it must be a top-level effect: combat.js pauses the card there until combat.choose(uids) (see its header)
 //   zombie-only: healAllies { n }  revive { pct }  sleepTick  guardOffensive
 // scope = { source: 'party' | enemy, card?, inst?, hero?, target?, potion?, pre: { targetStaggered, anyStaggered }, killed, hitTargets }
 // n may be a function of the zombie for zombie moves (e => e.vars.bite).
@@ -93,6 +95,9 @@ export const OPS = {
   },
 
   slowMotion(cx) { cx.slowMotion(); },
+
+  // only reached outside a card's top level (a potion, an 'if'): the choice opens, the list doesn't wait for it
+  choose(cx, op, s) { cx.beginChoice(op, s); },
 
   // ---- zombie moves
   healAllies(cx, op, s) {

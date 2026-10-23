@@ -6,6 +6,9 @@
 // Flow: HUD input -> combat.playCard -> director.push(combat.takeEvents()); the director lands each event with its
 // timing and the HUD updates its numbers then ('event' -> ui.onEvent, 'number' -> ui.number, 'banner' -> ui.banner).
 // The director also plays every event's sound (audio.event). Input reopens the moment a card's hit has landed.
+// A card that asks for a choice ("Discard a card") pauses the engine on combat.state.choice: when the director lands its
+// { t: 'choice' } event (or the show is idle with a choice still open) the choice overlay (ui/choice.js) opens over the
+// battle; its answer goes to combat.choose(uids) and the events that follow go to the director like any play.
 import * as THREE from 'three';
 import * as R from '../game/run.js';
 import { createBattleActors, createDirector } from '../render/director.js';
@@ -13,6 +16,8 @@ import { createFx } from '../render/fx.js';
 import { SLOTS } from '../render/camera.js';
 import { heroYaw } from '../render/actor.js';
 import { createCombatUI } from '../ui/hud.js';
+import { openChoice } from '../ui/choice.js';
+import { warnEndTurn, uiOf } from './extras.js';
 import { battleRoom } from './rooms.js';
 
 export async function openCombat(app, { onOver } = {}) {
@@ -63,12 +68,40 @@ export async function openCombat(app, { onOver } = {}) {
     onOpenDeck: () => app.openDeck(),
     onOpenMap: () => app.openMapView(),
     onSettings: () => app.openSettings(),
+    // "End turn with energy left?" (Settings; on for the first 3 runs); never for the bot
+    warnEndTurn: () => !window.__SL?.bot?.running && warnEndTurn(app.profile),
+    onWarnOff: () => { uiOf(app.profile).warnEndTurn = false; app.saveProfile?.(); },
   });
 
   director.on('event', e => { if (!hudGone) ui.onEvent(e); });
   director.on('number', n => { if (!hudGone) ui.number({ ...n, target: n.uid }); });
   director.on('banner', b => { if (!hudGone) ui.banner(b.text, b.kind); });
   director.on('finisher', () => { if (!hudGone) ui.finisher?.(); });
+  director.on('event', e => { if (e.t === 'choice') openChoiceNow(); });
+
+  // ---- a card's choice: the overlay over the battle until it's answered
+  let choiceUi = null;
+  function openChoiceNow() {
+    const ch = combat.state.choice;
+    if (!ch || choiceUi?.open || hudGone || disposed) return;
+    const pile = combat.state[ch.from || 'hand'] || [];
+    const cards = (ch.uids || []).map(uid => combat.findCard?.(uid) || pile.find(c => c.uid === uid)).filter(Boolean);
+    if (!cards.length) return;
+    ui.hand?.cancel?.();
+    choiceUi = openChoice({
+      root: app.uiRoot, choice: ch, cards, studio, audio,
+      onConfirm: uids => answer(uids),
+      onSkip: () => answer([]),
+    });
+    fight.choice = choiceUi;
+  }
+  function answer(uids) {
+    choiceUi = null; fight.choice = null;
+    const r = combat.choose(uids);
+    if (!r.ok) { console.warn('[combat] choose refused', r.reason); if (!hudGone) ui.sync(); setTimeout(openChoiceNow, 50); return r; }
+    director.push(combat.takeEvents());
+    return r;
+  }
 
   audio?.setLoadout?.(run.weapons);
   audio?.setParty?.({ hp: run.hp, maxHp: run.maxHp });
@@ -76,7 +109,8 @@ export async function openCombat(app, { onOver } = {}) {
   // every frame: input opens when the director has landed the last hit; the fight ends when the show is over
   const unframe = stage.onFrame(() => {
     if (disposed) return;
-    if (!hudGone) ui.setInputEnabled(director.canAcceptInput());
+    if (!hudGone) ui.setInputEnabled(director.canAcceptInput() && !combat.state.choice);
+    if (combat.state.choice && !choiceUi?.open && director.idle()) openChoiceNow();
     if (!over && combat.over && director.idle()) { over = true; setTimeout(() => !disposed && onOver?.(fight), 120); }
   });
 
@@ -100,9 +134,11 @@ export async function openCombat(app, { onOver } = {}) {
   }
 
   const fight = {
-    combat, director, ui, actors, fx, room, pending,
+    combat, director, ui, actors, fx, room, pending, choice: null,
     get over() { return over; },
     play, endTurn, potion,
+    /** answer the open choice directly (the bot, __SL.choose): closes the overlay too */
+    choose(uids) { if (choiceUi?.open) choiceUi.close(); return answer(uids); },
     /** the HUD's hand order (what the player sees), falling back to the engine's */
     handUids: () => (hudGone ? [] : ui.hand?.uids?.() || combat.state.hand.map(c => c.uid)),
     targets: () => combat.state.enemies.filter(e => e.alive).sort((a, b) => a.slot - b.slot).map(e => e.uid),
@@ -114,7 +150,7 @@ export async function openCombat(app, { onOver } = {}) {
       combat.forceLose();
       director.push([{ t: 'damage', source: by, target: 'party', amount: hp, blocked: 0, hp: 0, block: 0, kind: 'heavy', hero: 'marc', hit: 1, hits: 1 }, ...combat.takeEvents()]);
     },
-    closeHud() { if (hudGone) return; hudGone = true; ui.destroy(); },
+    closeHud() { if (hudGone) return; hudGone = true; choiceUi?.close(); choiceUi = null; ui.destroy(); },
     dispose() {
       if (disposed) return;
       disposed = true;
