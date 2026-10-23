@@ -15,6 +15,10 @@
 //                  peeks at draws. An upper bound: a careful player who plans every turn.
 // A bot: { name, neow(run), pick(run, picker) -> uid|null, path(run, nodes) -> id, turn(combat, info),
 //          rewards(run), rest(run), shop(run), event(run) -> choice index, mapPotions(run) }. (play.mjs always takes treasure.)
+// Card choices in a fight (combat.state.choice: Check the Mag, Tough It Out, Wait for It): every bot answers them;
+// chooseFor(combat) -> uids is the sensible answer and settleChoice(combat) applies it (the app's autoplay can use both).
+// Card ratings: CARD_SCORE (base) + rateCard (the deck's builds: Staggered, Strength, Bulwark...). withArchetype(bot,
+// 'bulwark'|'strength'|'stagger') drafts toward one build for the --archetype sim.
 
 import * as R from '../../src/game/run.js';
 import { CARDS, cardView, isUpgradable } from '../../src/game/content/cards.js';
