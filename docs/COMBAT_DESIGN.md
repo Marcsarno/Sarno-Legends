@@ -1,5 +1,7 @@
 # Combat design (draft 3)
 
+> **Superseded on 2026-10-23 by the card-game direction in `DECKBUILDER_PLAN.md`.** The intents, stagger/break, roles and zombie roster carry over; the menu combat and its numbers don't.
+
 Last updated 2026-10-23. Approved direction by Marc ("I like where it's headed"); numbers, names and stats are still drafts. Draft 2 was reviewed by a critic and a verifier and simulated (see `RESEARCH_NOTES.md`); draft 3 is the fixed version, simulated with `tools/balance-sim/`.
 
 ## Decided

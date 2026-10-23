@@ -127,3 +127,32 @@ The full summary and the plan that came out of it are in `ROADMAP.md`. Source qu
 - **Raid and MSF campaigns:** about 6 stages per chapter, with 3-star ratings. [Gamer Empire](https://gamerempire.net/raid-shadow-legends-how-to-get-3-stars-from-stages/)
 - **Session length:** phone sessions run anywhere from a 5–6 minute median to about 37 minutes for RPGs. [GameDev Reports](https://gamedevreports.substack.com/p/gameanalytics-mobile-gaming-benchmarks)
 - **Ratings:** E10+ allows mild fantasy violence. [Nintendo support](https://en-americas-support.nintendo.com/app/answers/detail/a_id/1398/~/entertainment-software-rating-board-%28esrb%29-software-rating-information)
+
+## Pass 4: roguelike deckbuilders (the card pivot)
+
+The plan that came out of this is in `DECKBUILDER_PLAN.md`. Page fetches failed in this pass, so most of it comes from search snippets, and the agents flagged numbers taken from memory.
+
+**Closest models**
+- **Slay the Spire:** run structure, intents, rest-or-upgrade. Critics called its animation static. [notebookcheck](https://www.notebookcheck.net/90-off-on-Steam-This-roguelike-has-never-been-cheaper-194K-reviews-97-positive.1189359.0.html)
+- **Roguebook:** two heroes share one deck; the front hero takes hits. [Game Developer](https://www.gamedeveloper.com/design/tackling-deckbuilding-design-in-abrakam-s-roguebook), [LessWrong review](https://www.lesswrong.com/posts/QRJkxcDtJ58j8XN6A/spoiler-free-review-roguebook)
+- **Fights in Tight Spaces:** each card is a fight animation; players say the animations can run long. [GGRecon](https://www.ggrecon.com/reviews/fights-in-tight-spaces-review/), [Tildes](https://tildes.net/~games/1guy/knights_in_tight_spaces_reveal_trailer)
+
+**Run structure and odds (Slay the Spire)**
+- **Room odds and map:** normal 53%, elite 8%, rest 12%, shop 5%, unknown 22%; the room before each boss is always a rest site. [wiki](https://slaythespire.wiki.gg/wiki/Map_Generation)
+- **Card rewards:** 60/37/3 from normal fights, 50/40/10 from elites, rare from bosses, plus a rare pity offset. [wiki](https://slay-the-spire.fandom.com/wiki/Card_Rewards)
+- **Balance by metrics:** track pick rates and win rates. [GDC 2019](https://www.gdcvault.com/browse/gdc-19/play/1025731)
+
+**Meta-progression**
+- Unlocks and side-grades beat raw power. Stat upgrades in Hades made it easy and needed Heat to rebalance. [Steam](https://steamcommunity.com/app/1076200/discussions/0/3070873501568676154)
+- **Hades God Mode:** starts at 20% damage resistance and adds 2% per death. [Inverse](https://www.inverse.com/gaming/hades-god-mode-interview)
+- **Never take progress away or nerf invested builds.** Slay the Spire 2's balance-patch backlash and Wildfrost's companion lockout both drew criticism. [Player.one](https://www.player.one/slay-spire-2-update-triggers-fanbase-major-nerfs-boss-buffs-early-access-162528), [TapTap](https://www.taptap.io/br/post/5234225)
+
+**Pace**
+- Legends of Runeterra and Hearthstone both sped up their animations after complaints. [Inven](https://invenglobal.com/articles/10550/patch-091-speeds-up-animations-introduces-jinx-and-garen-themed-boards-to-legends-of-runeterra), [Hearthstone Top Decks](https://www.hearthstonetopdecks.com/minion-animations-triggers-will-be-sped-up-significantly-in-regular-game-too/)
+- Marvel Snap fast-forwards long chains of card effects. [Twinfinite](https://twinfinite.net/marvel-snap/what-is-fast-forwarding-in-marvel-snap-explained/)
+
+**Phone**
+- **Slay the Spire mobile:** small touch targets, and tap and drag controls that clash. [TouchArcade](https://toucharcade.com/2020/06/15/slay-the-spire-ios-review-iphone-ipad-performance-icloud-megacrit-humble-games/)
+- **Dawncaster:** portrait, no ads, no timers; cards hidden behind the UI. [Pocket Gamer](https://www.pocketgamer.com/dawncaster/review/)
+
+**Niche:** no well-known zombie roguelike deckbuilder. Draft of Darkness, a survival-horror deckbuilder with ammo, is the nearest. [GamingOnLinux](https://www.gamingonlinux.com/2021/08/draft-of-darkness-is-a-deckbuilder-like-nothing-else-with-a-horror-theme)
