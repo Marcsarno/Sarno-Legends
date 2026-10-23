@@ -155,3 +155,11 @@
   .res-ecg { height: calc(var(--u) * 4); }
   .res-sub { display: none; }
 }
+
+/* phones held sideways: weapon nodes are 44 px thumb targets, their labels 11 px */
+@media (max-height: 520px) {
+  .ar-wpn { min-height: 44px; }
+  .ar-wpn__name { font-size: 11.5px; }
+  .ar-wpn__state { font-size: 10.5px; }
+  .ar-need { font-size: 10.5px; }
+}

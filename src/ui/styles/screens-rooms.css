@@ -340,3 +340,9 @@
   .tr-loot { height: calc(var(--u) * 34); }
   .tr-item__text { display: none; }
 }
+
+/* phones held sideways: 44 px choices, pinned buttons clear of the notch and the home bar */
+@media (max-height: 520px) {
+  .ev-choice { min-height: 44px; }
+  .sh-leave { right: max(var(--scr-pad), calc(var(--sa-r) + 10px)); bottom: max(calc(var(--u) * 2), calc(var(--sa-b) + 4px)); }
+}

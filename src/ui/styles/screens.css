@@ -8,7 +8,7 @@
   --scr-grit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .6' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -8 5.6'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
   --scr-topbar-h: clamp(34px, 8.2vmin, 60px);   /* the UI kit's bar (measured at runtime when it's there) */
   --scr-tray-h: calc(var(--scr-topbar-h) + clamp(30px, 7vmin, 52px));   /* bar + the relic tray under it */
-  --scr-pad: max(calc(var(--u) * 3), env(safe-area-inset-left, 0px));
+  --scr-pad: max(calc(var(--u) * 3), calc(var(--sa-l) + 6px), calc(var(--sa-r) + 6px));   /* clear of a notch on either side */
 }
 
 /* ---------------------------------------------------------------- shell */
@@ -390,10 +390,11 @@
   .scr--settings .scr-modal__body { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; padding: 4px 18px 10px; }
   .scr--settings .set-row { padding: 4px 0; min-height: 50px; }
   .scr--settings .set-slider { width: 52%; }
-  .scr--settings .set-danger, .scr--settings .set-foot { grid-column: 1 / -1; }
-  .scr--settings .set-danger { margin-top: 8px; padding: 6px 12px; flex-wrap: nowrap; }
-  .scr--settings .set-danger__label { flex: 0 0 auto; margin-right: auto; }
-  .scr--settings .set-foot { margin-top: 8px; }
+  .scr--settings .set-row { min-height: 48px; }
+  .scr--settings .set-danger { grid-column: 1; margin-top: 8px; padding: 4px 10px; flex-wrap: nowrap; gap: 8px; }
+  .scr--settings .set-danger__label { flex: 0 0 auto; margin-right: auto; font-size: 11px; }
+  .scr--settings .set-foot { grid-column: 2; margin-top: 8px; align-self: center; }
+  .scr--settings .set-ver { font-size: 10.5px; letter-spacing: .08em; }
 }
 
 /* phone landscape: tighter */

@@ -14,13 +14,15 @@ import { createCallout } from '../ui/callout.js';
 import { cardView } from '../game/content/cards.js';
 
 const TIPS = {
-  map: { title: 'Tap a glowing room to go there', sub: 'Paths only lead up. The boss waits at the top.', side: 'right', tapAway: true },
-  elite: { title: 'Elites are tough, but drop a relic', sub: 'A relic helps for the rest of the run.', side: 'right', tapAway: true },
+  map: { title: 'Tap a glowing room to go there', sub: 'Paths only lead up. The boss waits at the top.', side: 'top', tapAway: true },
+  elite: { title: 'Elites are tough, but drop a relic', sub: 'A relic helps for the rest of the run.', side: 'top', tapAway: true },
   hp: { title: 'Your HP carries from room to room', sub: 'Yola’s Nurse’s Kit heals 6 after each fight. Rest sites heal more.', side: 'bottom', tapAway: true },
-  drag: { title: 'Drag a card up to play it', sub: 'Or tap it, then tap it again. Each card costs the energy in its corner.', side: 'top', ring: false, swipe: true },
-  intent: { title: 'Zombies show what they’ll do next turn', sub: 'The number is the damage they will deal to you.', side: 'bottom' },
+  drag: { title: 'Drag a card up to play it', side: 'top', ring: false, swipe: true,
+    sub: () => (touchFirst() ? 'Or tap it twice. It costs the energy in its corner.' : 'Or click it, then click where it goes. It costs the energy in its corner.') },
+  intent: { title: 'Zombies show what they’ll do next turn', side: 'bottom',
+    sub: it => (it?.damage != null ? `A number is damage: this one will hit you for ${it.damage * Math.max(1, it.hits || 1)}.` : 'No number means no attack this time. A number is damage.') },
   block: { title: 'Block soaks damage until your next turn', sub: 'Plan it against the damage the zombies show.', side: 'top' },
-  endturn: { title: 'End Turn when you’re out of energy', sub: 'Then the zombies act. You get 3 fresh energy and 5 new cards.', side: 'top' },
+  endturn: { title: 'End Turn when you’re out of energy', sub: 'The zombies act, then you get fresh energy and cards.', side: 'top' },
   stagger: { title: 'Staggered zombies take 50% more damage', sub: 'Marc staggers, Yola cashes in.', side: 'top' },
   elite_fight: { title: 'Elites are tough, but drop a relic', sub: 'Spend your best cards here.', side: 'bottom' },
   reward: { title: 'Take what you like', sub: 'A new card is optional: a small deck draws its best cards more often.', side: 'auto', tapAway: true },
@@ -30,6 +32,7 @@ const TIPS = {
 export const TIP_IDS = Object.keys(TIPS);
 
 const $ = sel => document.querySelector(sel);
+const touchFirst = () => typeof matchMedia === 'function' && matchMedia('(hover: none)').matches;
 const shown = el => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight; };
 
 export function createCoach(app) {
@@ -58,13 +61,14 @@ export function createCoach(app) {
 
   // ---------------------------------------------------------------- showing and closing
 
-  function open(id, target) {
+  function open(id, target, info) {
     const t = TIPS[id];
     S.active = { id, ...t, target };
     S.shownAt = now();
     S.perScreen++;
     markSeen(id);
-    callout.show({ id, title: t.title, sub: t.sub, side: t.side || 'auto', ring: t.ring !== false, swipe: !!t.swipe, target });
+    const sub = typeof t.sub === 'function' ? t.sub(info) : t.sub;
+    callout.show({ id, title: t.title, sub, side: t.side || 'auto', ring: t.ring !== false, swipe: !!t.swipe, target });
     if (t.tapAway) {
       // screens: any tap elsewhere (after a moment to read) closes it; the tap still does its job
       const fn = e => { if (now() - S.shownAt > 900 && !e.target.closest?.('.coach__bubble')) close(false); };
@@ -108,13 +112,11 @@ export function createCoach(app) {
     const w = Math.min(r - l, 160);
     return { left: (l + r) / 2 - w / 2, right: (l + r) / 2 + w / 2, top: t, bottom: Math.min(b, innerHeight), width: w, height: Math.min(b, innerHeight) - t };
   }
-  function intentTarget(fi) {
-    const list = [...fi.M.enemies.values()].filter(r => r.alive && r.intent);
-    const pick = list.find(r => r.intent.damage != null) || list[0];
-    if (!pick) return null;
-    const el = pick.intentEl?.querySelector('.intent__inner');
-    return el && !pick.intentEl.classList.contains('intent--spent') ? el : null;
+  function intentPick(fi) {
+    const list = [...fi.M.enemies.values()].filter(r => r.alive && r.intent && !r.intentEl.classList.contains('intent--spent'));
+    return list.find(r => r.intent.damage != null) || list[0] || null;
   }
+  function intentTarget(fi) { return intentPick(fi)?.intentEl?.querySelector('.intent__inner') || null; }
   function staggerCard(fi) {
     for (const uid of fi.M.hand) {
       const inst = fi.C.findCard?.(uid);
@@ -136,7 +138,11 @@ export function createCoach(app) {
       if (!run || !open.length || since < (run.path.length ? 900 : 2700) || $('.map--travelling')) return null;
       const elite = open.find(el => el.classList.contains('map-node--elite'));
       if (elite && !seen('elite') && !seen('elite_fight')) return ['elite', () => elite];
-      if (!seen('map')) return ['map', () => $('.scr--map:not(.scr--leaving) .map-node--open')];
+      // the room nearest the middle (the bubble goes above it, over rooms you can't reach yet)
+      const mid = () => [...document.querySelectorAll('.scr--map:not(.scr--leaving) .map-node--open')]
+        .map(el => { const r = el.getBoundingClientRect(); return { el, d: Math.abs(r.left + r.width / 2 - innerWidth / 2) }; })
+        .sort((a, b) => a.d - b.d)[0]?.el || null;
+      if (!seen('map')) return ['map', mid];
       if (run.path.length >= 1 && !seen('hp')) return ['hp', () => $('.scr--map:not(.scr--leaving) .tb__hp')];
       return null;
     }
@@ -161,7 +167,7 @@ export function createCoach(app) {
         if (el) return ['elite_fight', () => el.root.querySelector('.hpbar')];
       }
       if (!seen('drag') && fi.M.hand.length && document.querySelector('.hand-card.card--playable')) return ['drag', handCenter];
-      if (!seen('intent') && seen('drag') && S.played > 0) { const t = intentTarget(fi); if (t) return ['intent', () => intentTarget(fightInfo() || fi)]; }
+      if (!seen('intent') && seen('drag') && S.played > 0) { const p = intentPick(fi); if (p && intentTarget(fi)) return ['intent', () => intentTarget(fightInfo() || fi), p.intent]; }
       if (!seen('block') && S.blockGained && fi.M.party.block > 0) return ['block', () => fi.f.ui.el.querySelector('.ehud--party .ehud__barrow')];
       if (!seen('endturn') && seen('drag') && $('.endturn.endturn--glow:not(:disabled)')) return ['endturn', () => $('.endturn')];
       if (!seen('stagger') && seen('drag')) { const uid = staggerCard(fi); if (uid && handEl(uid)) return ['stagger', () => handEl(uid)]; }
@@ -182,7 +188,7 @@ export function createCoach(app) {
     callout.el.style.visibility = '';
     if (isBlocked || now() - S.closedAt < 700) return;
     const c = candidate();
-    if (c) open(c[0], c[1]);
+    if (c) open(c[0], c[1], c[2]);
   }
 
   // ---------------------------------------------------------------- fight events

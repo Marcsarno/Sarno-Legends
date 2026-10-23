@@ -582,15 +582,18 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   app.bankRun = bankRun;
 
   // ---------------------------------------------------------------- boot: heroes, the title room, then the title
-  // the heroes, and the zombies of a saved fight (a new player's first zombies load right after the title, in idle time)
+  // the heroes, and the zombies of a saved fight (a new player's first zombies load right after the title, in idle time).
+  // The title's room is a baked picture (public/assets/baked, a small WebP) that downloads alongside them; without a
+  // bake it is painted live once they're in (GPU work, so not at the same time as the models parse).
   const saved = saves.loadRun();
   const savedZombies = saved?.pending?.encounter ? (ENCOUNTERS[saved.pending.encounter]?.enemies || []).map(id => ENEMIES[id]?.model).filter(Boolean) : [];
+  const titleRoom = rooms.prepaint('title', null, { live: false });
   boot.progress(0.08, 'Loading Marc and Yola');
   await preload(['marc', 'yola', ...new Set(savedZombies)], (done, total) => boot.progress(0.08 + 0.42 * (total ? done / total : 1), 'Loading Marc and Yola'));
   await app.heroes();
   boot.progress(0.56, 'Arming them');
   await titleHeroes();
-  boot.creep(0.95, 9000, 'Painting the ER');
+  if (await titleRoom) boot.progress(0.9, 'Lighting the ER'); else boot.creep(0.95, 9000, 'Painting the ER');
   await stage.setRoom('title').catch(e => console.warn('[app] title room', e));
   return app;
 }
@@ -601,8 +604,10 @@ export function idle(fn, timeout = 1500) {
   else setTimeout(fn, 60);
 }
 
-/** After the title is up: the coming fights' zombies, the portraits, the first room, the deck's card art, then every other
- *  zombie, one job per idle slot so input never waits on it. */
+/** After the title is up: what the first fight needs (its room, the portraits, the deck's card art, the first fights'
+ *  zombies), then every other zombie, one job per idle slot so input never waits on it. Baked art (public/assets/baked) is
+ *  a few small downloads, fetched all at once before the zombies; art the studio has to render live is GPU work, so it
+ *  goes one picture per idle slot after the first zombies, as before. */
 export function warmUp(app) {
   const run = app.saves.loadRun();
   const ids = [...new Set([...(run?.deck || []).map(c => c.id), ...STARTER, 'nail_swing', 'pry_loose', 'buckshot'])].filter(id => CARDS[id]);
@@ -612,18 +617,23 @@ export function warmUp(app) {
   const firstSet = [...new Set(first.filter(Boolean))];
   const rest = Object.keys(MODELS).filter(k => k.startsWith('z_') && !firstSet.includes(k));
   const model = m => () => preload([m]).catch(() => {});
-  const jobs = [
-    ...firstSet.map(model),
+  const room = run?.pending?.encounter ? battleRoom(run) : battleRoom({ floor: 1 });   // a saved fight's room, or the first fight's
+  const art = [
     () => app.studio.portrait('marc').catch(() => {}),
     () => app.studio.portrait('yola').catch(() => {}),
-    () => app.rooms.prepaint('er_lobby'),
+    () => app.rooms.prepaint(room.key, room.look),
     ...ids.map(id => () => app.studio.cardArt(id).catch(() => {})),
-    ...rest.map(model),
   ];
-  const next = () => {
-    const job = jobs.shift();
-    if (!job) return;
-    idle(() => Promise.resolve(job()).finally(() => setTimeout(next, 30)));
+  const queue = jobs => {
+    const next = () => {
+      const job = jobs.shift();
+      if (!job) return;
+      idle(() => Promise.resolve(job()).finally(() => setTimeout(next, 30)));
+    };
+    next();
   };
-  next();
+  const atOnce = fns => () => Promise.race([Promise.all(fns.map(f => Promise.resolve().then(f).catch(() => {}))), new Promise(r => setTimeout(r, 8000))]);
+  app.studio.baked().catch(() => false).then(baked => queue(baked
+    ? [atOnce(art), ...firstSet.map(model), ...rest.map(model)]
+    : [...firstSet.map(model), ...art, ...rest.map(model)]));
 }

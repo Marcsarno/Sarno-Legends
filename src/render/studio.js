@@ -1,10 +1,11 @@
 // Studio: card art, relic / potion / weapon icons and portraits, rendered from the game's own models and painted through
 // the room painter's pipeline (painter.js renderPainted) so cards and rooms share one hand.
 //   const studio = createStudio(renderer)
-//   await studio.cardArt('bat_swing')     -> object URL (JPEG, 4:3): the card's hero posed mid-clip over a painted
-//                                            gradient in the hero colour (Marc red, Yola teal, status cards grey)
-//   await studio.relicIcon('duct_tape')   -> object URL (PNG, square, transparent): a kit model or a small procedural one
-//   await studio.potionIcon('flashbang')  -> idem;  studio.weaponIcon('nail_bat') -> idem;  studio.portrait('shambler') -> PNG
+//   await studio.cardArt('bat_swing')     -> image URL (4:3): the card's hero posed mid-clip over a painted gradient in
+//                                            the hero colour (Marc red, Yola teal, status cards grey)
+//   await studio.relicIcon('duct_tape')   -> image URL (square, transparent): a kit model or a small procedural one
+//   await studio.potionIcon('flashbang')  -> idem;  studio.weaponIcon('nail_bat') -> idem;  studio.portrait('shambler') -> idem
+//   (the baked WebP's URL, or an object URL of a live render: JPEG for cards, PNG for the rest)
 // Baked first: tools/bake-art.mjs (npm run bake) renders every card, relic, potion, weapon and portrait ahead of time
 // into public/assets/baked/{cards,icons,portraits} (WebP; icons keep their alpha), listed in public/assets/baked/
 // manifest.json with the VERSION they were made for. A picture listed there for this VERSION and size comes back as its
