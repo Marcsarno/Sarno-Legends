@@ -21,7 +21,7 @@ import { createWeapon, WEAPONS, DEFAULT_WEAPON } from './weapons.js';
 export const CLIP_TIMING = {
   // Marc: every strike sweeps through the front of the body at its impact (the heading of the bat tip ~0), so the yaws
   // face the target, turned ~0.15 rad toward the camera
-  bat_swing: { start: 0.55, cock: 0.95, impact: 1.245, end: 1.75, yaw: 1.4, reach: 1.15 },
+  bat_swing: { start: 0.55, cock: 0.95, impact: 1.2, end: 1.75, yaw: 1.4, reach: 1.15 },
   ual1_Sword_Attack: { start: 0.0, cock: 0.33, impact: 0.45, end: 1.05, yaw: 1.45, reach: 1.25 },
   ual_Sword_Regular_A: { start: 0.0, cock: 0.15, impact: 0.25, end: 0.47, yaw: 1.4, reach: 1.1 },
   ual_Sword_Regular_B: { start: 0.0, cock: 0.17, impact: 0.283, end: 0.57, yaw: 1.4, reach: 1.15 },
@@ -589,13 +589,17 @@ export class Actor {
         if (B.Spine2) this.rotateAbout(B.Spine2, ax, LOW_READY.chest * k);
       }
     }
+    // the shot's kick: the wrists flip the muzzle up, both arms rise a little together (the two-hand grip holds), the
+    // chest rocks back; it snaps back in ~0.15 s
     if (this.recoil > 0.001) {
       const k = this.recoil * this.recoil, ax = this.lateral(_v2);
-      if (B.Spine2) this.rotateAbout(B.Spine2, ax, -0.08 * k);
-      if (B.RightArm) this.rotateAbout(B.RightArm, ax, -0.35 * k);
-      if (B.RightForeArm) this.rotateAbout(B.RightForeArm, ax, -0.25 * k);
-      if (B.LeftArm) this.rotateAbout(B.LeftArm, ax, -0.2 * k);
-      this.recoil = Math.max(0, this.recoil - dt * 7);
+      if (B.Spine2) this.rotateAbout(B.Spine2, ax, -0.05 * k);
+      for (const side of ['Right', 'Left']) {
+        if (B[side + 'Arm']) this.rotateAbout(B[side + 'Arm'], ax, -0.08 * k);
+        if (B[side + 'ForeArm']) this.rotateAbout(B[side + 'ForeArm'], ax, -0.06 * k);
+        if (B[side + 'Hand']) this.rotateAbout(B[side + 'Hand'], ax, -0.26 * k);
+      }
+      this.recoil = Math.max(0, this.recoil - dt * 6.5);
     }
     for (const b of this.collapsed) b.scale.setScalar(0.001);
     this.data.model.updateMatrixWorld(true);

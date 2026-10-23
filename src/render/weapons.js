@@ -86,8 +86,25 @@ export function placeOneHanded(bones, side, o, def, fit, k = 1) {
   applyFit(o, F.c, q0, fit, new THREE.Vector3(...def.grip_primary), 1, k);
   return true;
 }
-// both fists on it (closer than `apart`): along the line through both fist centres, barrel toward the index knuckles
-export function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
+// both fists on it (closer than `apart`): along the line through both fist centres, barrel toward the index knuckles.
+// st (optional, per weapon): hysteresis on the two-hands test, and a short blend of the bat's turn when it switches
+// between two hands and one (the swing's follow-through lets go mid-sweep: without it the bat pops to the other side)
+export function placeBat(bones, o, def, fit, k = 1, apart = 0.2, st = null, dt = 0) {
+  if (!st) return placeBatRaw(bones, o, def, fit, k, apart);
+  const R = fistFrame(bones, 'Right', F1), L = R && fistFrame(bones, 'Left', F2);
+  const two = !!(R && L && def.two && R.c.distanceTo(L.c) <= apart * k * (st.two ? 1.35 : 1));
+  const ok = placeBatRaw(bones, o, def, fit, k, two ? Infinity : 0);
+  if (!ok) return false;
+  if (st.q && two !== st.two) { st.from = (st.from || new THREE.Quaternion()).copy(st.q); st.blend = 1; }
+  st.two = two;
+  if (st.blend > 0 && st.from) {
+    st.blend = Math.max(0, st.blend - dt / 0.1);
+    o.quaternion.slerpQuaternions(o.quaternion.clone(), st.from, st.blend * st.blend);
+  }
+  (st.q ||= new THREE.Quaternion()).copy(o.quaternion);
+  return true;
+}
+function placeBatRaw(bones, o, def, fit, k = 1, apart = 0.2) {
   const R = fistFrame(bones, 'Right', F1); if (!R) return false;
   const L = fistFrame(bones, 'Left', F2);
   if (!L || !def.two || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, 'Right', o, def, fit, k);
@@ -200,6 +217,8 @@ export async function createWeapon(id, scene) {
   const tipLocal = W.def ? new THREE.Vector3(...(W.def.impact || W.def.tip)) : null;
   // dropped (a defeat): it leaves the hand and tumbles to the floor; pickUp() puts it back in the hand
   let dropped = null;
+  const batState = { two: true, q: null, from: null, blend: 0 };
+  let lastDt = 0;
   const half = W.kind === 'pistol' ? 0.03 : W.kind === 'shotgun' ? 0.05 : 0.035; // resting height of its centre
 
   return {
@@ -222,7 +241,7 @@ export async function createWeapon(id, scene) {
         obj.quaternion.multiply(_q.setFromEuler(_e.set((SHOTGUN_FIT[id]?.tilt || 0) * D2R, (SHOTGUN_FIT[id]?.turn || 0) * D2R, (SHOTGUN_FIT[id]?.roll || 0) * D2R, 'YXZ')));
         obj.position.copy(R.c).add(_b.set(0, -0.02, -0.02).applyQuaternion(obj.quaternion));
         obj.scale.setScalar(1);
-      } else placeBat(B, obj, W.def, W.fit, k);
+      } else placeBat(B, obj, W.def, W.fit, k, 0.2, batState, lastDt);
       // procedural slide / pump kick after a shot
       if (kickT < 1) {
         const u = kickT, s = Math.sin(Math.min(1, u) * Math.PI) * kickS;
@@ -243,6 +262,7 @@ export async function createWeapon(id, scene) {
     pickUp() { dropped = null; },
     get dropped() { return !!dropped; },
     update(dt) {
+      lastDt = dt;
       if (kickT < 1) kickT = Math.min(1, kickT + dt / (W.kind === 'shotgun' ? 0.5 : 0.09));
       if (dropped && !dropped.rest && dt > 0) {
         const D = dropped;

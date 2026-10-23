@@ -1264,7 +1264,8 @@ export const ROOM_KEYS = Object.keys(ROOMS);
 //   wide  2.4:1   the 32 degree lens every screen of 16:9 or wider uses (a wider screen just sees more of the sides)
 //   tall  4:3     the widened lens of narrower screens (they all show the same width, more or less floor and ceiling)
 // Every screen's view is then a centred crop of one of the two: bakedRoom picks the framing that covers it, crops it
-// (or mirrors the picture outward past its edges for a screen even wider or taller), and multiplies the room's vignette
+// (or mirrors the picture outward past its edges for a screen a little wider or taller; a portrait tablet is painted
+// live), and multiplies the room's vignette
 // over the result exactly as the paint shader would have for a painting of that size. The characters stand on the same
 // floor as on a live painting. public/assets/baked/manifest.json lists the files with a content hash (for caching) and the
 // BAKE_VERSION they were painted for: a bake made for another version is ignored (live painting) until it is re-baked.
@@ -1281,6 +1282,7 @@ export function bakedManifest() {
     : fetch(assetUrl('baked/manifest.json'), { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null);
   return manifestP;
 }
+if (typeof window !== 'undefined') bakedManifest();   // ask for it as soon as the game's code runs (it is ~4 KB)
 /** URL of a baked file from its manifest entry ({ file, hash }); the hash keeps a re-bake from hitting a stale cache. */
 export const bakedUrl = f => assetUrl('baked/' + f.file) + (f.hash ? '?h=' + f.hash : '');
 const warned = new Set();
@@ -1335,6 +1337,9 @@ async function bakedRoom(key, width, height, look) {
   if (!e) return null;
   const pick = pickVariant(e, width, height);
   if (!pick) return null;
+  // far taller (or wider) than both framings, the mirrored margins would show: paint it live, unless it's a phone held
+  // upright, where index.html's "turn your phone sideways" panel covers the game anyway
+  if (Math.max(pick.fx, pick.fy) > 1.25 && !(typeof matchMedia === 'function' && matchMedia('(orientation: portrait) and (max-width: 760px)').matches)) return null;
   const img = await loadImage(pick.v);
   // no sharper than the baked pixels this view spans (a 1920 screen gets ~1920 px across a 16:9 crop of 1920x800)
   const k = Math.min(1, (pick.fx * pick.v.w) / width);
@@ -1343,10 +1348,10 @@ async function bakedRoom(key, width, height, look) {
   // the whole picture's size and place on this canvas (its view centred on the screen's)
   const w = W / pick.fx, h = H / pick.fy, x0 = (W - w) / 2, y0 = (H - h) / 2;
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  for (const i of [-1, 0, 1]) for (const j of [-1, 0, 1]) {   // the picture, and mirror images of it past its edges
-    const x = x0 + i * w, y = y0 + j * h;
+  for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) {   // the picture, and mirror images of it past its edges
+    const x = x0 + i * w, y = y0 + j * h, fx = i % 2 !== 0, fy = j % 2 !== 0;
     if (x >= W || y >= H || x + w <= 0 || y + h <= 0) continue;
-    ctx.setTransform(i ? -1 : 1, 0, 0, j ? -1 : 1, i ? x + w : x, j ? y + h : y);
+    ctx.setTransform(fx ? -1 : 1, 0, 0, fy ? -1 : 1, fx ? x + w : x, fy ? y + h : y);
     ctx.drawImage(img, 0, 0, w, h);
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);

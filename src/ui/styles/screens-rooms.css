@@ -345,6 +345,7 @@
 @media (max-height: 520px) {
   .ev-choice { min-height: 44px; }
   .ev-choice__key { font-size: 11px; }
+  .scr--shop { --card-grid-w: clamp(76px, min(26vmin, 13.2vw), 186px); }
   .rs-hp { height: 16px; }
   .rs-hp__text { font-size: 13px; }
   .rs-choice__note { font-size: 12px; color: var(--ink-dim); }

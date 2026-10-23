@@ -279,6 +279,16 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     return null;
   }
 
+  // more hits of this same swing / blast still queued (a sweep or a blast hits every zombie at once; a kill's death and
+  // statuses sit between them)? hit null: any hit of that source
+  function sameSwing(e) {
+    for (const n of queue) {
+      if (n.t === 'damage' && n.source === e.source && n.target !== 'party' && (e.hit == null || (n.hit || 1) === (e.hit || 1))) return true;
+      if (n.t !== 'death' && n.t !== 'status' && n.t !== 'block' && n.t !== 'energy') return false;
+    }
+    return false;
+  }
+
   // ---- event handlers: return { delay, after, land } (seconds of game time) ----
   const H = {
     combat_start(e) {
@@ -382,22 +392,21 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
         after = (e.hit || 1) >= (e.hits || 1) ? Z.gap ?? 0.3 : Z.hold;
       } else if (e.target !== 'party' && atk && !atk.enemy) {
         // a hero's hit: the impact holds before anything queued (the next card) starts; a sweep's hits land together
-        const nx = queue[0];
-        const together = nx && nx.t === 'damage' && nx.source === e.source && (nx.hit || 1) === (e.hit || 1) && nx.target !== e.target;
-        after = together ? 0 : (e.hit || 1) > 1 ? PACING.hero.combo.hold : atk.P?.hold ?? 0.12;
+        after = sameSwing(e) ? 0 : (e.hit || 1) > 1 ? PACING.hero.combo.hold : atk.P?.hold ?? 0.12;
       }
       return { delay, after, land: () => landDamage(e) };
     },
     death(e) {
       const z = A.enemies.get(e.target);
       if (!z) return {};
-      return { land: () => {
+      const hold = sameSwing({ source: e.by, hit: null }) ? 0 : 0.05;
+      return { after: hold, land: () => {
         if (z.finisherDone) return;
         if (e.finisher && !z.dead) { finisherFx(z, actorOf(e.by) || A.marc, e.kind, null); return; }
         if (!z.dead) z.die(e.kind || 'light');
         later(1.0, () => fx?.dust?.(z.anchor('hips', new THREE.Vector3()), { amount: 0.8 }));
         sfx('body_fall', { uid: z.uid });
-      }, after: 0.05 };
+      } };
     },
     block(e) {
       if (e.amount <= 0 || e.cleared) return {};
@@ -571,6 +580,8 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     const dir = attacker ? hitDir(attacker, z) : new THREE.Vector3(1, 0, 0);
     const gun = e.kind === 'gun' || e.kind === 'blast';
     const p = gun && z.lastShotAt ? z.lastShotAt.clone() : strikePoint(z, attacker);
+    // a melee blow lands where the weapon meets the body (the bat's barrel, pulled onto the target)
+    if (!gun && attacker?.weapon?.kind === 'melee') { const tip = attacker.anchor('tip', _v2); if (tip.distanceTo(p) < 0.9 * (z.scale || 1)) p.lerp(tip, 0.55); }
     if (!(e.amount > 0)) {
       if (e.blocked > 0) { fx?.impact?.(p, { blocked: true }); z.hit({ blocked: true }); stage.hitStop(45); stage.nudge(Math.sign(dir.x) || 1, 0, 0.2 * shakeK()); number(e.target, 'BLOCKED', 'blocked', { amount: e.blocked }); }
       return;

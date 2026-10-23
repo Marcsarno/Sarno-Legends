@@ -224,7 +224,7 @@ export function createFx(stage, { gore = 'full' } = {}) {
   }
   // brass: little cylinders kicked up and right, bouncing on the floor
   const shells = [];
-  const shellGeo = new THREE.CylinderGeometry(0.0045, 0.0045, 0.019, 8); shellGeo.rotateZ(Math.PI / 2);
+  const shellGeo = new THREE.CylinderGeometry(0.0062, 0.0062, 0.026, 8); shellGeo.rotateZ(Math.PI / 2);
   const shellMat = new THREE.MeshStandardMaterial({ color: 0xc89a3c, metalness: 0.9, roughness: 0.3, envMapIntensity: 1.5 });
   function shell(pos, side = new THREE.Vector3(0, 0, 1)) {
     let s = shells.find(x => !x.on);
