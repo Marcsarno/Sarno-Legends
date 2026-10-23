@@ -41,7 +41,7 @@ for (const b of bots) {
   raw[b] = list.map(r => ({ seed: r.seed, won: r.won, floor: r.floor, log: r.stats.log.filter(e => e.t === 'fight') }));
   process.stderr.write(`${b}: ${runs} runs in ${((Date.now() - t0) / 1000).toFixed(1)} s\n`);
 }
-console.log(`## Sim: ${runs} runs per bot, seed ${seed}, weapons ${JSON.stringify({ marc: 'wood_bat', yola: 'pistol', ...weapons })}\n`);
+console.log(`## Sim: ${runs} runs per bot, seed ${seed}, weapons ${JSON.stringify({ marc: 'wood_bat', yola: 'pistol', ...weapons })}, Infection ${infection}${archetype ? `, drafting ${archetype}` : ''}\n`);
 console.log(formatReport(byBot));
 const json = opt('json', null);
 if (json) writeFileSync(json, JSON.stringify({ byBot, raw }, null, 1));
