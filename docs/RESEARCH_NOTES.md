@@ -305,3 +305,24 @@ The result is `GAME_CORE.md`. Page fetches were blocked again, so the findings c
   - The duo rule became a colour tax.
   - ROADMAP was stale.
 - **Proposed:** the pitch, three pillars, keep / cut / park, and the paper test, all now in `GAME_CORE.md`.
+
+## Pass 7: what the build might have missed (2026-10-23, after the first playable build)
+Done by the lead alone (web search + checking our code), no agents.
+
+1. **Saves on iPhone can vanish.** Safari erases localStorage/IndexedDB after 7 days without a visit (ITP, since iOS 13.4);
+   home-screen web apps keep their own counter but reports of loss exist. Our profile (scrap, weapons, coach) and the run
+   live in localStorage only. Fix: web app manifest + Add to Home Screen, `navigator.storage.persist()`, and a save code
+   (export/import) as a backup. Cloud save later if needed. Sources: mjtsai.com 2020-03-26, Apple forums 710157, WebKit 211775.
+2. **"Every card should have a place"** is Mega Crit's stated first balancing goal (GDC talk, via mechanicsofmagic.com).
+   Our sim shows ~11 cards almost never picked: the card pass is the priority.
+3. **The hand is the #1 touch complaint about the StS mobile port**: tap-to-select and drag-to-play fighting each other,
+   cards hard to hit on small phones (TouchArcade, Android Central). Our hand supports both; needs a real-phone pass.
+4. **Two-hero decks (Roguebook)**: who stands in front is a resource there; big decks get hard to draw. Ours: Marc is
+   always in front (simpler); keep removal available; the two pools dilute rewards, so the "1 Marc / 1 Yola / 1 either"
+   reward idea stays on the table.
+5. **Replay hooks we don't have**: run history screen (we already log 20 runs), a card/relic compendium (seen/unseen),
+   a daily seed (the whole family plays the same hospital and compares), an unlock drip beyond weapons.
+6. **Already handled**: iOS silent-switch audio (silent WAV loop in audio.js), audio resume on tab return, onboarding
+   (the coach; StS itself teaches by dying).
+7. **Not researched, from experience**: offline play (service worker cache) for car trips; an "End turn with energy
+   left?" nudge for kids; a text-size setting.
