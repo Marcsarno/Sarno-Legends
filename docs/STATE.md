@@ -20,8 +20,10 @@ like a video, push to GitHub and Vercel at the end; save and commit before any c
   kokoro-onnx; tools/voice/, placeholder lines; /labs/voice.html is in the build for auditioning).
 - **Live:** https://sarno-legends.vercel.app (Vercel project sarno-legends, team marcsarno, linked to GitHub; every push
   to main deploys). Build log at /build-log/.
-- Stage 3 running: three parallel polish agents: (1) phone speed: prebaked rooms/card art (tools/bake-art.mjs,
-  public/assets/baked/), (2) combat feel + defeat pose + mirrored shield label (src/render), (3) first-run coach +
-  phone readability (src/ui, src/app/coach.js).
+- Stage 3 done on branch `polish` (merged to main after a full playtest on the built game): Marc's feel notes
+  (facing, slower readable attacks, longer finisher slow-mo, defeat collapse), prebaked art (`npm run bake`), first-run
+  coach + phone readability. Follow-ups: the bat points straight up in the finisher freeze; the coach bubble can briefly
+  cover the party bar; shop shelf names ~10 px; status/relic tap areas ~30 px; real-iPhone safe-area check; stage.js
+  loads 235 KB of fallback-room textures at boot; audio prefetch (1.5 MB) competes with models at boot.
 - Open for Marc: story/event/voice text (all placeholders), voice picks (/labs/voice.html), balance levels (BALANCE.md),
   family call-ins, chapter-2 characters, t_ clip licence (none shipped).

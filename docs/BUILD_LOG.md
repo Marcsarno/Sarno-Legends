@@ -52,3 +52,23 @@ Nine agents built the game's modules side by side against `BUILD_SPEC.md`, each 
 - **Before → after:** #5–#11 (separate test pages) → #12–#21 work in progress → the full scene set captured from the
   frozen build (title, armory, Shift Change, map, fights, targeting, zombie turn, finisher, elite, boss, rewards, card
   pick, rest, upgrade, shop, event, treasure, deck, victory, defeat, settings).
+
+## Stage 3: polish after Marc played it (2026-10-23)
+Three agents in parallel, then a full playtest on the built game.
+- **Marc's notes** ("Marc needs to actually face the zombies", "the finishers need more time to slow motion",
+  "the attacks all happen so quick … give them a moment"):
+  - Marc's batting stance turned to face the zombies (it was aimed at Yola); a look-at turns both heroes' heads to their
+    target and each zombie to the hero it attacks.
+  - Every attack has a wind-up, a fast strike, a short freeze on the hit and a follow-through: light ~1.15 s, heavy
+    ~1.55 s, pistol ~1–1.25 s, zombie attacks ~0.9–1.1 s (one `PACING` table in `src/render/director.js`; 2× halves it).
+  - Finisher slow motion eases in during the swing, holds at 0.25× through the hit, the burst and the start of the fall,
+    then eases out: about 3 s on the first finisher of a run, 2.5 s after.
+  - Defeat: both heroes collapse (the one hit last first), drop their weapons and stay down. The Shield Guard's
+    "SECURITY" label reads the right way round.
+- **Phone speed:** the 10 painted rooms (+ elite looks), 68 card arts, 42 icons and 13 portraits are baked into 148
+  WebP files (2.8 MB) by `npm run bake`; live painting only as a fallback. A room appears in 1–150 ms instead of
+  10–55 s of live painting (software GPU); time to title on the test machine 75–90 s → 21–27 s.
+- **First-time players:** a one-time coach (drag a card, the zombie's intent, Block, End Turn, Staggered, then the map,
+  HP carrying over, elites, rewards, rest, shop), skippable, with a Tips toggle and a How to Play panel. Phones: bigger
+  card text (~11–12 px), 44 px tap targets, notch/home-bar safe areas, tap-for-tooltip on touch, an incoming-damage
+  chip by the party HP ("Lethal" when the hit would end the run).
