@@ -21,7 +21,7 @@ const frames = fs.existsSync(LIST) ? JSON.parse(fs.readFileSync(LIST, 'utf8')) :
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 
 async function shoot(page, shot, stage) {
-  await page.goto(shot.url, { waitUntil: 'load' });
+  await page.goto(shot.url, { waitUntil: 'load', timeout: 180000 });
   if (shot.ready !== false) await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 }).catch(() => {});
   if (shot.eval) await page.evaluate(shot.eval);
   if (shot.until) await page.waitForFunction(shot.until, null, { timeout: Number(shot.timeout ?? 120000) }).catch(() => console.warn('until timed out', shot.title));
@@ -31,6 +31,7 @@ async function shoot(page, shot, stage) {
   const png = await page.screenshot();
   await sharp(png).resize(1280, 720, { fit: 'inside' }).jpeg({ quality: 80, mozjpeg: true }).toFile(path.join(DIR, file));
   frames.push({ n, file, title: shot.title, caption: shot.caption || '', stage: Number(stage ?? 0), date: new Date().toISOString().slice(0, 16).replace('T', ' ') });
+  fs.writeFileSync(LIST, JSON.stringify(frames, null, 1));   // saved after every shot, so a crash never loses frames
   console.log(`frame ${n}: ${shot.title}`);
 }
 
@@ -40,6 +41,11 @@ page.on('pageerror', e => console.log('pageerror:', e.message));
 const shots = args.plan
   ? JSON.parse(fs.readFileSync(args.plan, 'utf8')).map(s => ({ ...s, url: new URL(s.url || '', args.base || 'http://localhost:5180/').href }))
   : [{ url: args.url, title: args.title, caption: args.caption, eval: args.eval, until: args.until, wait: args.wait, ready: args.ready !== 'false' }];
-for (const s of shots) await shoot(page, s, args.stage);
-fs.writeFileSync(LIST, JSON.stringify(frames, null, 1));
+// --from N skips the first N-1 plan entries (resume a run that stopped part way)
+for (const s of shots.slice(Math.max(0, Number(args.from || 1) - 1))) {
+  for (let attempt = 1; ; attempt++) {
+    try { await shoot(page, s, args.stage); break; }
+    catch (e) { console.warn(`shot "${s.title}" failed (attempt ${attempt}): ${e.message.split('\n')[0]}`); if (attempt >= 2) break; }
+  }
+}
 await browser.close();
