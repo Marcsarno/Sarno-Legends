@@ -13,10 +13,15 @@ like a video, push to GitHub and Vercel at the end; save and commit before any c
   or create_deployment). Never the hornerxpress account.
 
 ## Stage log
-- Stage 0 done: scaffold, asset pipeline, spec, build-log tooling (commits 7162637 and after).
-- Stage 1 done (commit 76d7f28): all modules built and tested in labs; 149 tests; frames #2-#11.
-  Builder reports: /tmp/claude-0/-home-user/d8a7a6c5-169c-5c1d-a65d-4fcaf359827b/tasks/wiaxv90v2.output (scratch; may be gone).
-- Stage 2 running: workflow wf_6d3cdcfa-e19 = integrator (index.html, src/main.js, src/app/) then QA (tools/playtest.mjs,
-  tools/snap-plan.json, bug fixes).
-- Next: Stage 2 integration (src/main.js + src/app/: router, combat screen wiring stage+director+HUD+audio, save/continue,
-  debug API window.__SL), playtest bot (tools/playtest.mjs), snap plan, then review/polish loops, deploy.
+- Stage 0 done: scaffold, asset pipeline, spec, build-log tooling.
+- Stage 1 done (76d7f28): all modules built and tested in labs; frames #2-#11.
+- Stage 2 done (de61676): integration (src/app/) + QA. tools/playtest.mjs: 5 full bot runs to the boss, 0 errors
+  (4 wins). Debug API window.__SL, ?shot=<scene> (21 scenes, tools/snap-plan.json). Voice barks (Kokoro-82M via
+  kokoro-onnx; tools/voice/, placeholder lines; /labs/voice.html is in the build for auditioning).
+- **Live:** https://sarno-legends.vercel.app (Vercel project sarno-legends, team marcsarno, linked to GitHub; every push
+  to main deploys). Build log at /build-log/.
+- Stage 3 running: three parallel polish agents: (1) phone speed: prebaked rooms/card art (tools/bake-art.mjs,
+  public/assets/baked/), (2) combat feel + defeat pose + mirrored shield label (src/render), (3) first-run coach +
+  phone readability (src/ui, src/app/coach.js).
+- Open for Marc: story/event/voice text (all placeholders), voice picks (/labs/voice.html), balance levels (BALANCE.md),
+  family call-ins, chapter-2 characters, t_ clip licence (none shipped).

@@ -35,3 +35,20 @@ Nine agents built the game's modules side by side against `BUILD_SPEC.md`, each 
   armory, settings, deck, picker). **Audio**: buses, 166 curated CC0 sounds (1.5 MB), 37 synthesised UI sounds, music.
 - **Before → after:** #1 (three figures on grey) → #2–#11: painted rooms, the 3D fight with the bat in Marc's hands and
   the Shield Guard's riot shield, the card HUD on the real engine, title, map, pharmacy and armory screens.
+
+## Stage 2: one game (2026-10-23)
+- **Integration** (`src/app/`): boot screen, one shared renderer, router for every screen, combat wiring
+  (engine → director → HUD → audio), painted rooms per room type, live 3D heroes on the title, save after every room and
+  Continue (a reload mid-fight restarts that fight), the debug API (`window.__SL`) and `?shot=<scene>` for the build-log
+  camera. Cross-module fixes: map row jitter, 11 invisible props, camera height (HP bars clear the hand), doubled
+  "+N if Staggered" text, Wood Bat preview, long card text auto-fits, harsher elite rooms, a stray "null".
+- **QA** (`tools/playtest.mjs`): the autoplay bot plays whole runs in the real browser. Fixed: knockback springs exploding
+  at high speed (bodies thrown kilometres away, the one NaN error), NaN number positions, Medkit usable on the map,
+  New Run over a save now asks, abandon during a killing blow, the bot now shops/rests/chooses like the sim. Result:
+  5 full runs, all reached the Shield Guard with 60–67 HP, 4 wins, 0 errors. Every manual check passed (mouse and touch).
+- **Voices**: 126 placeholder barks generated with Kokoro-82M (Marc am_michael, Yola af_heart, the Shield Guard
+  processed to sound zombified), a bark director with cooldowns, a Voices toggle; audition page /labs/voice.html.
+- **Deploy**: https://sarno-legends.vercel.app, auto-deploying from main.
+- **Before → after:** #5–#11 (separate test pages) → #12–#21 work in progress → the full scene set captured from the
+  frozen build (title, armory, Shift Change, map, fights, targeting, zombie turn, finisher, elite, boss, rewards, card
+  pick, rest, upgrade, shop, event, treasure, deck, victory, defeat, settings).
