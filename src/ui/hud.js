@@ -187,6 +187,12 @@ export function createCombatUI(opts) {
   party.body = h('div.ehud__body.ehud__body--party', { dataset: { tip: 'party:', tipSide: 'right' } });
   party.root.prepend(h('div.ehud__pips', h('i.pip--marc'), h('i.pip--yola')));
   world.append(party.body, party.root);
+  // incoming damage on your turn: a chip beside the party's bar (what you'd lose after Block) and that slice of the bar
+  const inc = { n: h('span'), ico: h('i'), small: h('small'), key: '' };
+  inc.el = h('div.ehud__inc', { dataset: { tip: 'incoming:', tipSide: 'bottom' } }, inc.ico, inc.n, inc.small);
+  party.root.querySelector('.ehud__barrow').append(inc.el);
+  inc.bar = h('div.hpbar__inc');
+  party.bar.insertBefore(inc.bar, party.bar.querySelector('.hpbar__gloss'));
 
   function makeBarGroup(uid) {
     const fill = h('div.hpbar__fill'), ghost = h('div.hpbar__ghost'), bleed = h('div.hpbar__bleed'), text = h('div.hpbar__text', '');
@@ -414,10 +420,23 @@ export function createCombatUI(opts) {
     const floorY = hand.restTop() - blockH - 8;
     place(party, screenOf('party', 'feet'), screenOf('party', 'head'), floorY, true);
     for (const r of M.enemies.values()) place(r, screenOf(r.uid, 'feet'), screenOf(r.uid, 'head'), floorY, false);
+    updateIncoming();
     if (target) {
       const r = M.enemies.get(target);
       if (r?._box) { const b = r._box; reticle.style.transform = `translate(${b.x}px, ${b.y}px)`; reticle.style.width = b.w + 'px'; reticle.style.height = b.h + 'px'; }
     }
+  }
+
+  // the bottom of the top bar (and the relic tray under it), measured now and then: intents stay below it
+  let tbBottom = 0, tbAt = 0;
+  function topLimit() {
+    const now = performance.now();
+    if (now - tbAt > 1000) {
+      tbAt = now;
+      tbBottom = topbar.el.querySelector('.tb')?.getBoundingClientRect().bottom || 0;
+      for (const e of M.enemies.values()) e._ih = e.intentEl?.firstChild.offsetHeight || 0;
+    }
+    return tbBottom;
   }
 
   function place(r, feet, head, floorY, isParty) {
@@ -436,10 +455,46 @@ export function createCombatUI(opts) {
       const bs = `translate(${box.x.toFixed(1)}px, ${box.y.toFixed(1)}px)`;
       if (r.body && r._bs !== bs + box.w + box.h) { r.body.style.transform = bs; r.body.style.width = box.w + 'px'; r.body.style.height = box.h + 'px'; r._bs = bs + box.w + box.h; }
       if (r.intentEl) {
-        const it = `translate(${head.x.toFixed(1)}px, ${(head.y - 6).toFixed(1)}px)`;
-        if (r._it !== it) { r.intentEl.style.transform = it; r.moveEl.style.transform = `translate(${head.x.toFixed(1)}px, ${(head.y - 6).toFixed(1)}px)`; r._it = it; }
+        // over the head, but never up under the top bar (a tall elite on a short phone screen)
+        const iy = Math.max(head.y - 6, topLimit() + (r._ih || 0) + 4);
+        const it = `translate(${head.x.toFixed(1)}px, ${iy.toFixed(1)}px)`;
+        if (r._it !== it) { r.intentEl.style.transform = it; r.moveEl.style.transform = it; r._it = it; }
       }
     }
+  }
+
+  // ---------------------------------------------------------------- incoming damage
+
+  function incoming() {
+    let total = 0;
+    for (const r of M.enemies.values()) {
+      const it = r.intent;
+      if (!r.alive || !it || it.damage === null || it.damage === undefined || r.intentEl.classList.contains('intent--spent')) continue;
+      total += it.damage * Math.max(1, it.hits || 1);
+    }
+    const block = M.party.block, hp = M.party.hp;
+    return { total, block, hp, loss: Math.max(0, Math.min(hp, total - block)) };
+  }
+
+  function updateIncoming() {
+    const on = M.phase === 'player' && !M.over;
+    const I = on ? incoming() : { total: 0, block: 0, hp: M.party.hp, loss: 0 };
+    const key = `${on}|${I.total}|${I.block}|${I.hp}`;
+    if (key === inc.key) return;
+    inc.key = key;
+    const show = on && I.total > 0;
+    const safe = show && I.loss === 0, lethal = show && I.loss >= I.hp && I.hp > 0;
+    inc.el.classList.toggle('ehud__inc--on', show);
+    inc.el.classList.toggle('ehud__inc--safe', safe);
+    inc.el.classList.toggle('ehud__inc--lethal', lethal);
+    if (show) {
+      inc.ico.innerHTML = icon(safe ? 'block' : lethal ? 'skull' : 'intent_attack');
+      inc.n.textContent = safe ? '0' : `-${I.loss}`;
+      inc.small.textContent = safe ? 'Blocked' : lethal ? 'Lethal' : 'HP';
+    }
+    const max = Math.max(1, M.party.maxHp);
+    inc.bar.classList.toggle('hpbar__inc--on', show && I.loss > 0);
+    if (show && I.loss > 0) { inc.bar.style.left = ((I.hp - I.loss) / max * 100) + '%'; inc.bar.style.width = (I.loss / max * 100) + '%'; }
   }
 
   // ---------------------------------------------------------------- energy, piles, end turn
@@ -742,6 +797,13 @@ export function createCombatUI(opts) {
       if (it) list.push(it);
       for (const [id, n] of Object.entries(r.statuses)) if (STATUSES[id] && n) list.push(tipStatus(id, n));
       return list;
+    }),
+    tipSource('incoming', () => {
+      const I = incoming();
+      if (!I.total) return null;
+      const soak = Math.min(I.block, I.total);
+      return { title: 'Incoming damage', icon: 'intent_attack', color: '#ff6a55',
+        body: `The zombies will deal <b>${I.total}</b> next turn.${soak ? ` Your Block soaks <b>${soak}</b>.` : ''} ${I.loss ? `You\u2019d lose <b>${I.loss}</b> HP${I.loss >= I.hp ? ': <b>that would end the run</b>' : ''}.` : 'You\u2019d take no damage.'}` };
     }),
     tipSource('party', () => {
       const list = [{ title: 'Marc & Yola', body: `<b>${M.party.hp}/${M.party.maxHp}</b> shared HP${M.party.block ? ` · <b>${M.party.block}</b> Block` : ''}. Zombies hit one of them, but the HP is shared.`, icon: 'hp', color: '#d94a3d' }];

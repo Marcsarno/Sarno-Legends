@@ -35,6 +35,7 @@ import { createSaves } from './save.js';
 import { createRooms, battleRoom } from './rooms.js';
 import { openCombat } from './combat.js';
 import { createBoot } from './loading.js';
+import { createCoach } from './coach.js';
 import { showError } from './errors.js';
 
 export const VERSION = '0.2.0';
@@ -78,6 +79,10 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   applySettings();
   const saveProfile = () => saves.saveProfile(profile);
   const saveRun = () => { if (app.run && !app.run.over) saves.saveRun(app.run); };
+  app.saveProfile = saveProfile;
+  // the first-run tips (src/app/coach.js): told about every screen and fight below
+  const coach = createCoach(app);
+  app.coach = coach;
 
   // ---------------------------------------------------------------- the heroes (built once, used by the title and every fight)
   let heroesP = null;
@@ -144,6 +149,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     main = { name, handle, ctx };
     app.screen = name;
     document.body.dataset.screen = name;
+    coach.screen(name, ctx);
     return handle;
   }
   function openOverlay(name, ctx) {
@@ -213,14 +219,24 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   app.openSettings = () => {
     const ex = topOverlay('settings'); if (ex) return closeOverlay(ex);
     const o = openOverlay('settings', {
-      settings: { ...profile.settings }, inRun: !!(app.run && !app.run.over), version: VERSION, audio,
+      settings: { ...profile.settings, tips: coach.on }, inRun: !!(app.run && !app.run.over), version: VERSION, audio,
       act: {
-        set: (k, v) => { const r = M.setSetting(profile, k, v); if (r.ok) { saveProfile(); applySettings(); } },
+        set: (k, v) => {
+          if (k === 'tips') { coach.setOn(v); return; }
+          const r = M.setSetting(profile, k, v); if (r.ok) { saveProfile(); applySettings(); }
+        },
+        howTo: () => { closeOverlay(o); app.openHowTo(); },
         close: () => closeOverlay(o),
         abandonRun: () => { closeOverlay(o); abandonRun(); },
         resetProfile: () => { closeOverlay(o); resetProfile(); },
       },
     });
+  };
+
+  app.openHowTo = () => {
+    const ex = topOverlay('howto'); if (ex) return closeOverlay(ex);
+    audio.ui('open');
+    const o = openOverlay('howto', { audio, act: { close: () => closeOverlay(o), replayTips: () => coach.reset() } });
   };
 
   // ---------------------------------------------------------------- title, armory
@@ -239,6 +255,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
         newRun: () => app.newRun(),
         armory: () => app.toArmory(),
         settings: () => app.openSettings(),
+        howTo: () => app.openHowTo(),
       },
     });
     audio.music('menu');
@@ -376,10 +393,11 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     main = { name: 'combat', handle: { unmount() {}, update() {} }, ctx: {} };
     app.screen = 'combat';
     document.body.dataset.screen = 'combat';
+    coach.screen('combat'); coach.fight(fight);
     // the stage needs a moment for the first frame of the new cast
     await new Promise(r => setTimeout(r, 120));
   }
-  function disposeFight() { if (app.fight) { app.fight.dispose(); app.fight = null; } }
+  function disposeFight() { if (app.fight) { coach.fight(null); app.fight.dispose(); app.fight = null; } }
 
   function fightOver(fight) {
     const run = app.run;
@@ -428,6 +446,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
       main = { name: 'reward', handle: h, ctx };
       app.screen = 'reward';
       document.body.dataset.screen = 'reward';
+      coach.screen('reward', ctx);
     } else {
       h = mountMain('reward', ctx);
       audio.music('map');
@@ -557,22 +576,24 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     await showRun();
   });
   app.saveRun = saveRun;
-  app.saveProfile = saveProfile;
   app.refresh = refresh;
   app.overlays = overlays;
   app.mainScreen = () => main;
   app.bankRun = bankRun;
 
   // ---------------------------------------------------------------- boot: heroes, the title room, then the title
-  // the heroes, and the zombies of a saved fight (a new player's first zombies load right after the title, in idle time)
+  // the heroes, and the zombies of a saved fight (a new player's first zombies load right after the title, in idle time).
+  // The title's room is a baked picture (public/assets/baked, a small WebP) that downloads alongside them; without a
+  // bake it is painted live once they're in (GPU work, so not at the same time as the models parse).
   const saved = saves.loadRun();
   const savedZombies = saved?.pending?.encounter ? (ENCOUNTERS[saved.pending.encounter]?.enemies || []).map(id => ENEMIES[id]?.model).filter(Boolean) : [];
+  const titleRoom = rooms.prepaint('title', null, { live: false });
   boot.progress(0.08, 'Loading Marc and Yola');
   await preload(['marc', 'yola', ...new Set(savedZombies)], (done, total) => boot.progress(0.08 + 0.42 * (total ? done / total : 1), 'Loading Marc and Yola'));
   await app.heroes();
   boot.progress(0.56, 'Arming them');
   await titleHeroes();
-  boot.creep(0.95, 9000, 'Painting the ER');
+  if (await titleRoom) boot.progress(0.9, 'Lighting the ER'); else boot.creep(0.95, 9000, 'Painting the ER');
   await stage.setRoom('title').catch(e => console.warn('[app] title room', e));
   return app;
 }
@@ -583,8 +604,10 @@ export function idle(fn, timeout = 1500) {
   else setTimeout(fn, 60);
 }
 
-/** After the title is up: the coming fights' zombies, the portraits, the first room, the deck's card art, then every other
- *  zombie, one job per idle slot so input never waits on it. */
+/** After the title is up: what the first fight needs (its room, the portraits, the deck's card art, the first fights'
+ *  zombies), then every other zombie, one job per idle slot so input never waits on it. Baked art (public/assets/baked) is
+ *  a few small downloads, fetched all at once before the zombies; art the studio has to render live is GPU work, so it
+ *  goes one picture per idle slot after the first zombies, as before. */
 export function warmUp(app) {
   const run = app.saves.loadRun();
   const ids = [...new Set([...(run?.deck || []).map(c => c.id), ...STARTER, 'nail_swing', 'pry_loose', 'buckshot'])].filter(id => CARDS[id]);
@@ -594,18 +617,23 @@ export function warmUp(app) {
   const firstSet = [...new Set(first.filter(Boolean))];
   const rest = Object.keys(MODELS).filter(k => k.startsWith('z_') && !firstSet.includes(k));
   const model = m => () => preload([m]).catch(() => {});
-  const jobs = [
-    ...firstSet.map(model),
+  const room = run?.pending?.encounter ? battleRoom(run) : battleRoom({ floor: 1 });   // a saved fight's room, or the first fight's
+  const art = [
     () => app.studio.portrait('marc').catch(() => {}),
     () => app.studio.portrait('yola').catch(() => {}),
-    () => app.rooms.prepaint('er_lobby'),
+    () => app.rooms.prepaint(room.key, room.look),
     ...ids.map(id => () => app.studio.cardArt(id).catch(() => {})),
-    ...rest.map(model),
   ];
-  const next = () => {
-    const job = jobs.shift();
-    if (!job) return;
-    idle(() => Promise.resolve(job()).finally(() => setTimeout(next, 30)));
+  const queue = jobs => {
+    const next = () => {
+      const job = jobs.shift();
+      if (!job) return;
+      idle(() => Promise.resolve(job()).finally(() => setTimeout(next, 30)));
+    };
+    next();
   };
-  next();
+  const atOnce = fns => () => Promise.race([Promise.all(fns.map(f => Promise.resolve().then(f).catch(() => {}))), new Promise(r => setTimeout(r, 8000))]);
+  app.studio.baked().catch(() => false).then(baked => queue(baked
+    ? [atOnce(art), ...firstSet.map(model), ...rest.map(model)]
+    : [...firstSet.map(model), ...art, ...rest.map(model)]));
 }

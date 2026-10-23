@@ -180,11 +180,14 @@ export function createFx(stage, { gore = 'full' } = {}) {
     glow.spawn(pos, _v.set(0, 0, 0), { life: 0.08, color, size: 0.35, size1: 0.6, alpha: 0.8, floor: false });
   }
   /** The impact itself: a bright star where the blow lands + sparks (blunt) or blood (gore). */
-  function impact(pos, { dir = new THREE.Vector3(1, 0, 0), strength = 1, blunt = true, blocked = false } = {}) {
-    sprite(star, pos, { size: 0.35 + strength * 0.25, size1: 0.7 + strength * 0.4, life: 0.09, color: blocked ? 0x9fd0ff : 0xfff2d0 });
+  function impact(pos, { dir = new THREE.Vector3(1, 0, 0), strength = 1, blunt = true, blocked = false, heavy = false } = {}) {
+    sprite(star, pos, { size: 0.35 + strength * 0.25, size1: 0.7 + strength * 0.4, life: heavy ? 0.12 : 0.09, color: blocked ? 0x9fd0ff : 0xfff2d0 });
+    stage.flashLight?.(pos, blocked ? 0x9fd0ff : 0xffe2b8, blocked ? 10 : 8 + strength * 10);
     if (blocked) { sparks(pos, 14, 0xa8d8ff, 4.5); return; }
-    if (blunt) sparks(pos, Math.round(4 + strength * 5), 0xffe0a0, 3);
-    blood(pos, dir, strength);
+    // a heavy blow: a shock ring off the contact and more debris
+    if (heavy) sprite(ring, pos, { size: 0.25, size1: 1.1 + strength * 0.5, life: 0.2, color: 0xffe8c8, opacity: 0.75, rot: 0 });
+    if (blunt) sparks(pos, Math.round(4 + strength * (heavy ? 9 : 5)), 0xffe0a0, heavy ? 4 : 3);
+    blood(pos, dir, strength * (heavy ? 1.2 : 1));
   }
   function dust(pos, { amount = 1, color = 0x8a8478 } = {}) {
     for (let i = 0; i < 6 + amount * 6; i++) {
@@ -221,7 +224,7 @@ export function createFx(stage, { gore = 'full' } = {}) {
   }
   // brass: little cylinders kicked up and right, bouncing on the floor
   const shells = [];
-  const shellGeo = new THREE.CylinderGeometry(0.0045, 0.0045, 0.019, 8); shellGeo.rotateZ(Math.PI / 2);
+  const shellGeo = new THREE.CylinderGeometry(0.0062, 0.0062, 0.026, 8); shellGeo.rotateZ(Math.PI / 2);
   const shellMat = new THREE.MeshStandardMaterial({ color: 0xc89a3c, metalness: 0.9, roughness: 0.3, envMapIntensity: 1.5 });
   function shell(pos, side = new THREE.Vector3(0, 0, 1)) {
     let s = shells.find(x => !x.on);

@@ -1,0 +1,1007 @@
+{
+ "generated": "2026-10-23T14:34:08.155Z",
+ "note": "tools/bake-art.mjs (npm run bake). Do not edit by hand.",
+ "rooms": {
+  "version": "rooms-1",
+  "sizes": {
+   "wide": [
+    1920,
+    800
+   ],
+   "tall": [
+    1200,
+    900
+   ]
+  },
+  "list": [
+   {
+    "key": "er_lobby",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/er_lobby-wide.webp",
+      "hash": "b9d771dd5c",
+      "kb": 88.9,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/er_lobby-4x3.webp",
+      "hash": "51c1ed89b8",
+      "kb": 61.9,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "ward",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/ward-wide.webp",
+      "hash": "49215bae04",
+      "kb": 109.3,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/ward-4x3.webp",
+      "hash": "eb426e32e5",
+      "kb": 73.4,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "corridor",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/corridor-wide.webp",
+      "hash": "076af51439",
+      "kb": 81.2,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/corridor-4x3.webp",
+      "hash": "971b243004",
+      "kb": 57.6,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "supply_closet",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/supply_closet-wide.webp",
+      "hash": "55001a75f3",
+      "kb": 99.2,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/supply_closet-4x3.webp",
+      "hash": "478fc11837",
+      "kb": 72,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "pharmacy",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/pharmacy-wide.webp",
+      "hash": "c328553102",
+      "kb": 103.6,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/pharmacy-4x3.webp",
+      "hash": "f26caeed03",
+      "kb": 70.6,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "security_gate",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/security_gate-wide.webp",
+      "hash": "271c8748ac",
+      "kb": 90.6,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/security_gate-4x3.webp",
+      "hash": "66b41b7dff",
+      "kb": 65.1,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "break_room",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/break_room-wide.webp",
+      "hash": "23117526b2",
+      "kb": 92.1,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/break_room-4x3.webp",
+      "hash": "732913fb10",
+      "kb": 60.6,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "xray",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/xray-wide.webp",
+      "hash": "57a7f0b051",
+      "kb": 74.9,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/xray-4x3.webp",
+      "hash": "578b98dea3",
+      "kb": 50.6,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "storage",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/storage-wide.webp",
+      "hash": "ddea002d8a",
+      "kb": 85.3,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/storage-4x3.webp",
+      "hash": "55a7f13adc",
+      "kb": 65,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "title",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/title-wide.webp",
+      "hash": "23a7c6eb20",
+      "kb": 55.8,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/title-4x3.webp",
+      "hash": "e839f14ba4",
+      "kb": 42.5,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "corridor",
+    "look": {
+     "exposure": 0.92,
+     "contrast": 1.2,
+     "saturation": 0.72,
+     "highTint": [
+      0.08,
+      0,
+      -0.03
+     ],
+     "shadowTint": [
+      0.02,
+      -0.01,
+      -0.01
+     ],
+     "vignette": 1.3,
+     "vigColor": [
+      0.2,
+      0.04,
+      0.03
+     ]
+    },
+    "tag": "elite",
+    "variants": [
+     {
+      "file": "rooms/corridor-elite-wide.webp",
+      "hash": "9ef1e06b6e",
+      "kb": 71.8,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/corridor-elite-4x3.webp",
+      "hash": "77ea113fbe",
+      "kb": 50.6,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "ward",
+    "look": {
+     "exposure": 0.92,
+     "contrast": 1.2,
+     "saturation": 0.72,
+     "highTint": [
+      0.08,
+      0,
+      -0.03
+     ],
+     "shadowTint": [
+      0.02,
+      -0.01,
+      -0.01
+     ],
+     "vignette": 1.3,
+     "vigColor": [
+      0.2,
+      0.04,
+      0.03
+     ]
+    },
+    "tag": "elite",
+    "variants": [
+     {
+      "file": "rooms/ward-elite-wide.webp",
+      "hash": "23abba652a",
+      "kb": 97.7,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/ward-elite-4x3.webp",
+      "hash": "9fd5c43b9f",
+      "kb": 67.1,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   }
+  ]
+ },
+ "studio": {
+  "version": "studio-2",
+  "sizes": {
+   "card": "480x360",
+   "relic": "256",
+   "potion": "256",
+   "weapon": "256",
+   "portrait": "256"
+  },
+  "files": {
+   "card:bat_swing": {
+    "file": "cards/bat_swing.webp",
+    "hash": "7c67f64a3a",
+    "kb": 8.2
+   },
+   "card:pistol_shot": {
+    "file": "cards/pistol_shot.webp",
+    "hash": "8441c0eb74",
+    "kb": 9.6
+   },
+   "card:brace": {
+    "file": "cards/brace.webp",
+    "hash": "1f80b19413",
+    "kb": 7.1
+   },
+   "card:sidestep": {
+    "file": "cards/sidestep.webp",
+    "hash": "df1bea19b3",
+    "kb": 9.4
+   },
+   "card:home_run": {
+    "file": "cards/home_run.webp",
+    "hash": "3781f43458",
+    "kb": 7.4
+   },
+   "card:clean_shot": {
+    "file": "cards/clean_shot.webp",
+    "hash": "55343388fc",
+    "kb": 10
+   },
+   "card:crowbar_pry": {
+    "file": "cards/crowbar_pry.webp",
+    "hash": "cf11925937",
+    "kb": 8.4
+   },
+   "card:shoulder_check": {
+    "file": "cards/shoulder_check.webp",
+    "hash": "ef7572d138",
+    "kb": 8.6
+   },
+   "card:wild_swing": {
+    "file": "cards/wild_swing.webp",
+    "hash": "614492920e",
+    "kb": 8.2
+   },
+   "card:heavy_swing": {
+    "file": "cards/heavy_swing.webp",
+    "hash": "9ace8791de",
+    "kb": 8
+   },
+   "card:one_two": {
+    "file": "cards/one_two.webp",
+    "hash": "295e351eb5",
+    "kb": 9.1
+   },
+   "card:hold_the_line": {
+    "file": "cards/hold_the_line.webp",
+    "hash": "a0ef9fe6f0",
+    "kb": 8.3
+   },
+   "card:deep_breath": {
+    "file": "cards/deep_breath.webp",
+    "hash": "a3787b35a2",
+    "kb": 8
+   },
+   "card:kick_the_door": {
+    "file": "cards/kick_the_door.webp",
+    "hash": "c2424a3f1e",
+    "kb": 9
+   },
+   "card:haymaker": {
+    "file": "cards/haymaker.webp",
+    "hash": "6f4cc1455d",
+    "kb": 7.3
+   },
+   "card:tackle": {
+    "file": "cards/tackle.webp",
+    "hash": "519e6f1315",
+    "kb": 8.1
+   },
+   "card:batter_up": {
+    "file": "cards/batter_up.webp",
+    "hash": "1528e97787",
+    "kb": 8.5
+   },
+   "card:overhead_smash": {
+    "file": "cards/overhead_smash.webp",
+    "hash": "f9305c2717",
+    "kb": 7.1
+   },
+   "card:ground_pound": {
+    "file": "cards/ground_pound.webp",
+    "hash": "8639a56c63",
+    "kb": 8.6
+   },
+   "card:momentum": {
+    "file": "cards/momentum.webp",
+    "hash": "070050cd19",
+    "kb": 8
+   },
+   "card:dig_in": {
+    "file": "cards/dig_in.webp",
+    "hash": "64b57b17f8",
+    "kb": 8.6
+   },
+   "card:thick_skin": {
+    "file": "cards/thick_skin.webp",
+    "hash": "98b1472448",
+    "kb": 9.7
+   },
+   "card:pumped_up": {
+    "file": "cards/pumped_up.webp",
+    "hash": "39f5aa107e",
+    "kb": 9.8
+   },
+   "card:swing_guard": {
+    "file": "cards/swing_guard.webp",
+    "hash": "edf3bf8195",
+    "kb": 8.5
+   },
+   "card:jaw_breaker": {
+    "file": "cards/jaw_breaker.webp",
+    "hash": "18ebf39ca0",
+    "kb": 7.5
+   },
+   "card:wrench_arm": {
+    "file": "cards/wrench_arm.webp",
+    "hash": "3cf073a15e",
+    "kb": 7.9
+   },
+   "card:grit_teeth": {
+    "file": "cards/grit_teeth.webp",
+    "hash": "3078e11667",
+    "kb": 8.3
+   },
+   "card:berserker": {
+    "file": "cards/berserker.webp",
+    "hash": "3c52dbe9fe",
+    "kb": 9.6
+   },
+   "card:grand_slam": {
+    "file": "cards/grand_slam.webp",
+    "hash": "feabe698fd",
+    "kb": 7.8
+   },
+   "card:bolt_the_door": {
+    "file": "cards/bolt_the_door.webp",
+    "hash": "c96e65a81e",
+    "kb": 8.1
+   },
+   "card:fortify": {
+    "file": "cards/fortify.webp",
+    "hash": "e3f8101eca",
+    "kb": 9.3
+   },
+   "card:make_it_count": {
+    "file": "cards/make_it_count.webp",
+    "hash": "86783cbea0",
+    "kb": 7
+   },
+   "card:rally": {
+    "file": "cards/rally.webp",
+    "hash": "4bf4c1287c",
+    "kb": 7.3
+   },
+   "card:double_tap": {
+    "file": "cards/double_tap.webp",
+    "hash": "2114fb672a",
+    "kb": 9.3
+   },
+   "card:aimed_shot": {
+    "file": "cards/aimed_shot.webp",
+    "hash": "be82e56079",
+    "kb": 11
+   },
+   "card:kneecap": {
+    "file": "cards/kneecap.webp",
+    "hash": "90c45bdcc4",
+    "kb": 9.1
+   },
+   "card:suppressing_fire": {
+    "file": "cards/suppressing_fire.webp",
+    "hash": "a97b208d4f",
+    "kb": 9.2
+   },
+   "card:cover_him": {
+    "file": "cards/cover_him.webp",
+    "hash": "2360c2b574",
+    "kb": 9.1
+   },
+   "card:tuck_and_roll": {
+    "file": "cards/tuck_and_roll.webp",
+    "hash": "ecf9a6267f",
+    "kb": 9.3
+   },
+   "card:check_mag": {
+    "file": "cards/check_mag.webp",
+    "hash": "54130f013b",
+    "kb": 8.9
+   },
+   "card:flare": {
+    "file": "cards/flare.webp",
+    "hash": "31bb32d2bf",
+    "kb": 8.7
+   },
+   "card:quick_shot": {
+    "file": "cards/quick_shot.webp",
+    "hash": "bde05ed93b",
+    "kb": 9.4
+   },
+   "card:cheap_shot": {
+    "file": "cards/cheap_shot.webp",
+    "hash": "c5eb28b89d",
+    "kb": 9
+   },
+   "card:headshot": {
+    "file": "cards/headshot.webp",
+    "hash": "ec54d5fdf0",
+    "kb": 11.2
+   },
+   "card:triage": {
+    "file": "cards/triage.webp",
+    "hash": "2ce965532a",
+    "kb": 11.8
+   },
+   "card:adrenaline_shot": {
+    "file": "cards/adrenaline_shot.webp",
+    "hash": "7f2a30ed83",
+    "kb": 8.1
+   },
+   "card:marksman": {
+    "file": "cards/marksman.webp",
+    "hash": "53e29d67e2",
+    "kb": 9.8
+   },
+   "card:spray_and_pray": {
+    "file": "cards/spray_and_pray.webp",
+    "hash": "a5a4bb6418",
+    "kb": 9.6
+   },
+   "card:painkillers": {
+    "file": "cards/painkillers.webp",
+    "hash": "58d5e3a6ba",
+    "kb": 8.9
+   },
+   "card:light_on_feet": {
+    "file": "cards/light_on_feet.webp",
+    "hash": "1bc808e226",
+    "kb": 10.1
+   },
+   "card:triple_tap": {
+    "file": "cards/triple_tap.webp",
+    "hash": "210754a2b5",
+    "kb": 9.7
+   },
+   "card:covering_fire": {
+    "file": "cards/covering_fire.webp",
+    "hash": "4902a4f3a3",
+    "kb": 9.3
+   },
+   "card:clean_kill": {
+    "file": "cards/clean_kill.webp",
+    "hash": "4ce150e12a",
+    "kb": 9.9
+   },
+   "card:overdrive": {
+    "file": "cards/overdrive.webp",
+    "hash": "e5bf8305b2",
+    "kb": 8.8
+   },
+   "card:slow_motion": {
+    "file": "cards/slow_motion.webp",
+    "hash": "8c8843f035",
+    "kb": 8.6
+   },
+   "card:dead_eye": {
+    "file": "cards/dead_eye.webp",
+    "hash": "9ed69489fb",
+    "kb": 10.6
+   },
+   "card:defibrillator": {
+    "file": "cards/defibrillator.webp",
+    "hash": "03c3e463a9",
+    "kb": 11.3
+   },
+   "card:point_blank": {
+    "file": "cards/point_blank.webp",
+    "hash": "14b2cf2177",
+    "kb": 10.2
+   },
+   "card:nail_swing": {
+    "file": "cards/nail_swing.webp",
+    "hash": "9df6a78684",
+    "kb": 8.6
+   },
+   "card:barbed_swing": {
+    "file": "cards/barbed_swing.webp",
+    "hash": "62c3707deb",
+    "kb": 8.6
+   },
+   "card:pry_loose": {
+    "file": "cards/pry_loose.webp",
+    "hash": "523416975a",
+    "kb": 8.5
+   },
+   "card:chop_block": {
+    "file": "cards/chop_block.webp",
+    "hash": "f6d13a7e26",
+    "kb": 7.9
+   },
+   "card:sledge": {
+    "file": "cards/sledge.webp",
+    "hash": "d30c47055e",
+    "kb": 7.9
+   },
+   "card:buckshot": {
+    "file": "cards/buckshot.webp",
+    "hash": "0a2645653c",
+    "kb": 9.4
+   },
+   "card:both_barrels": {
+    "file": "cards/both_barrels.webp",
+    "hash": "e7ca600921",
+    "kb": 9.8
+   },
+   "card:panic": {
+    "file": "cards/panic.webp",
+    "hash": "747d5d08dc",
+    "kb": 7.2
+   },
+   "card:bile": {
+    "file": "cards/bile.webp",
+    "hash": "3f4b10bf1a",
+    "kb": 6
+   },
+   "card:infection": {
+    "file": "cards/infection.webp",
+    "hash": "c04d222da0",
+    "kb": 6.5
+   },
+   "weapon:wood_bat": {
+    "file": "icons/weapon-wood_bat.webp",
+    "hash": "ec610f0066",
+    "kb": 4.8
+   },
+   "weapon:nail_bat": {
+    "file": "icons/weapon-nail_bat.webp",
+    "hash": "48de03791a",
+    "kb": 6.5
+   },
+   "weapon:wire_bat": {
+    "file": "icons/weapon-wire_bat.webp",
+    "hash": "441daee69c",
+    "kb": 5.5
+   },
+   "weapon:crowbar": {
+    "file": "icons/weapon-crowbar.webp",
+    "hash": "7cf287cf54",
+    "kb": 4.1
+   },
+   "weapon:fire_axe": {
+    "file": "icons/weapon-fire_axe.webp",
+    "hash": "fc0604aae8",
+    "kb": 5.6
+   },
+   "weapon:sledgehammer": {
+    "file": "icons/weapon-sledgehammer.webp",
+    "hash": "d7959b56e5",
+    "kb": 5
+   },
+   "weapon:pistol": {
+    "file": "icons/weapon-pistol.webp",
+    "hash": "60eed16f6f",
+    "kb": 6.6
+   },
+   "weapon:shotgun": {
+    "file": "icons/weapon-shotgun.webp",
+    "hash": "2fdacdce20",
+    "kb": 3.2
+   },
+   "weapon:sawed_off": {
+    "file": "icons/weapon-sawed_off.webp",
+    "hash": "7713c1f99f",
+    "kb": 3.5
+   },
+   "relic:nurses_kit": {
+    "file": "icons/relic-nurses_kit.webp",
+    "hash": "c9d4b4bb28",
+    "kb": 8.6
+   },
+   "relic:duct_tape": {
+    "file": "icons/relic-duct_tape.webp",
+    "hash": "ea1f5c336f",
+    "kb": 6
+   },
+   "relic:coffee_thermos": {
+    "file": "icons/relic-coffee_thermos.webp",
+    "hash": "87f8aac29e",
+    "kb": 4.7
+   },
+   "relic:stethoscope": {
+    "file": "icons/relic-stethoscope.webp",
+    "hash": "d73981e157",
+    "kb": 7.5
+   },
+   "relic:pager": {
+    "file": "icons/relic-pager.webp",
+    "hash": "66bcd7a958",
+    "kb": 3.4
+   },
+   "relic:protein_bar": {
+    "file": "icons/relic-protein_bar.webp",
+    "hash": "5bf56e2333",
+    "kb": 4.7
+   },
+   "relic:knee_brace": {
+    "file": "icons/relic-knee_brace.webp",
+    "hash": "2f764869b2",
+    "kb": 5.6
+   },
+   "relic:granola": {
+    "file": "icons/relic-granola.webp",
+    "hash": "22998b5e35",
+    "kb": 4.2
+   },
+   "relic:iv_bag": {
+    "file": "icons/relic-iv_bag.webp",
+    "hash": "1e6e66378f",
+    "kb": 6.4
+   },
+   "relic:coin_jar": {
+    "file": "icons/relic-coin_jar.webp",
+    "hash": "614aad8a62",
+    "kb": 8.3
+   },
+   "relic:tally_marks": {
+    "file": "icons/relic-tally_marks.webp",
+    "hash": "3c2e00a2ac",
+    "kb": 8.1
+   },
+   "relic:riot_vest": {
+    "file": "icons/relic-riot_vest.webp",
+    "hash": "16e00665f7",
+    "kb": 4.4
+   },
+   "relic:combo_counter": {
+    "file": "icons/relic-combo_counter.webp",
+    "hash": "1c78f2c24a",
+    "kb": 8
+   },
+   "relic:box_cutter": {
+    "file": "icons/relic-box_cutter.webp",
+    "hash": "29e1f44bec",
+    "kb": 4.6
+   },
+   "relic:door_wedge": {
+    "file": "icons/relic-door_wedge.webp",
+    "hash": "019990ed84",
+    "kb": 3.2
+   },
+   "relic:trophy_belt": {
+    "file": "icons/relic-trophy_belt.webp",
+    "hash": "b938307c0a",
+    "kb": 9.5
+   },
+   "relic:emergency_rations": {
+    "file": "icons/relic-emergency_rations.webp",
+    "hash": "20dccde84c",
+    "kb": 5
+   },
+   "relic:hollow_points": {
+    "file": "icons/relic-hollow_points.webp",
+    "hash": "4075cd0e4b",
+    "kb": 6.6
+   },
+   "relic:steel_plate": {
+    "file": "icons/relic-steel_plate.webp",
+    "hash": "3835932e68",
+    "kb": 3.8
+   },
+   "relic:defib_pads": {
+    "file": "icons/relic-defib_pads.webp",
+    "hash": "328d4528d2",
+    "kb": 9.2
+   },
+   "relic:cooler": {
+    "file": "icons/relic-cooler.webp",
+    "hash": "0cadb3671f",
+    "kb": 6.5
+   },
+   "relic:staff_badge": {
+    "file": "icons/relic-staff_badge.webp",
+    "hash": "d714921ca9",
+    "kb": 5.2
+   },
+   "relic:doctors_note": {
+    "file": "icons/relic-doctors_note.webp",
+    "hash": "c772fbff72",
+    "kb": 7.5
+   },
+   "relic:wood_bat": {
+    "file": "icons/weapon-wood_bat.webp",
+    "hash": "ec610f0066",
+    "kb": 4.8
+   },
+   "relic:nail_bat": {
+    "file": "icons/weapon-nail_bat.webp",
+    "hash": "48de03791a",
+    "kb": 6.5
+   },
+   "relic:wire_bat": {
+    "file": "icons/weapon-wire_bat.webp",
+    "hash": "441daee69c",
+    "kb": 5.5
+   },
+   "relic:crowbar": {
+    "file": "icons/weapon-crowbar.webp",
+    "hash": "7cf287cf54",
+    "kb": 4.1
+   },
+   "relic:fire_axe": {
+    "file": "icons/weapon-fire_axe.webp",
+    "hash": "fc0604aae8",
+    "kb": 5.6
+   },
+   "relic:sledgehammer": {
+    "file": "icons/weapon-sledgehammer.webp",
+    "hash": "d7959b56e5",
+    "kb": 5
+   },
+   "relic:pistol": {
+    "file": "icons/weapon-pistol.webp",
+    "hash": "60eed16f6f",
+    "kb": 6.6
+   },
+   "relic:shotgun": {
+    "file": "icons/weapon-shotgun.webp",
+    "hash": "2fdacdce20",
+    "kb": 3.2
+   },
+   "relic:sawed_off": {
+    "file": "icons/weapon-sawed_off.webp",
+    "hash": "7713c1f99f",
+    "kb": 3.5
+   },
+   "potion:medkit": {
+    "file": "icons/potion-medkit.webp",
+    "hash": "b237d1fab7",
+    "kb": 6.3
+   },
+   "potion:adrenaline": {
+    "file": "icons/potion-adrenaline.webp",
+    "hash": "1d26ea3bfa",
+    "kb": 5.5
+   },
+   "potion:extinguisher": {
+    "file": "icons/potion-extinguisher.webp",
+    "hash": "7fa2760055",
+    "kb": 4.3
+   },
+   "potion:flashbang": {
+    "file": "icons/potion-flashbang.webp",
+    "hash": "2eed03f0e6",
+    "kb": 5.7
+   },
+   "potion:energy_drink": {
+    "file": "icons/potion-energy_drink.webp",
+    "hash": "6ea4cc9409",
+    "kb": 4.9
+   },
+   "potion:body_armor": {
+    "file": "icons/potion-body_armor.webp",
+    "hash": "1cc5158ee9",
+    "kb": 3.8
+   },
+   "potion:pipe_bomb": {
+    "file": "icons/potion-pipe_bomb.webp",
+    "hash": "91e07ad165",
+    "kb": 5.1
+   },
+   "potion:protein_shake": {
+    "file": "icons/potion-protein_shake.webp",
+    "hash": "21e95aa784",
+    "kb": 4.4
+   },
+   "potion:painkiller_pills": {
+    "file": "icons/potion-painkiller_pills.webp",
+    "hash": "bce99ed7b7",
+    "kb": 6.5
+   },
+   "potion:epi_pen": {
+    "file": "icons/potion-epi_pen.webp",
+    "hash": "955f74a933",
+    "kb": 5.5
+   },
+   "portrait:marc": {
+    "file": "portraits/marc.webp",
+    "hash": "a8af44f944",
+    "kb": 6.2
+   },
+   "portrait:yola": {
+    "file": "portraits/yola.webp",
+    "hash": "a8e5a0e6c2",
+    "kb": 7.7
+   },
+   "portrait:shambler": {
+    "file": "portraits/shambler.webp",
+    "hash": "2e8815d64a",
+    "kb": 4.1
+   },
+   "portrait:biter": {
+    "file": "portraits/biter.webp",
+    "hash": "ab8261cd48",
+    "kb": 7
+   },
+   "portrait:spitter": {
+    "file": "portraits/spitter.webp",
+    "hash": "f3cb61a8c1",
+    "kb": 6
+   },
+   "portrait:screamer": {
+    "file": "portraits/screamer.webp",
+    "hash": "dead033638",
+    "kb": 6.6
+   },
+   "portrait:sprinter": {
+    "file": "portraits/sprinter.webp",
+    "hash": "0525b107bf",
+    "kb": 6.2
+   },
+   "portrait:nurse": {
+    "file": "portraits/nurse.webp",
+    "hash": "f62800489d",
+    "kb": 5.7
+   },
+   "portrait:bloater": {
+    "file": "portraits/bloater.webp",
+    "hash": "c2c099aeec",
+    "kb": 6.1
+   },
+   "portrait:big_walker": {
+    "file": "portraits/big_walker.webp",
+    "hash": "2d414f91e4",
+    "kb": 4.7
+   },
+   "portrait:sleeping_patient": {
+    "file": "portraits/sleeping_patient.webp",
+    "hash": "5ed93959d1",
+    "kb": 6.8
+   },
+   "portrait:orderly": {
+    "file": "portraits/orderly.webp",
+    "hash": "a2cb8c0c43",
+    "kb": 6
+   },
+   "portrait:shield_guard": {
+    "file": "portraits/shield_guard.webp",
+    "hash": "eb84ae7bde",
+    "kb": 7.2
+   }
+  }
+ }
+}

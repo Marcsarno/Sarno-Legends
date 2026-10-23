@@ -36,6 +36,44 @@ const DEBUFF = new Set(['vulnerable', 'weak', 'frail', 'bleed']);
 const STATUS_COLOR = { vulnerable: 0xb06bff, weak: 0x9fc27a, frail: 0x7aa0c2, bleed: 0xd8302a, strength: 0xff7a3d, temp_strength: 0xffa04d, dexterity: 0x7cf08a, ritual: 0xff4d4d, enrage: 0xff4d4d, plating: 0x9fb6cc, thorns: 0xd8a24d };
 const HERO_COLOR = { marc: 0xff6a4d, yola: 0x47d1c4 };
 
+// ---- pacing: every beat's timing in one place (game seconds at 1x; the speed setting 1 / 1.5 / 2x divides them all) ----
+// Marc (2026-10-23): "give them a moment to show what they are doing": a visible wind-up, the strike, a short hold on
+// the impact, then the recovery. lead: from the card (or the zombie's move) to the impact, the wind-up and any dash in
+// it; snap: the last part of the lead, where the clip snaps from loaded to the hit; hold: the impact pose freezes (the
+// next queued card waits for it; input reopens after it); recover: the follow-through back to the stance; hitStop: the
+// whole stage freezes at the impact (ms, real time); lean: the procedural lean back in the wind-up (rad).
+export const PACING = {
+  hero: {
+    light: { lead: 0.5, snap: 0.13, hold: 0.14, recover: 0.42, dash: 0.2, hitStop: 60, lean: 0.12 },     // ~1.0 s
+    heavy: { lead: 0.72, snap: 0.15, hold: 0.18, recover: 0.55, dash: 0.24, hitStop: 90, lean: 0.22 },   // ~1.45 s
+    sweep: { lead: 0.66, snap: 0.15, hold: 0.16, recover: 0.5, dash: 0.24, hitStop: 75, lean: 0.18 },
+    combo: { lead: 0.36, snap: 0.12, hold: 0.13, recover: 0.42, dash: 0.1, hitStop: 55, lean: 0.06 },   // each extra hit
+    finisher: { lead: 0.78, snap: 0.16, hold: 0.22, recover: 0.6, dash: 0.24, hitStop: 140, lean: 0.2 },
+    home: 0.34,          // the walk back to the slot (starts after the hold)
+  },
+  gun: {
+    pistol: { lead: 0.42, hold: 0.12, recover: 0.4, hitStop: 50 },       // raise and aim, the shot, recoil held
+    shotgun: { lead: 0.52, hold: 0.18, recover: 0.5, hitStop: 85 },
+    burst: 0.26,         // each extra shot of a burst / volley
+    finisher: { lead: 0.62, hold: 0.2 },
+  },
+  zombie: {
+    light: { lead: 0.5, snap: 0.13, hold: 0.12, recover: 0.4, dash: 0.26, gap: 0.3, lunge: 0.22, lean: 0.12 },   // ~0.9 s
+    heavy: { lead: 0.64, snap: 0.15, hold: 0.16, recover: 0.5, dash: 0.3, gap: 0.36, lunge: 0.3, lean: 0.2 },    // ~1.1 s
+    combo: { lead: 0.34, snap: 0.12, hold: 0.1, gap: 0.3, lean: 0.06 },                                           // extra hits
+  },
+  skill: { block: 0.3, power: 0.36, other: 0.26 },
+  banner: { player: 0.3, enemy: 0.55 },
+  // the finisher's slow motion (real seconds; the first one of a run is the long beat): ease in during the swing / aim,
+  // hold through the impact, the death and the burst, ease out
+  finisher: {
+    scale: 0.25,
+    first: { in: 0.22, hold: 1.4, out: 0.5, punch: 0.42 },
+    later: { in: 0.18, hold: 0.95, out: 0.4, punch: 0.32 },
+  },
+  defeat: { second: 0.38, slow: 0.55, after: 2.4 },
+};
+
 // the riot shield on the guard's left forearm (bone frame: +Y runs down the forearm to the hand)
 export const SHIELD_FIT = { at: 0.55, out: [0.07, 0, 0], rot: [0, 0, 0] };
 
@@ -59,6 +97,7 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
   let card = null;                   // the card being played
   let atk = null;                    // the attack in flight { by, actor, anim, hits, hit, targets, finisher, kind }
   let lastFrame = -1;
+  let lastPartyHero = 'marc';        // who took the last party hit (falls first at a defeat)
 
   function later(sec, fn, key = null) {
     if (key) for (const t of timers) if (t.key === key) t.dead = true;
@@ -96,7 +135,8 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     if (attacker) p.addScaledVector(hitDir(target, attacker), 0.18 * (target.scale || 1));
     return p;
   }
-  function heroMelee(hero, targets, clip, { hitIn = 0.27, dash = 0.12, after = 1.25 } = {}) {
+  // Marc steps in front of the nearest target and swings so the impact lands P.lead from now; returns the lead
+  function heroMelee(hero, targets, clip, P = PACING.hero.light) {
     if (!targets.length) return 0;
     const T = CLIP_TIMING[clip] || {};
     // stand in front of the nearest target, facing the group (a sweep swings through the front row from there)
@@ -107,27 +147,32 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     const reach = (T.reach ?? 1.1) + 0.32 * (big - 1);
     const dest = tp.clone().addScaledVector(dir, -reach); dest.z += 0.12;
     later(0, () => {}, 'ret:' + hero.id);
-    hero.dashTo(dest, dash * 1000);
-    hero.turnTo((T.yaw ?? Math.PI / 2) + Math.atan2(dir.x, dir.z) - Math.PI / 2, 90);
-    hero.strike(clip, { hitIn, after });
-    fx?.trail?.(hero, true);
-    later(hitIn + 0.16, () => fx?.trail?.(hero, false), 'trail:' + hero.id);
-    later(hitIn + 0.34, () => { hero.returnHome(230); }, 'ret:' + hero.id);
-    sfx('swing', { by: hero.id, clip });
-    return hitIn;
+    hero.dashTo(dest, P.dash * 1000);
+    hero.turnTo((T.yaw ?? Math.PI / 2) + Math.atan2(dir.x, dir.z) - Math.PI / 2, 120);
+    hero.lookTarget = near;
+    hero.strike(clip, { hitIn: P.lead, snap: P.snap, hold: P.hold, recover: P.recover, lean: P.lean });
+    later(Math.max(0, P.lead - P.snap - 0.04), () => fx?.trail?.(hero, true), 'trailOn:' + hero.id);
+    later(P.lead + 0.12, () => fx?.trail?.(hero, false), 'trailOff:' + hero.id);
+    later(P.lead + P.hold + 0.08, () => { hero.returnHome(PACING.hero.home * 1000); }, 'ret:' + hero.id);
+    later(Math.max(0, P.lead - P.snap - 0.05), () => sfx('swing', { by: hero.id, clip }));
+    return P.lead;
   }
-  function zombieMelee(z, hero, clip, { hitIn = 0.28, dash = 0.15, ret = true } = {}) {
+  // a zombie closes in (a shuffle, then a lunge in the snap) and swipes / bites so the hit lands P.lead from now
+  function zombieMelee(z, hero, clip, P = PACING.zombie.light, { ret = true } = {}) {
     const T = CLIP_TIMING[clip] || {};
     const hp = hero.root.position.clone();
     const dir = flat(_v.copy(hp).sub(z.home)).normalize();
     const reach = (T.reach ?? 1.0) * Math.max(1, (z.scale || 1) * 0.92) + (T.travel || 0);
     const dest = hp.clone().addScaledVector(dir, -reach);
+    const lunge = P.lunge ?? 0.2;
     later(0, () => {}, 'ret:' + z.uid);
-    z.dashTo(dest, dash * 1000); z.face(hp, 90);
-    z.strike(clip, { hitIn, after: 1.35 });
-    if (ret) later(hitIn + 0.3, () => { z.returnHome(260); z.turnTo(z.baseYaw, 260); }, 'ret:' + z.uid);
-    sfx('zombie_attack', { by: z.uid, clip });
-    return hitIn;
+    z.dashTo(dest.clone().addScaledVector(dir, -lunge), P.dash * 1000); z.face(hp, 120);
+    later(Math.max(0, P.lead - P.snap - 0.03), () => z.dashTo(dest, (P.snap + 0.03) * 1000));    // the lunge into the blow
+    z.lookTarget = hero;
+    z.strike(clip, { hitIn: P.lead, snap: P.snap, hold: P.hold, recover: P.recover ?? 0.4, lean: P.lean ?? 0.12 });
+    if (ret) later(P.lead + P.hold + 0.12, () => { z.returnHome(320); z.turnTo(z.baseYaw, 320); }, 'ret:' + z.uid);
+    later(Math.max(0, P.lead - P.snap - 0.12), () => sfx('zombie_attack', { by: z.uid, clip }));
+    return P.lead;
   }
   // turn the shooter so the barrel lines up with the target
   function aimAt(hero, point, ms = 80) {
@@ -145,22 +190,27 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     for (const t of targets) {
       const p = t.anchor(head ? 'head' : 'chest', new THREE.Vector3()); if (head) p.y -= 0.08 * (t.scale || 1);
       p.x += (Math.random() - 0.5) * 0.12; p.y += (Math.random() - 0.5) * 0.15;
-      fx?.tracer?.(m, p, { width: big ? 0.03 : 0.022 });
+      fx?.tracer?.(m, p, { width: big ? 0.034 : 0.024 });
       t.lastShotAt = p;
     }
     const side = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), fwd).normalize().negate();
     fx?.shell?.(hero.anchor('hand', new THREE.Vector3()).addScaledVector(fwd, 0.05), side);
-    hero.kickRecoil(big ? 1.25 : 0.85);
+    hero.kickRecoil(big ? 1.25 : 0.9);
+    hero.knock.v -= big ? 2.2 : 0.8;                       // the shot rocks her back a touch
     stage.shake((big ? 0.35 : 0.12) * shakeK(), 160);
+    stage.nudge(-1, 0.3, (big ? 0.5 : 0.18) * shakeK());
     sfx(big ? 'shotgun' : 'pistol', { by: hero.id });
   }
-  function heroShoot(hero, targets, { big = false, hitIn = 0.09, head = false } = {}) {
+  // Yola raises and aims over `lead` (the pistol comes up off the low ready), then fires
+  function heroShoot(hero, targets, { big = false, lead = PACING.gun.pistol.lead, head = false } = {}) {
     if (!targets.length) return 0;
-    hero.aiming = true;
-    aimAt(hero, targets[0].anchor('chest', new THREE.Vector3()), Math.min(80, hitIn * 900));
-    later(hitIn, () => fire(hero, targets, { big, head }));
-    later(hitIn + 0.7, () => { hero.aiming = false; if (!hero.dead) hero.turnTo(STANCE_YAW[hero.stanceClip()] ?? hero.baseYaw, 260); }, 'aim:' + hero.id);
-    return hitIn;
+    hero.aiming = true; hero.lookTarget = targets[0];
+    const aimMs = Math.min(220, lead * 600);
+    aimAt(hero, targets[0].anchor('chest', new THREE.Vector3()), aimMs);
+    later(Math.max(0, lead - 0.1), () => aimAt(hero, targets[0].anchor(head ? 'head' : 'chest', new THREE.Vector3()), 60));   // settle on the mark
+    later(lead, () => fire(hero, targets, { big, head }));
+    later(lead + 0.75, () => { hero.aiming = false; if (!hero.dead) hero.turnTo(STANCE_YAW[hero.stanceClip()] ?? hero.baseYaw, 300); }, 'aim:' + hero.id);
+    return lead;
   }
   function heroPose(hero, anim, clip) {
     if (!hero) return;
@@ -178,28 +228,47 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
   }
 
   // ---- the finisher (pillar 2: the kill is the show) ----
+  // The slow motion eases in during the swing / aim (so the blow lands slowed), holds through the impact, the burst and
+  // the start of the fall, then eases out; the camera pushes in on the head for the whole beat. The first finisher of
+  // a run is the long one (PACING.finisher.first: ~2.1 s of real time at 1x), later ones are shorter.
+  const finisherTiming = () => (finishersShown === 0 ? PACING.finisher.first : PACING.finisher.later);
+  function finisherWindup(z, startIn) {
+    const F = finisherTiming();
+    later(Math.max(0, startIn), () => {
+      if (z.finisherCam) return; z.finisherCam = true;
+      stage.slowMo(PACING.finisher.scale, 0, { inMs: F.in * 1000, holdMs: 2500, outMs: F.out * 1000 });   // (the hold is set at the impact)
+      const head = z.anchor('head', new THREE.Vector3()); head.y = Math.max(1.1, head.y - 0.25 * (z.scale || 1));
+      stage.punchIn(head, (F.in + F.hold + F.out + 0.35) * 1000, F.punch);
+    });
+  }
   function finisherFx(z, attacker, kind, evt) {
+    const F = finisherTiming();
     const first = finishersShown === 0; finishersShown++;
     const gun = kind === 'gun' || kind === 'blast';
     const dir = attacker ? hitDir(attacker, z) : new THREE.Vector3(1, 0, 0);
-    stage.hitStop(first ? 150 : 110);
-    stage.slowMo(0.25, first ? 1300 : 700);
-    stage.punchIn(z.anchor('head', new THREE.Vector3()).setY(Math.max(1.1, z.anchor('head', _v2).y - 0.25)), first ? 1900 : 1150, first ? 0.42 : 0.3);
-    stage.whiteFlash(0.45, 150);
-    stage.shake(0.8 * shakeK(), 380);
+    stage.hitStop(gun ? PACING.gun.pistol.hitStop + 70 : PACING.hero.finisher.hitStop);
+    stage.slowMo(PACING.finisher.scale, 0, { inMs: z.finisherCam ? 60 : 90, holdMs: F.hold * 1000, outMs: F.out * 1000 });
+    if (!z.finisherCam) { z.finisherCam = true; const h = z.anchor('head', new THREE.Vector3()); h.y = Math.max(1.1, h.y - 0.25 * (z.scale || 1)); stage.punchIn(h, (F.hold + F.out + 0.3) * 1000, F.punch); }
+    stage.whiteFlash(0.5, 160);
+    stage.shake(0.85 * shakeK(), 420);
+    stage.nudge(Math.sign(dir.x) || 1, 0.2, 0.8 * shakeK());
     const head = z.anchor('head', new THREE.Vector3());
     if (goreFull()) fx?.gib?.(z, 'head', { dir, burst: gun, speed: 4.6 });
-    fx?.blast?.(head, { color: 0xff5a3a, strength: 0.55, ground: false });
-    fx?.impact?.(head, { dir, strength: 1.6, blunt: !gun });
+    fx?.blast?.(head, { color: 0xff5a3a, strength: 0.6, ground: false });
+    fx?.impact?.(head, { dir, strength: 1.8, blunt: !gun, heavy: true });
     z.finisherDone = true;
+    z.flash(0xffffff, 1);
     z.die(gun ? 'gun' : 'heavy', { finisher: true });
     if (!gun) z.tween(z.root, 'position', z.root.position.clone().addScaledVector(dir, 0.7), 650);
     banner('FINISHER', 'finisher');
     emit('finisher', { uid: z.uid, by: attacker?.id || null, first, kind });
     number(z.uid, evt?.amount ?? '', 'finisher', { amount: evt?.amount, big: true });
     sfx('finisher', { uid: z.uid, kind, first });
-    blockReal = Math.max(blockReal, realNow + (first ? 2.0 : 1.05));
-    later(first ? 0.6 : 0.35, () => { if (attacker?.isHero) attacker.returnHome(300); }, 'ret:' + attacker?.id);
+    // the queue (and input) wait for the slow beat in real time; the walk home starts as the slow motion eases out
+    const sp = stage.getSpeed?.() || 1;
+    blockReal = Math.max(blockReal, realNow + (0.15 + F.hold + F.out * 0.6) / sp);
+    const backIn = F.hold * PACING.finisher.scale + F.out * 0.5;
+    later(backIn, () => { if (attacker?.isHero && !attacker.dead) attacker.returnHome(380); }, 'ret:' + attacker?.id);
   }
   // the attack event: look ahead for a finisher in this attack's damage (a kill on a Staggered zombie)
   function findFinisher() {
@@ -208,6 +277,16 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
       if ((e.t === 'damage' && e.finisher) || (e.t === 'death' && e.finisher)) return e;
     }
     return null;
+  }
+
+  // more hits of this same swing / blast still queued (a sweep or a blast hits every zombie at once; a kill's death and
+  // statuses sit between them)? hit null: any hit of that source
+  function sameSwing(e) {
+    for (const n of queue) {
+      if (n.t === 'damage' && n.source === e.source && n.target !== 'party' && (e.hit == null || (n.hit || 1) === (e.hit || 1))) return true;
+      if (n.t !== 'death' && n.t !== 'status' && n.t !== 'block' && n.t !== 'energy') return false;
+    }
+    return false;
   }
 
   // ---- event handlers: return { delay, after, land } (seconds of game time) ----
@@ -221,9 +300,9 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
       return { after: e.boss || e.elite ? 0.9 : 0.35 };
     },
     turn_start(e) {
-      if (e.side === 'enemy') { banner("Zombies' Turn", 'enemy'); return { after: 0.5 }; }
+      if (e.side === 'enemy') { banner("Zombies' Turn", 'enemy'); return { after: PACING.banner.enemy }; }
       banner('Your Turn', 'player');
-      return { after: 0.25 };
+      return { after: PACING.banner.player };
     },
     card_played(e) {
       card = e; atk = null;
@@ -233,7 +312,7 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
       if (e.anim === 'none') return {};
       heroPose(hero, e.anim, e.clip);
       if (e.type === 'power') { fx?.buffAura?.(hero, HERO_COLOR[hero.id]); sfx('power', { hero: hero.id }); }
-      return { after: e.anim === 'block' || e.anim === 'dodge' ? 0.16 : 0.2 };
+      return { after: e.anim === 'block' || e.anim === 'dodge' ? PACING.skill.block : e.type === 'power' ? PACING.skill.power : PACING.skill.other };
     },
     attack(e) {
       const byEnemy = !!A.enemies.get(e.by);
@@ -244,9 +323,9 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
         const pref = ENEMY_CLIPS[z.enemyId]?.[anim] || ZOMBIE_CLIPS[anim] || ZOMBIE_CLIPS.melee_light;
         const clip = (z.nextClip && z.has(z.nextClip)) ? z.nextClip : z.pickClip(pref);
         z.nextClip = null;
-        atk = { by: e.by, actor: z, hero, anim, hits: e.hits || 1, hit: 1, clips: pref.filter(c => z.has(c)), enemy: true };
-        const t = zombieMelee(z, hero, clip, { hitIn: anim === 'melee_heavy' ? 0.32 : 0.27 });
-        return { after: t };
+        const P = anim === 'melee_heavy' ? PACING.zombie.heavy : PACING.zombie.light;
+        atk = { by: e.by, actor: z, hero, anim, hits: e.hits || 1, hit: 1, clips: pref.filter(c => z.has(c)), enemy: true, P };
+        return { after: zombieMelee(z, hero, clip, P) };
       }
       const hero = heroFor(e.by) || (card && heroFor(card.hero));
       const targets = e.target === 'all' ? living() : [A.enemies.get(e.target)].filter(Boolean);
@@ -257,13 +336,17 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
       const gun = /pistol|shotgun/.test(anim);
       if (gun) {
         const big = anim === 'shotgun';
-        if (fin && !atk.all && e.hits <= 1) {
-          // bullet time: slow, push in on the head, then the shot
-          stage.slowMo(0.35, 650); stage.punchIn(targets[0].anchor('head', new THREE.Vector3()), 1500, 0.32);
-          atk.head = true;
-          return { delay: heroShoot(hero, targets, { big, hitIn: 0.2, head: true }), after: 0.03 };
+        const G = big ? PACING.gun.shotgun : PACING.gun.pistol;
+        atk.P = G;
+        // an extra shot of a volley (each random shot is its own attack event): no second raise
+        const lead = (e.volley || 1) > 1 ? PACING.gun.burst : G.lead;
+        if (fin && !atk.all && (e.hits || 1) <= 1) {
+          // bullet time: the slow motion eases in as she aims, the camera pushes in on the head, then the shot
+          atk.head = true; atk.P = { ...G, ...PACING.gun.finisher };
+          finisherWindup(targets[0], PACING.gun.finisher.lead - 0.18);
+          return { delay: heroShoot(hero, targets, { big, lead: PACING.gun.finisher.lead, head: true }), after: 0.03 };
         }
-        return { delay: heroShoot(hero, targets, { big, hitIn: 0.08 }), after: 0.035 };
+        return { delay: heroShoot(hero, targets, { big, lead }), after: 0.03 };
       }
       // melee
       let clip = (card?.clip && hero.has(card.clip) && CLIP_TIMING[card.clip]) ? card.clip : CARD_CLIPS[card?.id] || null;
@@ -274,9 +357,11 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
         clip = anim === 'melee_light' ? list[hero.lightIx % list.length] : hero.pickClip(list);
       }
       atk.clips = HERO_ANIMS[hero.id]?.melee_combo || [clip];
-      const hitIn = fin && clip.startsWith('hub_execution') ? 0.42 : anim === 'melee_heavy' || anim === 'melee_sweep' ? 0.3 : 0.27;
-      const t = heroMelee(hero, targets, clip, { hitIn });
-      return { after: t };
+      const H = PACING.hero;
+      const P = fin && !atk.all && clip.startsWith('hub_execution') ? H.finisher : anim === 'melee_heavy' ? H.heavy : anim === 'melee_sweep' ? H.sweep : H.light;
+      atk.P = P;
+      if (P === H.finisher) finisherWindup(targets[0], P.lead - P.snap - 0.03);
+      return { after: heroMelee(hero, targets, clip, P) };
     },
     damage(e) {
       // a follow-up hit of a multi-hit attack: swing / shoot again first
@@ -285,34 +370,43 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
         atk.hit = e.hit;
         if (atk.enemy) {
           const clip = atk.clips[(e.hit - 1) % Math.max(1, atk.clips.length)] || 'scratch';
-          delay = 0.2; atk.actor.strike(clip, { hitIn: 0.2, after: 1.35 });
-          later(0.5, () => { atk?.actor?.returnHome?.(260); }, 'ret:' + atk.actor.uid);
+          const C = PACING.zombie.combo;
+          delay = C.lead; atk.actor.strike(clip, { hitIn: C.lead, snap: C.snap, hold: C.hold, recover: 0.35, lean: C.lean });
+          later(C.lead + C.hold + 0.15, () => { atk?.actor?.returnHome?.(300); }, 'ret:' + atk.actor.uid);
         } else if (/pistol|shotgun/.test(atk.anim)) {
-          const tgt = A.enemies.get(e.target), shooter = atk.actor, big = atk.anim === 'shotgun'; delay = 0.13;
+          const tgt = A.enemies.get(e.target), shooter = atk.actor, big = atk.anim === 'shotgun'; delay = PACING.gun.burst;
           if (tgt) {
-            later(0.03, () => aimAt(shooter, tgt.anchor('chest', new THREE.Vector3()), 50));
-            later(0.1, () => fire(shooter, [tgt], { big }));
+            later(0.04, () => aimAt(shooter, tgt.anchor('chest', new THREE.Vector3()), 60));
+            later(delay, () => fire(shooter, [tgt], { big }));
           }
         } else {
           const tgt = atk.all ? living() : [A.enemies.get(e.target)].filter(Boolean);
           const clip = atk.clips[(e.hit - 1) % atk.clips.length];
-          delay = heroMelee(atk.actor, tgt.length ? tgt : atk.targets, clip, { hitIn: 0.22, dash: 0.08 });
+          delay = heroMelee(atk.actor, tgt.length ? tgt : atk.targets, clip, PACING.hero.combo);
         }
       }
-      // a zombie's last hit: a beat before the next zombie moves (~0.45 s a zombie in all)
-      const after = A.enemies.get(e.source) && e.target === 'party' && (e.hit || 1) >= (e.hits || 1) ? 0.13 : 0;
+      let after = 0;
+      if (A.enemies.get(e.source) && e.target === 'party') {
+        // a zombie's hit: hold it; after its last hit, a beat before the next zombie moves
+        const Z = atk?.P || PACING.zombie.light;
+        after = (e.hit || 1) >= (e.hits || 1) ? Z.gap ?? 0.3 : Z.hold;
+      } else if (e.target !== 'party' && atk && !atk.enemy) {
+        // a hero's hit: the impact holds before anything queued (the next card) starts; a sweep's hits land together
+        after = sameSwing(e) ? 0 : (e.hit || 1) > 1 ? PACING.hero.combo.hold : atk.P?.hold ?? 0.12;
+      }
       return { delay, after, land: () => landDamage(e) };
     },
     death(e) {
       const z = A.enemies.get(e.target);
       if (!z) return {};
-      return { land: () => {
+      const hold = sameSwing({ source: e.by, hit: null }) ? 0 : 0.05;
+      return { after: hold, land: () => {
         if (z.finisherDone) return;
         if (e.finisher && !z.dead) { finisherFx(z, actorOf(e.by) || A.marc, e.kind, null); return; }
         if (!z.dead) z.die(e.kind || 'light');
         later(1.0, () => fx?.dust?.(z.anchor('hips', new THREE.Vector3()), { amount: 0.8 }));
         sfx('body_fall', { uid: z.uid });
-      }, after: 0.05 };
+      } };
     },
     block(e) {
       if (e.amount <= 0 || e.cleared) return {};
@@ -435,31 +529,48 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
         if (e.won) {
           later(0.5, () => { A.marc?.returnHome(300); A.yola?.turnTo(STANCE_YAW[A.yola.stanceClip()] ?? A.yola.baseYaw, 300); });
         } else {
-          stage.slowMo(0.45, 1200); stage.pulse(0x6a0000, 0.8, 1600);
-          for (const h of [A.marc, A.yola]) if (h) { const c = h.pickClip(HERO_ANIMS[h.id]?.defeat || []); if (c) { h.dead = false; h.play(c, { timeScale: c === 'death_defeat' ? 1.6 : 1.1, then: 'hold', fade: 0.15 }); h.dead = true; } }
+          // the defeat: the hero who took the last hit goes down first, the other a beat later; both stay down
+          const D = PACING.defeat;
+          stage.slowMo(D.slow, 0, { inMs: 120, holdMs: 700, outMs: 600 }); stage.pulse(0x6a0000, 0.8, 1600);
+          const firstDown = heroFor(lastPartyHero) || A.marc, other = firstDown === A.marc ? A.yola : A.marc;
+          firstDown?.collapse({ delay: 0.05 });
+          other?.collapse({ delay: D.second });
+          for (const z of living()) { z.lookTarget = firstDown; }
+          const mid = (A.marc?.root.position.clone() || new THREE.Vector3()).lerp(A.yola?.root.position || _v2.set(-3, 0, 0), 0.5); mid.y = 0.9;
+          stage.punchIn(mid, 3200, 0.16);
         }
         sfx(e.won ? 'victory' : 'defeat');
-      }, after: e.won ? 1.0 : 2.2 };
+      }, after: e.won ? 1.0 : PACING.defeat.after };
     },
   };
 
+  // Every hit reads: the stage freezes for a beat (hit-stop), the target flashes and is knocked back along the blow,
+  // blood / sparks at the contact, the frame kicks along the blow and shakes, all scaled by the damage; heavy blows add
+  // a white pop, a short push-in and dust off the floor.
   function landDamage(e) {
     if (e.target === 'party') {
       const hero = heroFor(e.hero) || (e.kind === 'self' ? heroFor(card?.hero) || A.marc : A.marc);
+      lastPartyHero = hero.id;
       const src = A.enemies.get(e.source);
       const dir = src ? hitDir(src, hero) : new THREE.Vector3(-1, 0, 0);
       const chest = hero.anchor('chest', new THREE.Vector3());
+      const heavy = e.kind === 'heavy' || e.amount >= 12;
       if (e.amount > 0) {
-        hero.hit({ heavy: e.amount >= 12, fromDir: dir });
-        if (e.kind !== 'self') fx?.blood?.(chest, dir, Math.min(1, 0.3 + e.amount / 20)); else fx?.blood?.(chest, new THREE.Vector3(0, -1, 0), 0.25);
+        hero.hit({ heavy, fromDir: dir, amount: e.amount });
+        if (e.kind !== 'self') fx?.impact?.(chest.clone().addScaledVector(dir, -0.12), { dir, strength: THREE.MathUtils.clamp(e.amount / 12, 0.4, 1.4), blunt: false });
+        else fx?.blood?.(chest, new THREE.Vector3(0, -1, 0), 0.25);
         stage.pulse(0xb3261e, Math.min(0.75, 0.3 + e.amount / 30), 420);
-        stage.hitStop(e.amount >= 12 ? 70 : 45);
+        stage.hitStop(heavy ? 80 : 55);
         stage.shake(Math.min(1, 0.25 + e.amount / 20) * shakeK(), 260);
+        if (src) stage.nudge(Math.sign(dir.x) || -1, -0.15, THREE.MathUtils.clamp(0.25 + e.amount / 16, 0.3, 1) * shakeK());
         number('party', String(e.amount), 'damage', { hero: hero.id, amount: e.amount, big: e.amount >= 15 });
       }
       if (e.blocked > 0) {
         fx?.shieldShimmer?.([hero], { hit: true });
-        if (!(e.amount > 0)) { hero.hit({ blocked: true }); stage.hitStop(35); stage.shake(0.12 * shakeK(), 150); }
+        if (!(e.amount > 0)) {
+          hero.hit({ blocked: true }); stage.hitStop(45); stage.shake(0.15 * shakeK(), 150);
+          if (src) stage.nudge(Math.sign(dir.x) || -1, 0, 0.2 * shakeK());
+        }
         number('party', e.amount > 0 ? `${e.blocked} blocked` : 'BLOCKED', 'blocked', { hero: hero.id, amount: e.blocked });
       }
       return;
@@ -469,19 +580,29 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     const dir = attacker ? hitDir(attacker, z) : new THREE.Vector3(1, 0, 0);
     const gun = e.kind === 'gun' || e.kind === 'blast';
     const p = gun && z.lastShotAt ? z.lastShotAt.clone() : strikePoint(z, attacker);
+    // a melee blow lands where the weapon meets the body (the bat's barrel, pulled onto the target)
+    if (!gun && attacker?.weapon?.kind === 'melee') { const tip = attacker.anchor('tip', _v2); if (tip.distanceTo(p) < 0.9 * (z.scale || 1)) p.lerp(tip, 0.55); }
     if (!(e.amount > 0)) {
-      if (e.blocked > 0) { fx?.impact?.(p, { blocked: true }); z.hit({ blocked: true }); stage.hitStop(40); number(e.target, 'BLOCKED', 'blocked', { amount: e.blocked }); }
+      if (e.blocked > 0) { fx?.impact?.(p, { blocked: true }); z.hit({ blocked: true }); stage.hitStop(45); stage.nudge(Math.sign(dir.x) || 1, 0, 0.2 * shakeK()); number(e.target, 'BLOCKED', 'blocked', { amount: e.blocked }); }
       return;
     }
     // the finisher plays here when this hit kills a Staggered zombie
     if (e.killed && e.finisher && !z.finisherDone) { finisherFx(z, attacker || A.marc, e.kind, e); return; }
     const heavy = e.kind === 'heavy' || e.kind === 'blast' || e.amount >= 14;
     const strength = THREE.MathUtils.clamp(e.amount / 12, 0.45, 1.7);
+    const k = THREE.MathUtils.clamp(e.amount / 14, 0.25, 1.2);           // the camera's share
     if (e.kind === 'bleed') fx?.blood?.(z.anchor('chest', new THREE.Vector3()), new THREE.Vector3(0, -1, 0), 0.4);
-    else fx?.impact?.(p, { dir, strength, blunt: !gun });
-    if (!e.killed) z.hit({ heavy, fromDir: dir, amount: e.amount }); else z.flash(0xffffff, 0.7);
-    stage.hitStop(e.killed ? 85 : heavy ? 72 : e.kind === 'bleed' ? 0 : 52);
-    stage.shake(Math.min(1, 0.12 + e.amount / 26) * shakeK() * (gun ? 0.7 : 1), 230);
+    else fx?.impact?.(p, { dir, strength, blunt: !gun, heavy });
+    if (!e.killed) z.hit({ heavy, fromDir: dir, amount: e.amount }); else { z.flash(0xffffff, 1); z.knock.v -= heavy ? 3 : 1.8; }
+    const P = atk && !atk.enemy ? atk.P : null;
+    stage.hitStop(e.kind === 'bleed' ? 0 : e.killed ? Math.max(90, P?.hitStop || 0) : P?.hitStop ?? (heavy ? 85 : 55));
+    stage.shake(Math.min(1.1, 0.12 + e.amount / 22) * shakeK() * (gun && !heavy ? 0.7 : 1), heavy ? 300 : 230);
+    if (e.kind !== 'bleed') stage.nudge(Math.sign(dir.x) || 1, heavy ? -0.25 : 0.1, k * shakeK());
+    if (heavy && e.kind !== 'bleed') {
+      stage.whiteFlash(0.16, 110);
+      stage.punchIn(z.anchor('chest', new THREE.Vector3()), 420, 0.06);
+      fx?.dust?.(z.anchor('feet', new THREE.Vector3()), { amount: 0.7 });
+    }
     number(e.target, String(e.amount), 'damage', { amount: e.amount, big: e.amount >= 15 || e.staggered });
     if (e.blocked > 0) number(e.target, `${e.blocked} blocked`, 'blocked', { amount: e.blocked });
   }
@@ -500,10 +621,26 @@ export function createDirector({ stage, actors, fx, audio = null, settings = {} 
     } });
     cursor = landAt + after;
   }
+  // who looks at whom: a hero at the zombie it is hitting, else the nearest one; a zombie at the hero it goes for
+  function updateLooks() {
+    const zs = living();
+    for (const h of [A.marc, A.yola]) {
+      if (!h || h.dead) continue;
+      const t = atk && !atk.enemy && atk.actor === h ? atk.targets?.find(z => !z.dead) : null;
+      let best = t || null, bd = Infinity;
+      if (!best) for (const z of zs) { const d = z.root.position.distanceToSquared(h.root.position); if (d < bd) { bd = d; best = z; } }
+      h.lookTarget = best;
+    }
+    for (const z of zs) {
+      z.lookTarget = atk && atk.enemy && atk.actor === z ? atk.hero : ((z.slot ?? 0) % 2 ? A.yola : A.marc) || A.marc;
+      if (z.lookTarget?.dead) z.lookTarget = null;
+    }
+  }
   function update(dt, realDt = dt) {
     const f = stage.frame?.() ?? -2;
     if (f === lastFrame && f !== -2) return; lastFrame = f;
     now += dt; realNow += realDt;
+    updateLooks();
     runTimers();
     let guard = 0;
     while (queue.length && now + 1e-6 >= cursor && realNow >= blockReal && guard++ < 200) { startNext(); runTimers(); }

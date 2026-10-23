@@ -195,6 +195,7 @@
     0 0 0 .1em #fff4, 0 0 .55em .22em color-mix(in srgb, var(--fr-l) 55%, #ffe8a6), 0 .28em .7em #000c;
 }
 .card--dim > :not(.card__cost) { filter: brightness(.78) saturate(.7); }
+.card--dim.card--noenergy > :not(.card__cost) { filter: brightness(.55) saturate(.35); }   /* can't afford it: clearly darker */
 .card--selected .card__frame, .card--ready .card__frame {
   box-shadow:
     inset 0 0 0 .12em color-mix(in srgb, var(--fr-d) 70%, black),
@@ -220,3 +221,18 @@
   box-shadow: 0 0 0 .16em #c9b98f, 0 0 1em #000;
 }
 .card__backmark svg { width: 2.6em; height: 2.6em; transform: rotate(-45deg); }
+
+/* ---------------------------------------------------------------- phones held sideways (short screens)
+   The hand cards grow a little, and the small cards (hand, shop shelf, deck grid) give the art a little less room, so
+   the rules text reads at 11-12 px on an 844x390 phone (it was 8-9 px). Reward and zoomed cards keep the full layout. */
+@media (max-height: 520px) {
+  :root { --card-hand-w: clamp(84px, min(25.5vmin, 12.5vw), 124px); }
+  :is(.card--hand, .card--grid) .card__art { height: 4.55em; }
+  :is(.card--hand, .card--grid) .card__type { top: 6.6em; }
+  :is(.card--hand, .card--grid) .card__type span { font-size: .72em; }
+  :is(.card--hand, .card--grid) .card__sigil { top: 5.86em; }
+  :is(.card--hand, .card--grid) .card__text { top: 7.42em; padding: .35em .32em .3em; font-size: 1.22em; line-height: 1.08; }
+  :is(.card--hand, .card--grid) .card__text--long { font-size: 1.12em; }
+  :is(.card--hand, .card--grid) .card__text--xlong { font-size: 1.02em; line-height: 1.04; }
+  :is(.card--hand, .card--grid) .card__text--xxlong { font-size: .92em; line-height: 1.02; }
+}

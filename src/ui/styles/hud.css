@@ -183,10 +183,10 @@
 
 /* ================================================================ controls: energy, piles, end turn */
 
-.cui-left { position: absolute; left: max(8px, 1.4vw); bottom: max(6px, 1.3vh); width: calc(var(--orb) + var(--pile) * .5); height: calc(var(--orb) + var(--pile) * .8); pointer-events: none; }
+.cui-left { position: absolute; left: max(8px, 1.4vw, calc(var(--sa-l) + 4px)); bottom: max(6px, 1.3vh, var(--sa-b)); width: calc(var(--orb) + var(--pile) * .5); height: calc(var(--orb) + var(--pile) * .8); pointer-events: none; }
 .cui-left .pile { position: absolute; left: 0; bottom: 0; }
 .cui-left .orb { position: absolute; left: calc(var(--pile) * .5); bottom: calc(var(--pile) * .8); }
-.cui-right { position: absolute; right: max(8px, 1.4vw); bottom: max(6px, 1.3vh); display: flex; flex-direction: column; align-items: flex-end; gap: max(6px, 1.4vmin); pointer-events: none; }
+.cui-right { position: absolute; right: max(8px, 1.4vw, calc(var(--sa-r) + 4px)); bottom: max(6px, 1.3vh, var(--sa-b)); display: flex; flex-direction: column; align-items: flex-end; gap: max(6px, 1.4vmin); pointer-events: none; }
 .cui-piles { display: flex; align-items: flex-end; gap: max(6px, 1.2vmin); }
 
 .orb { width: var(--orb); height: var(--orb); border-radius: 50%; cursor: help; }
@@ -360,7 +360,8 @@
 .tbwrap { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; --tb-h: clamp(34px, 8.2vmin, 60px); }
 .tb {
   position: relative; pointer-events: auto; height: var(--tb-h);
-  display: flex; align-items: center; gap: max(8px, 1.6vmin); padding: 0 max(10px, 1.4vw);
+  display: flex; align-items: center; gap: max(8px, 1.6vmin);
+  padding: 0 max(10px, 1.4vw, calc(var(--sa-r) + 6px)) 0 max(10px, 1.4vw, calc(var(--sa-l) + 6px));
   background: linear-gradient(180deg, #091012f5 0%, #0f191cee 70%, #0d1416dd 100%);
   border-bottom: 1px solid #2d4249;
   box-shadow: 0 2px 14px #000b, inset 0 -1px 0 #ffffff0c;
@@ -394,7 +395,7 @@
 @keyframes tb-up { 25% { transform: scale(1.15); filter: brightness(1.4); } }
 .tb__potions { display: flex; gap: max(4px, .8vmin); margin-left: max(2px, .4vmin); }
 .tb__potion {
-  --pc: #efe6d2;
+  --pc: #efe6d2; position: relative;
   width: calc(var(--tb-h) * .72); height: calc(var(--tb-h) * .72); padding: 0; border-radius: 26%;
   display: grid; place-items: center; cursor: default; color: var(--pc);
   border: 1.5px dashed #344b51; background: #0a1113;
@@ -421,7 +422,7 @@
   background: #c8483a; color: #fff; box-shadow: 0 0 0 1.5px #0b1214;
   font: 400 calc(var(--tb-h) * .27)/1.1 var(--f-display); letter-spacing: .03em;
 }
-.tb__relics { pointer-events: auto; display: flex; flex-wrap: wrap; gap: max(4px, .9vmin); padding: max(4px, .8vmin) max(10px, 1.4vw); width: max-content; max-width: 62vw; }
+.tb__relics { pointer-events: auto; display: flex; flex-wrap: wrap; gap: max(4px, .9vmin); padding: max(4px, .8vmin) max(10px, 1.4vw); padding-left: max(10px, 1.4vw, calc(var(--sa-l) + 6px)); width: max-content; max-width: 62vw; }
 .tb__relic {
   --rc: #d7dde2; --rs: clamp(26px, 6.2vmin, 46px);
   position: relative; width: var(--rs); height: var(--rs); border-radius: 50%; cursor: help;
@@ -467,3 +468,53 @@
 .pv__grid .card { transition: transform .15s var(--ease-out); }
 .pv__grid .card:hover { transform: translateY(-4px) scale(1.04); z-index: 1; }
 .pv__empty { padding: 10vh 0; font: 600 clamp(14px, 3vmin, 22px)/1 var(--f-head); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+
+/* ================================================================ tap targets: every button reaches 44 px with an invisible margin */
+.tb__btn::after, .tb__potion::after { content: ''; position: absolute; inset: -6px -4px; }
+.pile::after { content: ''; position: absolute; inset: max(0px, calc((44px - var(--pile)) / -2)); }
+.tb__relic::after, .st::after { content: ''; position: absolute; inset: -4px; }
+
+/* ================================================================ incoming damage (your turn): next to the party's HP bar */
+.ehud__inc {
+  position: absolute; left: calc(100% + 8px); top: 50%; translate: 0 -50%; z-index: 3;
+  display: none; align-items: center; gap: 2px; padding: 3px 8px 2px 5px; border-radius: 99px; pointer-events: auto; cursor: help; white-space: nowrap;
+  background: linear-gradient(180deg, #3a0d08f0, #1c0604f0); box-shadow: 0 0 0 1.5px #ff6a55, 0 3px 8px #000c;
+  font: 400 clamp(15px, 3.4vmin, 26px)/1 var(--f-display); letter-spacing: .03em; color: #fff;
+}
+.ehud__inc--on { display: inline-flex; animation: inc-in .3s var(--ease-back); }
+@keyframes inc-in { from { scale: .5; opacity: 0; } }
+.ehud__inc i { display: grid; width: 1.05em; height: 1.05em; color: #ff8a74; }
+.ehud__inc i svg { width: 100%; height: 100%; filter: drop-shadow(0 1px 0 #000); }
+.ehud__inc small { font: 600 max(10px, .5em)/1 var(--f-head); letter-spacing: .08em; text-transform: uppercase; color: #ffb7a8; margin-left: 3px; }
+.ehud__inc--safe { background: linear-gradient(180deg, #0f2a40f0, #08182af0); box-shadow: 0 0 0 1.5px #7fb8e6, 0 3px 8px #000c; }
+.ehud__inc--safe i { color: #9fd0ff; } .ehud__inc--safe small { color: #b9dcff; }
+.ehud__inc--lethal { box-shadow: 0 0 0 2px #ffd166, 0 0 14px #ff3a26, 0 3px 8px #000c; animation: inc-lethal .9s ease-in-out infinite alternate; }
+@keyframes inc-lethal { to { box-shadow: 0 0 0 2px #fff0bf, 0 0 22px #ff3a26, 0 3px 8px #000c; } }
+/* the slice of the party's HP the zombies would take after your Block */
+.hpbar__inc { position: absolute; top: 0; bottom: 0; display: none; background: repeating-linear-gradient(-45deg, #ffe3dc 0 3px, #ff8a74 3px 6px); box-shadow: inset 0 0 0 1px #fff8; opacity: .85; }
+.hpbar__inc--on { display: block; animation: pred 0.9s ease-in-out infinite alternate; }
+
+/* ================================================================ phones held sideways */
+@media (max-height: 520px) {
+  .cui { --pile: 42px; }
+  .tbwrap { --tb-h: 42px; }
+  .tb__right { gap: 8px; }
+  .tb__btn { width: 36px; height: 36px; }
+  .tb__potions { gap: 10px; }
+  .tb__potion { width: 34px; height: 34px; }
+  .tb__potion::after { inset: -5px; }
+  .tb__floorlbl { font-size: 10.5px; letter-spacing: .18em; }
+  .tb__floor { padding: .3em .8em .25em; }
+  .hpbar { --bh: 14px; }
+  .ehud--party .hpbar { --bh: 16px; }
+  .blockb { width: 30px; height: 30px; margin-top: -15px; }
+  .blockb__num { font-size: 16px; }
+  .st { --s: 22px; }
+  .endturn { height: 46px; min-width: 108px; font-size: 16px; padding: 0 .9em; }
+  .pile--exhaust { --pile: 36px; }
+  .ehud__inc { font-size: 17px; padding: 3px 7px 2px 4px; }
+  .ehud__name { font-size: 12px; }
+  .pv__close { width: 44px; height: 44px; }
+  .pv__panel { width: min(calc(100vw - 16px - var(--sa-l) - var(--sa-r)), 1200px); max-height: calc(100vh - 12px - var(--sa-b)); }
+  .tb__menu-btn { min-height: 44px; }
+}

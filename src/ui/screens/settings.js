@@ -1,8 +1,8 @@
 // Settings: a modal over whatever is behind it. Game speed, music and sound volume, screen shake, gore, and the two
 // destructive buttons (abandon this run, reset the whole profile), each needing a second tap to confirm.
 // Every change goes out at once through act.set(key, value) so the app can apply it live.
-//   ctx: { settings: { speed: 1|1.5|2, music: 0..1, sfx: 0..1, voices: bool, shake: bool, gore: 'full'|'low' }, inRun?: bool, version? }
-//   act: set(key, value), close(), abandonRun(), resetProfile()
+//   ctx: { settings: { speed: 1|1.5|2, music: 0..1, sfx: 0..1, voices: bool, shake: bool, gore: 'full'|'low', tips: bool }, inRun?: bool, version? }
+//   act: set(key, value), close(), abandonRun(), resetProfile(), howTo()   (tips: the first-run coach, src/app/coach.js)
 
 import { shell, h, closeBtn, onEscape, hoverSounds, ui, enter } from './common.js';
 import '../styles/screens.css';
@@ -10,7 +10,7 @@ import '../styles/screens.css';
 export function mount(root, ctx) {
   const s = shell(root, 'settings', { modal: true });
   const act = ctx.act || {};
-  const cur = { speed: 1, music: .7, sfx: .8, voices: true, shake: true, gore: 'full', ...(ctx.settings || {}) };
+  const cur = { speed: 1, music: .7, sfx: .8, voices: true, shake: true, gore: 'full', tips: true, ...(ctx.settings || {}) };
   const close = () => { ui(ctx, 'click'); act.close?.(); };
   const set = (k, v) => { cur[k] = v; act.set?.(k, v); if (k === 'voices' && !v) ctx.audio?.voice?.stop?.(); };
 
@@ -56,6 +56,7 @@ export function mount(root, ctx) {
     h('div.scr-modal__head', h('h2', 'Settings'), closeBtn(close)),
     h('div.scr-modal__body',
       row('Game speed', 'How fast fights and animations play.', seg('speed', [[1, '1×'], [1.5, '1.5×'], [2, '2×']])),
+      row('Tips', 'Short hints the first time something new comes up.', seg('tips', [[true, 'On'], [false, 'Off']])),
       row('Music', null, slider('music')),
       row('Sound', null, slider('sfx')),
       row('Voices', 'Marc and Yola talk during fights.', seg('voices', [[true, 'On'], [false, 'Off']])),
@@ -65,7 +66,9 @@ export function mount(root, ctx) {
         h('div.set-danger__label', 'Careful'),
         ctx.inRun ? danger('Abandon run', 'Tap again to abandon', act.abandonRun) : null,
         danger('Reset profile', 'Tap again: erase everything', act.resetProfile)),
-      h('div.set-foot', h('span.set-ver', ctx.version ? `Sarno Legends v${String(ctx.version).replace(/^v/, '')}` : 'Sarno Legends'), h('button.btn.teal', { onclick: close }, 'Done'))));
+      h('div.set-foot', h('span.set-ver', ctx.version ? `Sarno Legends v${String(ctx.version).replace(/^v/, '')}` : 'Sarno Legends'),
+        act.howTo ? h('button.btn', { onclick: () => { ui(ctx, 'click'); act.howTo(); } }, 'How to Play') : null,
+        h('button.btn.teal', { onclick: close }, 'Done'))));
 
   s.el.append(h('div.scr-scrim', { onclick: close }), modal);
   s.cleanup(onEscape(close));

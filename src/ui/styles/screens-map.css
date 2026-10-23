@@ -115,6 +115,7 @@
 @keyframes node-arrive { 0% { transform: scale(1.3); background: color-mix(in srgb, var(--c) 45%, var(--bp-paper)); } 100% { transform: scale(1); } }
 .map--travelling .map-node--open:not(.map-node--arrive) { opacity: .45; }
 .map--travelling .map-node { pointer-events: none; }
+.map-node--open::after { content: ''; position: absolute; inset: -6px; border-radius: 30%; }   /* a 44+ px thumb target */
 
 /* legend highlight */
 .hl .map-node { opacity: .2; }
@@ -180,6 +181,10 @@
   .map-legend { min-width: 0; padding: calc(var(--u) * 1.4) calc(var(--u) * 1.8); }
   .map-tb__north { display: none; }
   .map-head__text b { display: none; }
-  .map-head__text span { font-size: 9px; letter-spacing: .14em; max-width: 90px; line-height: 1.2; }
+  .map-head__text span { font-size: 11px; letter-spacing: .12em; max-width: 116px; line-height: 1.2; }
+  .map-legend__row { font-size: 11.5px; padding: 1px 0; }
+  .map-legend__title { font-size: 10px; }
+  .map-tb__row { font-size: 10px; }
+  .map-head__floor small { font-size: 10px; }
   .map-head__floor { width: calc(var(--u) * 11); height: calc(var(--u) * 11); }
 }

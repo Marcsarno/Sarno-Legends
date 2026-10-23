@@ -16,7 +16,7 @@
 
 import { cardView } from '../game/content/cards.js';
 import { cardEl, attachStudioArt, setCardCost, updateCardNumbers } from './card.js';
-import { h, clamp } from './dom.js';
+import { h, clamp, safeInsets } from './dom.js';
 import { getSpeed } from './tween.js';
 import { showTip, hideTip, tipCardKeywords, suppressTips } from './tooltip.js';
 import { createTargeting } from './targeting.js';
@@ -55,7 +55,9 @@ export function createHand(o) {
     const zoom = clamp(vh * (phone ? 0.6 : 0.5) / H, 1.25, phone ? 1.85 : 1.6);
     const sink = -0.03;
     const side = Math.max(vw * 0.165, 120);
-    return { vw, vh, W, H, zoom, sink, side, baseY: vh - H / 2 + H * sink, lineY: vh - H * 1.18, phone };
+    // a notched phone's home bar: the hand sits above it (a drag that starts on the very edge is the system's swipe)
+    const sab = safeInsets().b;
+    return { vw, vh, W, H, zoom, sink, side, sab, baseY: vh - sab - H / 2 + H * sink, lineY: vh - sab - H * 1.18, phone };
   }
 
   function slots() {
@@ -174,7 +176,7 @@ export function createHand(o) {
         if (!slot) continue;
         if (rec.uid === hov || rec.state === 'select') {
           rec.tx = clamp(slot.x, G.W * G.zoom / 2 + 4, G.vw - G.W * G.zoom / 2 - 4);
-          rec.ty = G.vh - G.H * G.zoom / 2 - 4;
+          rec.ty = G.vh - G.sab - G.H * G.zoom / 2 - 4;
           rec.tr = 0; rec.ts = G.zoom; rec.z = 200;
         } else {
           let dx = 0;
@@ -250,7 +252,7 @@ export function createHand(o) {
   }
 
   const playSpot = () => ({ x: G.vw * 0.5, y: G.phone ? G.vh * 0.44 : G.vh * 0.45 });
-  const aimSpot = () => ({ x: G.vw * 0.5, y: G.vh - G.H * (G.phone ? 0.78 : 0.82) });
+  const aimSpot = () => ({ x: G.vw * 0.5, y: G.vh - G.sab - G.H * (G.phone ? 0.78 : 0.82) });
 
   // ---------------------------------------------------------------- targeting
 
@@ -377,6 +379,8 @@ export function createHand(o) {
     mode = 'press'; active = rec; hovered = rec.uid;
     press = { x0: e.clientX, y0: e.clientY, t0: performance.now(), id: e.pointerId, type: e.pointerType || 'mouse', gx: e.clientX - rec.x, gy: e.clientY - rec.y };
     o.onHover?.(rec.uid);
+    // touch: holding a card still zooms it (above) and, after a moment, explains its keywords
+    if (press.type !== 'mouse') { const p = press; setTimeout(() => { if (press === p && mode === 'press' && active === rec) showTipFor(rec, true); }, 360); }
   }
 
   function onMove(e) {
@@ -388,7 +392,7 @@ export function createHand(o) {
     if (mode === 'idle' && pointer.type === 'mouse' && !potionAim) hoverAt(e.clientX, e.clientY);
     else if (mode === 'press' && press) {
       const dx = e.clientX - press.x0, dy = e.clientY - press.y0, dist = Math.hypot(dx, dy);
-      if (press.type !== 'mouse' && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2 && e.clientY > G.vh - G.H * G.zoom) {
+      if (press.type !== 'mouse' && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2 && e.clientY > G.vh - G.sab - G.H * G.zoom) {
         // scrub along the hand with a finger
         const u = nearestSlot(e.clientX);
         if (u && u !== active?.uid) { active = cards.get(u); hovered = u; press.x0 = e.clientX; press.y0 = e.clientY; o.onHover?.(u); }
@@ -475,7 +479,7 @@ export function createHand(o) {
     const S = slots();
     if (!S.n) return null;
     const first = S.map.get(S.list[0]), last = S.map.get(S.list[S.n - 1]);
-    const top = hovered ? G.vh - G.H * G.zoom - 6 : G.vh - G.H * (1 - G.sink) - 4;
+    const top = hovered ? G.vh - G.sab - G.H * G.zoom - 6 : G.vh - G.sab - G.H * (1 - G.sink) - 4;
     if (y < top || x < first.x - G.W / 2 - 4 || x > last.x + G.W / 2 + 4) return null;
     return nearestSlot(x);
   }
@@ -602,7 +606,7 @@ export function createHand(o) {
     get busy() { return mode !== 'idle' || !!potionAim; },
     get hovered() { return hovered; },
     /** y of the top of the resting hand (the HUD keeps world bars above it) */
-    restTop: () => G.vh - G.H * (1 - G.sink),
+    restTop: () => G.vh - G.sab - G.H * (1 - G.sink),
     elOf: uid => cards.get(uid)?.el || null,
     /** test hooks (labs / playtests): put a card in a pose without the pointer */
     debugPose(uid, pose, opts = {}) {

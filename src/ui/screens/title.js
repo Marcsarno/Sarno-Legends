@@ -1,7 +1,7 @@
 // Title screen: the painted ER behind, the SARNO (red) LEGENDS (teal) logo and the menu on the right, the scrap count and
 // version in the corner. The center-left stays clear: the app stands live 3D Marc and Yola there.
 //   ctx: { hasSave, save?: { floor, hp, maxHp }, profile: { scrap }, version, rooms, audio }
-//   act: continue(), newRun(), armory(), settings()   (with a save, New Run needs a second tap: it abandons that run)
+//   act: continue(), newRun(), armory(), settings(), howTo()   (with a save, New Run needs a second tap: it abandons that run)
 
 import { shell, backdrop, hoverSounds, ui, st, h, icon, anim, wait, enter } from './common.js';
 
@@ -40,7 +40,9 @@ export function mount(root, ctx) {
       ctx.hasSave ? btn('.ttl-btn--cont', 'arrow_up', 'Continue', contNote, () => ctx.act?.continue?.()) : null,
       btn('.ttl-btn--primary', 'swords', ctx.hasSave ? 'New Run' : 'Start a Run', armed ? ['Tap again', h('br'), 'to abandon it'] : null, newRun),
       btn('', 'weapon_wood_bat', 'Armory', h('span.gold-c', `${scrap} scrap`), () => ctx.act?.armory?.()),
-      btn('', 'settings', 'Settings', null, () => ctx.act?.settings?.())].filter(Boolean));
+      h('div.ttl-row',
+        btn('.ttl-btn--help', 'info', 'How to Play', null, () => ctx.act?.howTo?.()),
+        btn('', 'settings', 'Settings', null, () => ctx.act?.settings?.()))].filter(Boolean));
     scrapN.textContent = String(scrap);
   }
   renderMenu();

@@ -86,8 +86,25 @@ export function placeOneHanded(bones, side, o, def, fit, k = 1) {
   applyFit(o, F.c, q0, fit, new THREE.Vector3(...def.grip_primary), 1, k);
   return true;
 }
-// both fists on it (closer than `apart`): along the line through both fist centres, barrel toward the index knuckles
-export function placeBat(bones, o, def, fit, k = 1, apart = 0.2) {
+// both fists on it (closer than `apart`): along the line through both fist centres, barrel toward the index knuckles.
+// st (optional, per weapon): hysteresis on the two-hands test, and a short blend of the bat's turn when it switches
+// between two hands and one (the swing's follow-through lets go mid-sweep: without it the bat pops to the other side)
+export function placeBat(bones, o, def, fit, k = 1, apart = 0.2, st = null, dt = 0) {
+  if (!st) return placeBatRaw(bones, o, def, fit, k, apart);
+  const R = fistFrame(bones, 'Right', F1), L = R && fistFrame(bones, 'Left', F2);
+  const two = !!(R && L && def.two && R.c.distanceTo(L.c) <= apart * k * (st.two ? 1.35 : 1));
+  const ok = placeBatRaw(bones, o, def, fit, k, two ? Infinity : 0);
+  if (!ok) return false;
+  if (st.q && two !== st.two) { st.from = (st.from || new THREE.Quaternion()).copy(st.q); st.blend = 1; }
+  st.two = two;
+  if (st.blend > 0 && st.from) {
+    st.blend = Math.max(0, st.blend - dt / 0.1);
+    o.quaternion.slerpQuaternions(o.quaternion.clone(), st.from, st.blend * st.blend);
+  }
+  (st.q ||= new THREE.Quaternion()).copy(o.quaternion);
+  return true;
+}
+function placeBatRaw(bones, o, def, fit, k = 1, apart = 0.2) {
   const R = fistFrame(bones, 'Right', F1); if (!R) return false;
   const L = fistFrame(bones, 'Left', F2);
   if (!L || !def.two || R.c.distanceTo(L.c) > apart * k) return placeOneHanded(bones, 'Right', o, def, fit, k);
@@ -198,11 +215,17 @@ export async function createWeapon(id, scene) {
 
   let kickT = 1, kickS = 0;
   const tipLocal = W.def ? new THREE.Vector3(...(W.def.impact || W.def.tip)) : null;
+  // dropped (a defeat): it leaves the hand and tumbles to the floor; pickUp() puts it back in the hand
+  let dropped = null;
+  const batState = { two: true, q: null, from: null, blend: 0 };
+  let lastDt = 0;
+  const half = W.kind === 'pistol' ? 0.03 : W.kind === 'shotgun' ? 0.05 : 0.035; // resting height of its centre
 
   return {
     id, kind: W.kind, def: W, obj, muzzle,
     /** pose it in the actor's hand this frame (after the mixer). */
     place(actor) {
+      if (dropped) return;
       const B = actor.bones, k = actor.rigScale || 1;
       if (W.kind === 'pistol') placePistol(B, obj, PISTOL_FIT[actor.id] || PISTOL_FIT.yola, k);
       else if (W.kind === 'shotgun') {
@@ -218,7 +241,7 @@ export async function createWeapon(id, scene) {
         obj.quaternion.multiply(_q.setFromEuler(_e.set((SHOTGUN_FIT[id]?.tilt || 0) * D2R, (SHOTGUN_FIT[id]?.turn || 0) * D2R, (SHOTGUN_FIT[id]?.roll || 0) * D2R, 'YXZ')));
         obj.position.copy(R.c).add(_b.set(0, -0.02, -0.02).applyQuaternion(obj.quaternion));
         obj.scale.setScalar(1);
-      } else placeBat(B, obj, W.def, W.fit, k);
+      } else placeBat(B, obj, W.def, W.fit, k, 0.2, batState, lastDt);
       // procedural slide / pump kick after a shot
       if (kickT < 1) {
         const u = kickT, s = Math.sin(Math.min(1, u) * Math.PI) * kickS;
@@ -231,7 +254,38 @@ export async function createWeapon(id, scene) {
     muzzleWorld(out = new THREE.Vector3()) { return muzzle ? muzzle.getWorldPosition(out) : obj.getWorldPosition(out); },
     forward(out = new THREE.Vector3()) { return out.set(0, 0, 1).transformDirection(obj.matrixWorld); },
     kick(strength = 1) { kickT = 0; kickS = strength; },
-    update(dt) { if (kickT < 1) kickT = Math.min(1, kickT + dt / (W.kind === 'shotgun' ? 0.5 : 0.09)); },
+    /** Let go: it keeps its place and falls with this velocity (world m/s) and a tumble. */
+    drop(v = new THREE.Vector3(0, 0.8, 0)) {
+      if (dropped) return;
+      dropped = { v: v.clone(), w: new THREE.Vector3((Math.random() - 0.5) * 9, (Math.random() - 0.5) * 5, (Math.random() - 0.5) * 9), rest: false, bounces: 0 };
+    },
+    pickUp() { dropped = null; },
+    get dropped() { return !!dropped; },
+    update(dt) {
+      lastDt = dt;
+      if (kickT < 1) kickT = Math.min(1, kickT + dt / (W.kind === 'shotgun' ? 0.5 : 0.09));
+      if (dropped && !dropped.rest && dt > 0) {
+        const D = dropped;
+        D.v.y -= 9.8 * dt; obj.position.addScaledVector(D.v, dt);
+        _q.setFromEuler(_e.set(D.w.x * dt, D.w.y * dt, D.w.z * dt)); obj.quaternion.premultiply(_q);
+        if (obj.position.y < half) {
+          obj.position.y = half;
+          if (D.v.y < -1.2 && D.bounces < 2) { D.v.y *= -0.28; D.v.x *= 0.45; D.v.z *= 0.45; D.w.multiplyScalar(0.4); D.bounces++; }
+          else {
+            // settle flat: keep its heading, lie along the floor
+            D.rest = true;
+            const gun = W.kind !== 'melee', up = _c.set(0, 1, 0);
+            const along = _a.set(0, gun ? 0 : 1, gun ? 1 : 0).applyQuaternion(obj.quaternion); along.y = 0;  // shaft / barrel
+            if (along.lengthSq() < 1e-4) along.set(1, 0, 0);
+            along.normalize();
+            if (gun) _m1.makeBasis(up, _b.crossVectors(along, up), along);           // on its side, barrel level
+            else { const side = _b.crossVectors(along, up).normalize(); _m1.makeBasis(side, along, _d.crossVectors(side, along)); }
+            obj.quaternion.setFromRotationMatrix(_m1);
+          }
+        }
+        obj.updateMatrixWorld(true);
+      }
+    },
     setVisible(v) { obj.visible = v; },
     dispose() { scene.remove(obj); obj.traverse(m => { if (m.isMesh) m.material.dispose?.(); }); }, // (geometry is the cached GLB's)
   };
@@ -239,6 +293,9 @@ export async function createWeapon(id, scene) {
 
 // The Shield Guard's riot shield (procedural): a smoked polycarbonate panel with a rubber rim, a "SECURITY" band and a
 // handle behind it. Frame: face toward +Z, up +Y, the handle (where the forearm goes) at the origin.
+// The band is its own small plane so it always reads right from the camera: each frame (userData.faceCamera, called by
+// the actor after posing) it sits on whichever face the camera sees and turns in quarter steps so the lettering runs
+// left to right and upright on screen, never mirrored or upside down, however the forearm swings the shield.
 export function createRiotShield() {
   const g = new THREE.Group(); g.name = 'riot_shield';
   const W = 0.56, H = 0.98, R = 0.08;
@@ -248,21 +305,53 @@ export function createRiotShield() {
   shape.quadraticCurveTo(-W / 2, H / 2, -W / 2, H / 2 - R); shape.lineTo(-W / 2, -H / 2 + R); shape.quadraticCurveTo(-W / 2, -H / 2, -W / 2 + R, -H / 2);
   const panelGeo = new THREE.ExtrudeGeometry(shape, { depth: 0.012, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.006, bevelSegments: 2, curveSegments: 6 });
   panelGeo.translate(0, 0, 0.05);
-  // the band: canvas text on the face
-  const c = document.createElement('canvas'); c.width = 256; c.height = 448; const x = c.getContext('2d');
-  x.fillStyle = 'rgba(40,52,60,0.0)'; x.fillRect(0, 0, 256, 448);
-  x.fillStyle = 'rgba(235,235,225,0.92)'; x.fillRect(0, 150, 256, 46);
-  x.fillStyle = '#1b2228'; x.font = 'bold 34px Oswald, Impact, sans-serif'; x.textAlign = 'center'; x.fillText('SECURITY', 128, 186);
-  x.strokeStyle = 'rgba(255,255,255,0.18)'; x.lineWidth = 3; for (let i = 0; i < 7; i++) { x.beginPath(); x.moveTo(20 + i * 40, 10); x.lineTo(i * 40 - 60, 440); x.stroke(); }
+  // scratches on the face
+  const c = document.createElement('canvas'); c.width = 128; c.height = 224; const x = c.getContext('2d');
+  x.strokeStyle = 'rgba(255,255,255,0.18)'; x.lineWidth = 1.5; for (let i = 0; i < 7; i++) { x.beginPath(); x.moveTo(10 + i * 20, 5); x.lineTo(i * 20 - 30, 220); x.stroke(); }
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
   const panel = new THREE.Mesh(panelGeo, new THREE.MeshStandardMaterial({ color: 0x55707c, transparent: true, opacity: 0.62, roughness: 0.12, metalness: 0.15, envMapIntensity: 1.6, depthWrite: false, side: THREE.DoubleSide }));
-  const face = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.94, H * 0.94), new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.4, depthWrite: false }));
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.94, H * 0.94), new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.4, depthWrite: false, side: THREE.DoubleSide }));
   face.position.z = 0.068;
+  // the band: lettering on a pale strip, long enough to run across the width or along the length
+  const lc = document.createElement('canvas'); lc.width = 512; lc.height = 96; const lx = lc.getContext('2d');
+  lx.fillStyle = 'rgba(235,235,225,0.94)'; lx.fillRect(0, 0, 512, 96);
+  lx.fillStyle = '#1b2228'; lx.font = 'bold 66px Oswald, Impact, sans-serif'; lx.textAlign = 'center'; lx.textBaseline = 'middle'; lx.fillText('SECURITY', 256, 52);
+  const ltex = new THREE.CanvasTexture(lc); ltex.colorSpace = THREE.SRGBColorSpace; ltex.anisotropy = 4;
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.086), new THREE.MeshStandardMaterial({ map: ltex, roughness: 0.45, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+  label.name = 'shield_label';
   const rimMat = new THREE.MeshStandardMaterial({ color: 0x16191c, roughness: 0.8 });
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(1, 0.012, 6, 4), rimMat); // (stand-in; the bevel reads as the rim)
-  rim.visible = false;
   const handle = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.16, 0.05), rimMat); handle.position.set(0, 0, 0.02);
-  g.add(panel, face, rim, handle);
-  g.traverse(m => { if (m.isMesh) { m.castShadow = true; m.renderOrder = 6; } });
+  g.add(panel, face, label, handle);
+  g.traverse(m => { if (m.isMesh) { m.castShadow = m !== label; m.renderOrder = 6; } });
+  label.renderOrder = 7;
+
+  // pick the label's face and quarter turn for this camera (with a little hysteresis so it doesn't flicker)
+  let pick = -1;
+  const cands = [];
+  for (const side of [1, -1]) for (let k = 0; k < 4; k++) cands.push({ side, k });
+  const _cp = new THREE.Vector3(), _n = new THREE.Vector3(), _r = new THREE.Vector3(), _u = new THREE.Vector3(), _cq = new THREE.Quaternion(), _lq = new THREE.Quaternion(), _ce = new THREE.Euler();
+  g.userData.faceCamera = (camera) => {
+    g.updateMatrixWorld(true);
+    const gq = g.getWorldQuaternion(_cq);
+    const toCam = _cp.setFromMatrixPosition(camera.matrixWorld).sub(_n.setFromMatrixPosition(g.matrixWorld));
+    const front = _n.set(0, 0, 1).applyQuaternion(gq).dot(toCam) >= 0 ? 1 : -1;
+    const camInv = camera.matrixWorldInverse;
+    let best = -1, bestS = -Infinity;
+    cands.forEach((C, i) => {
+      if (C.side !== front) return;
+      _lq.setFromEuler(_ce.set(0, C.side < 0 ? Math.PI : 0, C.k * Math.PI / 2));
+      _lq.premultiply(gq);
+      _r.set(1, 0, 0).applyQuaternion(_lq).transformDirection(camInv);   // the text's "right" in view space
+      _u.set(0, 1, 0).applyQuaternion(_lq).transformDirection(camInv);   // and its "up"
+      const sc = _r.x + 0.6 * _u.y + (i === pick ? 0.35 : 0);
+      if (sc > bestS) { bestS = sc; best = i; }
+    });
+    if (best !== pick) {
+      pick = best; const C = cands[best];
+      label.rotation.set(0, C.side < 0 ? Math.PI : 0, C.k * Math.PI / 2);
+      label.position.set(0, 0.12 * (C.k % 2 ? 0 : 1), C.side > 0 ? 0.0705 : 0.041);
+    }
+  };
+  g.userData.faceCamera.label = label;
   return g;
 }
