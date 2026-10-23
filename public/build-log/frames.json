@@ -166,5 +166,133 @@
   "caption": "Stage 2. \"You were overrun\": the run summary and scrap banked for the Armory (a forced test loss, hence the zeros).",
   "stage": 2,
   "date": "2026-10-23 10:36"
+ },
+ {
+  "n": 22,
+  "file": "frames/0022-title.jpg",
+  "title": "Title",
+  "caption": "Stage 2 complete. The title over the live stage: Marc and Yola in the painted ER, the menu on the right.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 23,
+  "file": "frames/0023-armory.jpg",
+  "title": "Armory",
+  "caption": "Stage 2 complete. The weapon racks: unlock with scrap, equip one weapon for each hero. The panel shows the passive and the starter-deck swap.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 24,
+  "file": "frames/0024-shift-change.jpg",
+  "title": "Shift Change",
+  "caption": "Stage 2 complete. The run-start bonus: pick one of three.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 25,
+  "file": "frames/0025-map.jpg",
+  "title": "Map",
+  "caption": "Stage 2 complete. Level 1 as a blueprint floor plan, from the lobby up to the boss elevator.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 26,
+  "file": "frames/0026-fight.jpg",
+  "title": "Fight",
+  "caption": "Stage 2 complete. The first fight of a run: the painted room, the 3D cast, the HUD and the hand.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 27,
+  "file": "frames/0027-aiming-a-card.jpg",
+  "title": "Aiming a card",
+  "caption": "Stage 2 complete. A card dragged onto a zombie: the arrow, the highlight and the slice of HP it would take.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 28,
+  "file": "frames/0028-zombies-turn.jpg",
+  "title": "Zombies' turn",
+  "caption": "Stage 2 complete. The zombies' turn, frozen on the first hit landing on the party.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 29,
+  "file": "frames/0029-finisher.jpg",
+  "title": "Finisher",
+  "caption": "Stage 2 complete. A kill on a Staggered zombie: the slow-motion finisher.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 30,
+  "file": "frames/0030-elite-fight.jpg",
+  "title": "Elite fight",
+  "caption": "Stage 2 complete. An elite (Big Walker) in the harsher elite grade.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 31,
+  "file": "frames/0031-boss-fight.jpg",
+  "title": "Boss fight",
+  "caption": "Stage 2 complete. The Shield Guard at the security gate.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 32,
+  "file": "frames/0032-rewards.jpg",
+  "title": "Rewards",
+  "caption": "Stage 2 complete. The reward panel over the won fight: supplies, a potion maybe, and a card to add.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 33,
+  "file": "frames/0033-card-pick.jpg",
+  "title": "Card pick",
+  "caption": "Stage 2 complete. Pick one of three cards, or skip.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 34,
+  "file": "frames/0034-supply-closet.jpg",
+  "title": "Supply Closet",
+  "caption": "Stage 2 complete. Rest (heal 30%) or Patch Up (upgrade a card).",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 35,
+  "file": "frames/0035-patch-up.jpg",
+  "title": "Patch Up",
+  "caption": "Stage 2 complete. The upgrade picker: hover shows the upgraded card.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 36,
+  "file": "frames/0036-pharmacy.jpg",
+  "title": "Pharmacy",
+  "caption": "Stage 2 complete. The shop: cards on the shelf, relics and medicine on the counter, card removal.",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
+ },
+ {
+  "n": 37,
+  "file": "frames/0037-locked-room.jpg",
+  "title": "Locked room",
+  "caption": "Stage 2 complete. A locked-room event with its choices (text is a placeholder).",
+  "stage": 2,
+  "date": "2026-10-23 14:00"
  }
 ]
