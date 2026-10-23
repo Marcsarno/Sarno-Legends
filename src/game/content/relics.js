@@ -186,7 +186,9 @@ export const RELICS = {
       if (card.id === 'bat_swing' && !r.data.used) { r.data.used = true; r.data.active = true; ctx.flash(r.id); }
     },
     modifyDamage(ctx, r, dmg, info) {
-      const on = info.card.id === 'bat_swing' && (r.data.active || (info.preview && !r.data.used));
+      // the preview doubles one card only: the first Bat Swing in hand (or the one asked about when none is in hand)
+      const first = () => { const b = ctx.state.hand.find(c => c.id === 'bat_swing'); return !b || !info.uid || b.uid === info.uid; };
+      const on = info.card.id === 'bat_swing' && (r.data.active || (info.preview && !r.data.used && first()));
       return on ? dmg * 2 : dmg;
     },
     onCardPlayed(ctx, r) { r.data.active = false; },

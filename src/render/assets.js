@@ -41,8 +41,21 @@ const prepared = new Map();  // character key -> Promise<{ gltf, clips, scale, h
 let manifest = null;
 
 function loadFile(path) {
-  if (!files.has(path)) files.set(path, loader.loadAsync(url(path)).catch(e => { files.delete(path); throw e; }));
+  if (!files.has(path)) files.set(path, loader.loadAsync(url(path)).then(g => { sanitize(g.scene); return g; }).catch(e => { files.delete(path); throw e; }));
   return files.get(path);
+}
+
+// Some kit GLBs (wet_floor_sign, janitor_cart, curtain_panel, locker_bank, coffee_*, the elevator...) carry a root node
+// with a null translation that three turns into a NaN pivot, so they render invisible: reset any non-finite transform
+// (the same fix as painter.js sanitize()).
+function sanitize(root) {
+  root.traverse(o => {
+    if (![o.position.x, o.position.y, o.position.z].every(Number.isFinite)) o.position.set(0, 0, 0);
+    if (![o.quaternion.x, o.quaternion.y, o.quaternion.z, o.quaternion.w].every(Number.isFinite)) o.quaternion.identity();
+    if (![o.scale.x, o.scale.y, o.scale.z].every(Number.isFinite)) o.scale.set(1, 1, 1);
+    if (o.pivot && ![o.pivot.x, o.pivot.y, o.pivot.z].every(Number.isFinite)) o.pivot = null;
+    o.updateMatrix();
+  });
 }
 
 async function getManifest() {

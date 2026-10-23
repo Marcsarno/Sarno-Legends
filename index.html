@@ -4,9 +4,71 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>Sarno Legends</title>
+<meta name="description" content="Marc and Yola fight their way up a hospital overrun by zombies. A family roguelike deckbuilder." />
+<meta name="theme-color" content="#0d1416" />
+<meta name="color-scheme" content="dark" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Sarno Legends" />
+<meta name="format-detection" content="telephone=no" />
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link rel="apple-touch-icon" href="./favicon.svg" />
+<style>
+  /* the boot screen: drawn before any script or font loads, so it only uses inline CSS and system fonts */
+  html, body { margin: 0; height: 100%; background: #0d1416; overflow: hidden; }
+  #boot { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; color: #ece4d2;
+    font-family: 'Bebas Neue', Impact, 'Arial Narrow', sans-serif; transition: opacity .6s ease, visibility 0s .6s;
+    background:
+      radial-gradient(60% 50% at 30% 72%, #ffb76a14, transparent 70%),
+      radial-gradient(45% 40% at 78% 18%, #ff3b2a12, transparent 70%),
+      linear-gradient(180deg, #0a1113 0%, #0f1a1c 55%, #070b0c 100%); }
+  #boot.boot--done { opacity: 0; visibility: hidden; pointer-events: none; }
+  #boot::before { content: ''; position: absolute; inset: 0; opacity: .5; pointer-events: none;
+    background: repeating-linear-gradient(90deg, transparent 0 11.5%, #ffffff05 11.5% 12%), radial-gradient(120% 80% at 50% 50%, transparent 40%, #000c 100%); }
+  .boot__in { position: relative; display: flex; flex-direction: column; align-items: center; width: min(78vw, 560px); }
+  .boot__logo { margin: 0; line-height: .82; text-align: center; font-weight: 400; letter-spacing: .03em; }
+  .boot__a { display: block; color: #d64a3a; font-size: clamp(54px, 15vmin, 150px); text-shadow: 0 .05em 0 #3a0c07, 0 0 .4em #ff403040; }
+  .boot__b { display: block; color: #39b8ac; font-size: clamp(38px, 10.6vmin, 106px); letter-spacing: .085em; text-shadow: 0 .05em 0 #06302c, 0 0 .4em #2fffe826;
+    animation: boot-flick 6s infinite steps(1); }
+  @keyframes boot-flick { 0%, 61%, 63%, 100% { opacity: 1; } 62% { opacity: .55; } }
+  .boot__bar { position: relative; width: 100%; height: 3px; margin-top: clamp(18px, 5vmin, 40px); background: #20323a; border-radius: 3px; overflow: hidden; }
+  .boot__fill { position: absolute; inset: 0 auto 0 0; width: 0%; background: linear-gradient(90deg, #c8483a, #e3b04b 60%, #2fa39a); box-shadow: 0 0 10px #e3b04b88;
+    transition: width .35s ease; }
+  .boot__ecg { position: absolute; left: 0; right: 0; top: -14px; height: 30px; opacity: .45; }
+  .boot__ecg path { fill: none; stroke: #2fa39a; stroke-width: 1.4; stroke-dasharray: 120 400; animation: boot-ecg 2.2s linear infinite; }
+  @keyframes boot-ecg { from { stroke-dashoffset: 520; } to { stroke-dashoffset: 0; } }
+  .boot__status { margin-top: 10px; font: 600 clamp(10px, 1.7vmin, 13px)/1 system-ui, sans-serif; letter-spacing: .28em; text-transform: uppercase; color: #64777a; }
+  .boot__tip { margin-top: clamp(16px, 5vmin, 44px); max-width: 46ch; text-align: center; color: #9fb0ae;
+    font: 400 clamp(12px, 2.1vmin, 16px)/1.35 system-ui, sans-serif; min-height: 2.7em; transition: opacity .4s; }
+  .boot__tip b { color: #e3b04b; font-weight: 600; }
+  /* portrait phones: ask for landscape */
+  #rotate { position: fixed; inset: 0; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    background: #0d1416f2; color: #ece4d2; font: 600 15px/1.3 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; text-align: center; padding: 24px; }
+  #rotate svg { width: 76px; height: 76px; animation: rot-turn 2.4s ease-in-out infinite; }
+  @keyframes rot-turn { 0%, 30% { transform: rotate(0); } 55%, 100% { transform: rotate(-90deg); } }
+  @media (orientation: portrait) and (max-width: 760px) { #rotate { display: flex; } }
+</style>
 </head>
 <body>
 <canvas id="stage"></canvas>
+<div id="ui"></div>
+<div id="boot" role="status" aria-live="polite">
+  <div class="boot__in">
+    <h1 class="boot__logo" aria-label="Sarno Legends"><span class="boot__a">SARNO</span><span class="boot__b">LEGENDS</span></h1>
+    <div class="boot__bar">
+      <svg class="boot__ecg" viewBox="0 0 520 30" preserveAspectRatio="none" aria-hidden="true"><path d="M0 15 H200 L212 15 L220 4 L230 27 L240 9 L248 15 H520" /></svg>
+      <div class="boot__fill"></div>
+    </div>
+    <div class="boot__status">Loading</div>
+    <p class="boot__tip"></p>
+  </div>
+</div>
+<noscript><div style="position:fixed;inset:0;z-index:1001;display:grid;place-items:center;background:#0d1416;color:#ece4d2;font:16px system-ui,sans-serif">Sarno Legends needs JavaScript (and WebGL) to run.</div></noscript>
+<div id="rotate" aria-hidden="true">
+  <svg viewBox="0 0 64 64" fill="none" stroke="#2fa39a" stroke-width="3" stroke-linejoin="round"><rect x="20" y="6" width="24" height="44" rx="4" /><path d="M29 44h6" /><path d="M8 40a24 24 0 0 0 20 18" stroke="#c8483a" /><path d="M24 54l4 4-5 3" stroke="#c8483a" /></svg>
+  <div>Turn your phone sideways</div>
+</div>
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>

@@ -5,8 +5,10 @@ import * as THREE from 'three';
 
 export const BATTLE = {
   fov: 32,                                   // vertical, at 16:9 (about a 40 mm lens)
-  position: new THREE.Vector3(0.3, 2.45, 8.0),   // ~11 deg above the action, close enough that a body is ~40% of the height
-  target: new THREE.Vector3(0.3, 1.02, 0),
+  // ~11 deg above the action; a body is ~38% of the screen height with its feet at ~65% (the HUD bars sit under the
+  // feet, clear of the hand). Was (0.3, 2.45, 8.0) -> (0.3, 1.02, 0): feet at 74%, in the hand.
+  position: new THREE.Vector3(0.3, 2.3, 8.4),
+  target: new THREE.Vector3(0.3, 0.62, 0),
   minHalfWidth: 4.15,                        // keep x in [target.x - w, target.x + w] visible on narrow screens
   near: 0.1, far: 80,
 };

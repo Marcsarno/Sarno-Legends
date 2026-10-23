@@ -109,6 +109,7 @@ function makeHelpers(view, base, preview) {
     d: (k = 0) => (dmgOps[k] !== undefined ? fmt(dmgOps[k]) : num(0)),
     b: (k = 0) => (blkOps[k] !== undefined ? fmt(blkOps[k]) : num(0)),
     n: x => num(x),
+    staggered: i => !!preview?.ops?.find(o => o.index === i)?.staggered,
     kw,
   };
 }
@@ -125,7 +126,8 @@ function autoText(view, v) {
         if (e.to === 'all') s = `Deal ${D} damage to ALL zombies`;
         else if (e.to === 'random') s = `Deal ${D} damage to a random zombie ${TIMES(times)}`;
         else s = `Deal ${D} damage${times > 1 ? ' ' + TIMES(times) : ''}`;
-        if (e.bonusStaggered) s += `, +${e.bonusStaggered}${times > 1 ? ' each' : ''} if ${kw('Staggered')}`;
+        // a live number against a Staggered zombie already includes the bonus: don't print it twice
+        if (e.bonusStaggered && !v.staggered(view.effects.indexOf(e))) s += `, +${e.bonusStaggered}${times > 1 ? ' each' : ''} if ${kw('Staggered')}`;
         s += '.';
         if (e.scaleStr && e.scaleStr !== 1) s += ` ${kw('Strength')} counts ${e.scaleStr} times.`;
         out.push(s);

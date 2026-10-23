@@ -1,0 +1,42 @@
+/* The app shell: the fade between screens, the title over the live 3D stage, the error panel and the debug overlay.
+   (The boot screen and the rotate-your-phone notice are inline in index.html: they show before any CSS loads.) */
+
+/* ---------------------------------------------------------------- the fade between screens */
+.sl-veil { position: fixed; inset: 0; z-index: 800; background: #050909; opacity: 0; pointer-events: none; }
+.sl-veil--on { opacity: 1; pointer-events: auto; }
+
+/* ---------------------------------------------------------------- title over the live stage
+   The painted ER and the 3D Marc and Yola are the stage's: the title screen drops its own picture and keeps its glow,
+   dust and shade on top. */
+body.sl-stage-title .scr--title { background: transparent; }
+body.sl-stage-title .scr--title > .scr-bg { display: none; }
+body.sl-stage-title .scr--title .ttl-glow { opacity: .7; }
+body.sl-stage-title .scr--title .ttl-shade {
+  background: linear-gradient(270deg, #050909e6 0%, #050909b8 30%, #05090933 52%, transparent 66%), linear-gradient(0deg, #050909c0, transparent 26%),
+    linear-gradient(180deg, #05090980, transparent 18%);
+}
+
+/* ---------------------------------------------------------------- rewards over the battle: let the fight show through */
+body.sl-stage-battle .scr--reward .rw-scrim { background: radial-gradient(70% 80% at 50% 55%, #050a0b99, #020405d9); }
+
+/* ---------------------------------------------------------------- error panel */
+.sl-err { position: fixed; inset: 0; z-index: 950; display: grid; place-items: center; padding: 16px;
+  background: radial-gradient(70% 70% at 50% 50%, #0d1416e6, #020405f5); font-family: var(--f-body, system-ui, sans-serif); color: #ece4d2; }
+.sl-err__card { width: min(560px, 100%); padding: clamp(16px, 4vmin, 32px); border-radius: 14px; background: #18262a; border: 2px solid #2d4249;
+  box-shadow: 0 16px 60px #000c; text-align: center; }
+.sl-err h2 { margin: 6px 0 8px; font: 400 clamp(28px, 6vmin, 46px)/1 var(--f-display, Impact, sans-serif); letter-spacing: .05em; color: #e8846f; }
+.sl-err p { margin: 0 auto 12px; max-width: 44ch; color: #9fb0ae; font-size: clamp(13px, 2.2vmin, 16px); line-height: 1.35; }
+.sl-err__msg { display: block; margin: 0 auto 16px; max-height: 5.5em; overflow: auto; padding: 8px 10px; border-radius: 8px; background: #0d1416;
+  color: #64777a; font: 12px/1.35 ui-monospace, monospace; text-align: left; word-break: break-word; user-select: text; -webkit-user-select: text; }
+.sl-err__btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.sl-err__ecg { height: 34px; }
+.sl-err__ecg svg { width: 100%; height: 100%; }
+.sl-err__ecg path { fill: none; stroke: #c8483a; stroke-width: 2; stroke-dasharray: 260; animation: sl-err-ecg 2.4s linear infinite; }
+@keyframes sl-err-ecg { from { stroke-dashoffset: 260; } to { stroke-dashoffset: -260; } }
+
+/* ---------------------------------------------------------------- ?debug=1 */
+.sl-debug { position: fixed; left: 6px; bottom: 6px; z-index: 990; pointer-events: none; white-space: pre; padding: 4px 7px; border-radius: 5px;
+  background: #000a; color: #9fe07a; font: 11px/1.35 ui-monospace, monospace; }
+
+/* ---------------------------------------------------------------- the ?shot= camera: no cursor blink, no tips left over */
+body[data-shot] { cursor: none; }

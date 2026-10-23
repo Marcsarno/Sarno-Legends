@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Sarno Legends: a shield split red (Marc) and teal (Yola) with a bat across it -->
+  <defs>
+    <clipPath id="s"><path d="M32 3 L57 11 V30 C57 46 46 56 32 61 C18 56 7 46 7 30 V11 Z"/></clipPath>
+  </defs>
+  <path d="M32 3 L57 11 V30 C57 46 46 56 32 61 C18 56 7 46 7 30 V11 Z" fill="#0d1416"/>
+  <g clip-path="url(#s)">
+    <rect x="0" y="0" width="32" height="64" fill="#c8483a"/>
+    <rect x="32" y="0" width="32" height="64" fill="#2fa39a"/>
+    <path d="M0 0 H64 V22 C44 30 20 30 0 22 Z" fill="#000" opacity=".18"/>
+  </g>
+  <path d="M32 3 L57 11 V30 C57 46 46 56 32 61 C18 56 7 46 7 30 V11 Z" fill="none" stroke="#efe6d2" stroke-width="3" stroke-linejoin="round"/>
+  <!-- the bat -->
+  <path d="M19 47 L43 16" stroke="#1a1a1a" stroke-width="9" stroke-linecap="round"/>
+  <path d="M19 47 L43 16" stroke="#e3b04b" stroke-width="5" stroke-linecap="round"/>
+  <path d="M17 50 L21 45" stroke="#efe6d2" stroke-width="5" stroke-linecap="round"/>
+</svg>

@@ -275,9 +275,11 @@ export class Combat {
       if (op.op === 'damage') {
         const base = this.damageBase(op, inst);
         const t = (op.to || 'target') === 'random' ? (target || null) : target;
-        const v = op.pure ? base : this.calcPartyAttack({ base, op, view, hero: view.hero, target: t && t.alive ? t : null, preview: true });
+        const live = t && t.alive ? t : null;
+        const v = op.pure ? base : this.calcPartyAttack({ base, op, view, hero: view.hero, target: live, preview: true, uid: inst.uid });
         const hits = op.times || 1;
-        ops.push({ index, op: 'damage', base, value: v, hits, to: op.to || 'target' });
+        // staggered: the live value already includes the target's Staggered bonus (card text drops its "+N if Staggered")
+        ops.push({ index, op: 'damage', base, value: v, hits, to: op.to || 'target', staggered: !op.pure && !!live && (live.statuses.vulnerable || 0) > 0 });
         total += v * hits;
         if (!main) main = { v, hits };
       } else if (op.op === 'block') {
@@ -765,13 +767,13 @@ export class Combat {
   }
 
   /** Party attack damage per hit (Slay the Spire order: flat bonuses, then x2s, Weak, Staggered; floor). */
-  calcPartyAttack({ base, op, view, hero, target, preview = false }) {
+  calcPartyAttack({ base, op, view, hero, target, preview = false, uid = null }) {
     const P = this.party;
     let d = base + (P.statuses.strength || 0) * (op.scaleStr || 1);
     const tStag = !!target && (target.statuses.vulnerable || 0) > 0;
     if (op.bonusStaggered && tStag) d += op.bonusStaggered;
     if (tStag && P.statuses.marksman > 0) d += P.statuses.marksman;
-    const info = { card: view, op, hero, target, base, preview };
+    const info = { card: view, op, hero, target, base, preview, uid };
     for (const r of this.state.relics) {
       const def = RELICS[r.id];
       if (def?.damageBonus) d += def.damageBonus(this, r, info) || 0;

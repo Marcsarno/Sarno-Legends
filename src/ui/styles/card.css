@@ -145,7 +145,8 @@
 .card__text::before { content: ''; position: absolute; inset: 0; background-image: var(--card-noise); background-size: 6em; opacity: .35; pointer-events: none; border-radius: inherit; }
 .card__desc { position: relative; }
 .card__text--long { font-size: .98em; }
-.card__text--xlong { font-size: .86em; line-height: 1.06; }
+.card__text--xlong { font-size: .88em; line-height: 1.06; }
+.card__text--xxlong { font-size: .78em; line-height: 1.04; }   /* card.js fitText() steps down until long text fits */
 .card .kw { color: #9b3f0d; font-weight: 700; }
 .card .num { font-weight: 700; }
 .card .num-up { color: #1c8a2a; font-weight: 800; }

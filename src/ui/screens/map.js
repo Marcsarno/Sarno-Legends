@@ -97,7 +97,8 @@ export function mount(root, ctx) {
     for (const n of Object.values(nodes)) {
       if (n.id === bossId) continue;
       let y = rowY(n.row);
-      const jy = typeof n.y === 'number' ? n.y - n.row : 0;
+      // map.js: n.y = (row - 1 + jitter) / rows, so the jitter in rows is n.y * rows + 1 - row (about +-0.2)
+      const jy = typeof n.y === 'number' ? n.y * (map.rows || maxRow) + 1 - n.row : 0;
       if (Math.abs(jy) < 1) y -= clamp(jy, -.35, .35) * rowGap * .7;
       pos.set(n.id, { x: nx(n.x ?? n.col), y });
     }

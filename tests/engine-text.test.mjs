@@ -42,6 +42,18 @@ test('live numbers against a hovered zombie', () => {
   assert.match(describeCard(card, { combat: c, targetUid: z.uid }), /num-down">4</);
 });
 
+test('a live number on a Staggered zombie includes the bonus, so the text drops "+N if Staggered"', () => {
+  const run = { seed: 'X', hp: 80, maxHp: 80, weapons: {}, potions: [null, null, null], relics: [],
+    deck: Array(6).fill(0).map((_, i) => ({ uid: `c${i}`, id: 'clean_shot', up: false })) };
+  const c = createCombat({ run, encounter: 'shambler_solo', rng: 'X' });
+  c.start();
+  const card = c.state.hand[0];
+  const z = c.state.enemies[0];
+  assert.equal(strip(describeCard(card, { combat: c, targetUid: z.uid })), 'Deal 5 damage, +5 if Staggered.');
+  z.statuses.vulnerable = 1;
+  assert.equal(strip(describeCard(card, { combat: c, targetUid: z.uid })), 'Deal 15 damage.');
+});
+
 test('relic, potion and status text; card names are not keyword-highlighted', () => {
   assert.equal(strip(describeRelic('pager')), 'At the start of each fight, apply 1 Staggered to ALL zombies.');
   assert.ok(!/data-kw="Block">Block<\/b>/.test(describeRelic('fire_axe').split('Chop Block')[0] + 'x') && describeRelic('fire_axe').includes('Chop Block'));

@@ -176,6 +176,7 @@ test('Wood Bat: the first Bat Swing each fight deals double (and previews it)', 
   const c = mk({ weapons: { marc: 'wood_bat' } });
   const [a, b] = hand(c, ['bat_swing', 'bat_swing']);
   assert.equal(c.previewCard(a, E(c).uid).total, 12);
+  assert.equal(c.previewCard(b, E(c).uid).total, 6); // only the first Bat Swing in hand previews double
   c.takeEvents();
   c.playCard(a, E(c).uid);
   assert.deepEqual(lastDamage(c), [12]);

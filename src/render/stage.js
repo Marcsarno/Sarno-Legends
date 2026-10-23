@@ -129,7 +129,10 @@ export function createStage(canvas, opts = {}) {
   let repaintTimer = null;
   function repaintSoon() { clearTimeout(repaintTimer); repaintTimer = setTimeout(() => roomKey && setRoom(roomKey, { force: true }), 400); }
 
-  async function setRoom(key, { force = false } = {}) {
+  // opts.look: painter LOOK overrides for this room (the app grades elite rooms harsher)
+  let roomLook = null;
+  async function setRoom(key, { force = false, look } = {}) {
+    if (look !== undefined) { const same = JSON.stringify(look || null) === JSON.stringify(roomLook); roomLook = look || null; if (!same) force = true; }
     if (!force && key === roomKey && back.visible) return;
     roomKey = key; const token = ++roomToken;
     const tint = ROOM_TINT[key] || ROOM_TINT.default;
@@ -141,7 +144,7 @@ export function createStage(canvas, opts = {}) {
       const mod = load ? await load() : null;
       if (mod && typeof mod.paintRoom === 'function') {
         const pw = Math.min(1920, Math.round(width * Math.min(renderer.getPixelRatio(), 1.5))), ph = Math.round(pw * height / width);
-        painted = await mod.paintRoom(renderer, key, { width: pw, height: ph, seed: opts.seed });
+        painted = await mod.paintRoom(renderer, key, { width: pw, height: ph, seed: opts.seed, look: roomLook });
       }
     } catch (e) { if (!/painter/.test(String(e?.message))) console.warn('[stage] painter unavailable, using the fallback room:', e?.message || e); }
     if (token !== roomToken || disposed) return;

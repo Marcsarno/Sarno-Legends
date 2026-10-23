@@ -118,15 +118,50 @@ export function cardEl(inst, opts = {}) {
   return el;
 }
 
+const FIT = ['', 'card__text--long', 'card__text--xlong', 'card__text--xxlong'];
+
 function writeText(el, html) {
   if (el._descHtml === html) return;
   el._descHtml = html;
   const desc = el.querySelector('.card__desc');
   desc.innerHTML = html;
+  // a first guess from the length, then measured once the card is on the page (long text shrinks until it fits)
   const len = desc.textContent.length;
+  setFit(el, len > 82 ? 2 : len > 50 ? 1 : 0);
+  queueFit(el);
+}
+
+function setFit(el, step) {
   const box = el.querySelector('.card__text');
-  box.classList.toggle('card__text--long', len > 62 && len <= 92);
-  box.classList.toggle('card__text--xlong', len > 92);
+  el._fit = step;
+  for (let i = 1; i < FIT.length; i++) box.classList.toggle(FIT[i], i === step);
+}
+
+// measuring needs the card in the document: cards are built detached, so they wait a few frames for it
+const fitQueue = new Set();
+let fitRaf = 0;
+function queueFit(el) {
+  el._fitTries = 0;
+  fitQueue.add(el);
+  if (!fitRaf && typeof requestAnimationFrame === 'function') fitRaf = requestAnimationFrame(flushFit);
+}
+function flushFit() {
+  fitRaf = 0;
+  const els = [...fitQueue];
+  fitQueue.clear();
+  for (const el of els) {
+    if (el.isConnected) fitText(el);
+    else if (++el._fitTries < 40) fitQueue.add(el);
+  }
+  if (fitQueue.size) fitRaf = requestAnimationFrame(flushFit);
+}
+/** Shrink the text a step at a time until it fits its box (never below the smallest step). */
+export function fitText(el) {
+  const box = el?.querySelector('.card__text'), desc = el?.querySelector('.card__desc');
+  if (!box || !desc || !box.clientHeight) return;
+  const cs = getComputedStyle(box);
+  const avail = () => box.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) + 1;
+  while (desc.offsetHeight > avail() && el._fit < FIT.length - 1) setFit(el, el._fit + 1);
 }
 
 function placeholderArt(view, hero) {
