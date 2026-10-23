@@ -427,3 +427,102 @@ Before floor 1 pick 1 of 3: +8 max HP / remove a card / upgrade a card / a rando
 
 ## 8. Debug API (for playtests and the build-log camera)
 `window.__SL` = `{ state(), app, newRun(seed?, opts?), goto(screen, opts?), combat(encounterId?, opts?), play(handIndex, targetIndex?), endTurn(), autoplay(on, speed?), setSpeed(x), win(), lose(), give({relic|card|potion|gold}), seed }`; `window.__ready = true` once the title is interactive. `?debug=1` shows an FPS/state overlay. `?seed=XYZ` fixes the seed. `?shot=<scene>` jumps straight to a scene for screenshots.
+
+## 9. Module interfaces (so modules built in parallel plug together)
+
+Everything is an ES module with named exports. Keep these signatures; add extra options freely.
+
+```js
+// src/render/assets.js
+export async function preload(keys, onProgress)              // keys: 'marc','yola', enemy model keys ('z_romero', ...), weapons
+export async function character(key)                         // -> { root: Object3D (cloned, skinned), clips: Map<name, AnimationClip>, bones, height }
+export async function prop(name)                             // -> Object3D clone of public/assets/models/props/<name>.glb (also items/, weapons/)
+export const MODELS = { marc: ['marc.glb','marc_moves.glb'], yola: [...], z_romero: ['z_romero.glb','z_romero_moves.glb'], ... }
+
+// src/render/stage.js
+export function createStage(canvas, opts) -> {
+  renderer, scene, camera, clock,
+  setRoom(key) -> Promise                                    // painted backdrop for 'er_lobby' | 'ward' | 'corridor' | 'supply_closet' | 'pharmacy' | 'security_gate' | 'break_room' | 'xray' | 'storage' | 'title'
+  slots: { marc: Vector3, yola: Vector3, enemy: [Vector3 x5] },
+  project(obj3dOrVec3, yOffset = 0) -> { x, y, visible },    // CSS px, for world-anchored DOM (intents, HP bars, numbers)
+  onFrame(fn(dt)) -> unsubscribe, resize(), setSpeed(x), shake(strength, ms), hitStop(ms), slowMo(scale, ms), punchIn(target, ms),
+  pick(clientX, clientY) -> enemyUid | 'party' | null,      // raycast for targeting on the 3D bodies
+  dispose()
+}
+
+// src/render/actor.js
+export class Actor {                                         // wraps a character
+  constructor(stage, characterData, { kind: 'hero'|'enemy', id, uid, scale })
+  play(clip, { loop, fade, timeScale, from, to, then }) -> Promise   // resolves at the end (or at `to`)
+  idle()                                                     // back to its stance idle (bat_idle / pistol_idle / zombie idle)
+  dashTo(vec3, ms) / returnHome(ms)
+  hit({ heavy, fromDir }) / die(kind, { finisher }) / revive()
+  setWeapon(weaponId)                                        // attach weapon model to the right hand (hero only)
+  highlight(on, color) / flash(color)
+  anchor(name) -> Vector3                                    // 'head' | 'chest' | 'feet' world position (for intents, numbers, effects)
+  dispose()
+}
+
+// src/render/director.js: plays combat events with the pacing rules
+export function createDirector({ stage, actors: { marc, yola, enemies: Map<uid, Actor> }, fx, audio, settings }) -> {
+  push(events),                     // queue events from combat.takeEvents()
+  update(dt),                       // called every frame by the stage
+  idle() -> boolean,                // nothing playing or queued
+  ready() -> Promise,               // resolves when the queue drains
+  canAcceptInput() -> boolean,      // true once the current card's hit has landed (cards can queue)
+  on(type, fn),                     // 'event' (evt) fired the moment an event "lands" (HUD updates numbers then),
+                                    // 'number' ({ uid|'party', text, kind }) for floating numbers, 'banner' ({ text, kind })
+  setSpeed(x), addEnemy(uid, actor), removeEnemy(uid)
+}
+
+// src/render/fx.js
+export function createFx(stage) -> { blood(pos, dir, amount), sparks(pos), muzzle(pos, dir), tracer(from, to), shell(pos),
+  shieldShimmer(actors), buffAura(actor, color), debuffSwirl(actor, color), dust(pos), healGlow(actor), gib(actor, part), update(dt) }
+
+// src/render/painter.js
+export async function paintRoom(renderer, key, { width, height, seed }) -> { texture: THREE.Texture, url: string /* objectURL or dataURL for CSS backgrounds */ }
+export const ROOMS = { er_lobby: {...}, ... }                 // recipes: props, layout, palette, light
+
+// src/render/studio.js
+export function createStudio(renderer) -> {
+  cardArt(cardId) -> Promise<url>,       // hero posed mid-clip (card's anim) over a painted gradient; cached
+  relicIcon(id) -> Promise<url>, potionIcon(id) -> Promise<url>, weaponIcon(id) -> Promise<url>,
+  portrait(key /* 'marc'|'yola'|enemyId */) -> Promise<url>
+}
+
+// src/ui/card.js
+export function cardEl(cardInst, { combat?, targetUid?, size: 'hand'|'reward'|'grid'|'zoom', art?: url }) -> HTMLElement
+export function updateCardNumbers(el, combat, targetUid)   // live numbers (green/red)
+
+// src/ui/hud.js  (the whole combat UI: HUD + hand + targeting + piles + world anchors)
+export function createCombatUI({ root, stage, studio, getRun, combat, onPlay(uid, targetUid), onEndTurn(), onPotion(slot, targetUid), onOpenDeck(), onOpenMap(), onSettings() }) -> {
+  sync(),                       // re-read combat.state (hand, energy, piles, intents) immediately
+  onEvent(evt),                 // the director says this event just landed: update HP/block/status/intents with motion
+  number({ target, text, kind }), banner(text, kind),
+  setInputEnabled(bool), destroy()
+}
+export function createTopBar({ root, getRun, onDeck, onMap, onSettings, onPotion }) -> { update(), destroy() }  // shared by map/shop/etc.
+
+// src/ui/screens/<name>.js
+export function mount(root, ctx) -> { unmount(), update?() }
+// ctx = { run, profile, studio, audio, act: { ...callbacks named per screen }, rooms: paintRoom url getter }
+// title:    act.continue(), act.newRun(), act.armory(), act.settings()
+// intro (Shift Change): ctx.options -> act.choose(index)
+// map:      act.travel(nodeId), act.openDeck()
+// reward:   ctx.rewards [{ kind: 'gold'|'potion'|'relic'|'cards', ... }] -> act.take(i), act.pickCard(i, cardIdx), act.skip(), act.done()
+// rest:     act.rest(), act.upgrade(uid), act.leave()
+// shop:     ctx.shop -> act.buyCard(i), act.buyRelic(i), act.buyPotion(i), act.remove(uid), act.leave()
+// event:    ctx.event { title, text, choices: [{ label, desc, disabled }] , room } -> act.choose(i), act.pickCard(...) when asked
+// treasure: act.open(), act.take(), act.leave()
+// result:   ctx.summary -> act.armory(), act.title()
+// armory:   ctx.profile -> act.unlock(weaponId), act.equip(hero, weaponId), act.back()
+// settings: ctx.settings -> act.set(key, value), act.close(), act.abandonRun()
+// deck:     ctx.cards, ctx.title -> act.close()
+// picker:   ctx.cards, ctx.mode 'upgrade'|'remove'|'transform'|'pick' -> act.choose(uid), act.cancel()
+
+// src/audio/audio.js
+export function createAudio() -> { unlock(), sfx(key, { vol, rate, at }), event(combatEvt), ui(name /* 'click'|'hover'|'card'|'deny'|'coin'|'open' */),
+  music(track /* 'menu'|'map'|'fight'|'elite'|'boss'|null */), setVolume({ master, music, sfx }), duck(ms) }
+```
+
+Ports for module lab pages (each module ships a `labs/<name>.html` to see it in isolation): render 5181, painter 5182, ui 5183, screens 5184, audio 5185, integration 5180.

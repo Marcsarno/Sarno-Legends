@@ -1,0 +1,77 @@
+/* Design tokens shared by every screen. Night hospital: teal-black, fluorescent white, warm emergency light, blood red.
+   Marc = red, Yola = teal, supplies = gold. Sizes scale with the viewport so phone landscape (844x390) and desktop both work. */
+@import '@fontsource/bebas-neue/400.css';
+@import '@fontsource/oswald/400.css';
+@import '@fontsource/oswald/500.css';
+@import '@fontsource/oswald/600.css';
+@import '@fontsource/oswald/700.css';
+@import '@fontsource/barlow-semi-condensed/400.css';
+@import '@fontsource/barlow-semi-condensed/500.css';
+@import '@fontsource/barlow-semi-condensed/600.css';
+@import '@fontsource/barlow-semi-condensed/700.css';
+
+:root {
+  /* palette */
+  --bg: #0d1416;
+  --bg-2: #142023;
+  --panel: #18262a;
+  --panel-2: #20323a;
+  --line: #2d4249;
+  --ink: #ece4d2;          /* warm off-white text */
+  --ink-dim: #9fb0ae;
+  --ink-faint: #64777a;
+  --paper: #efe6d2;        /* card paper */
+  --paper-ink: #1d1a17;
+  --marc: #c8483a;
+  --marc-dark: #7d231b;
+  --marc-light: #e8846f;
+  --yola: #2fa39a;
+  --yola-dark: #145a55;
+  --yola-light: #7fd6cc;
+  --neutral: #8b8f94;
+  --gold: #e3b04b;         /* supplies, rare trim */
+  --gold-dark: #8a6420;
+  --blood: #b3261e;
+  --hp: #d94a3d;
+  --hp-ghost: #f2d0c4;
+  --block: #6aa9d8;
+  --block-dark: #2e5f86;
+  --buff: #7cc96b;
+  --debuff: #c77ad8;
+  --energy: #ffd166;
+  --energy-glow: #ffb703;
+  --good: #8fd16a;         /* buffed number on a card */
+  --bad: #ff6b5e;          /* reduced number on a card */
+  --common: #a8adb3;
+  --uncommon: #79b4e0;
+  --rare: #e3b04b;
+
+  /* type */
+  --f-display: 'Bebas Neue', 'Oswald', Impact, sans-serif;
+  --f-head: 'Oswald', 'Barlow Semi Condensed', sans-serif;
+  --f-body: 'Barlow Semi Condensed', 'Segoe UI', system-ui, sans-serif;
+
+  /* scale: 1u ~ 1% of the short side, clamped */
+  --u: clamp(3.4px, 1vmin, 11px);
+  --radius: calc(var(--u) * 1.2);
+  --radius-lg: calc(var(--u) * 2);
+  --gap: calc(var(--u) * 1.6);
+
+  /* card size (hand); screens scale it with --card-scale */
+  --card-w: calc(var(--u) * 17.5);
+  --card-h: calc(var(--card-w) * 1.4);
+
+  /* motion */
+  --ease-out: cubic-bezier(.2, .9, .25, 1);
+  --ease-back: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-in: cubic-bezier(.55, 0, .9, .35);
+  --t-fast: 120ms;
+  --t-med: 240ms;
+  --t-slow: 480ms;
+
+  --shadow: 0 calc(var(--u) * .6) calc(var(--u) * 2.4) #000a;
+  --shadow-lg: 0 calc(var(--u) * 1.2) calc(var(--u) * 5) #000c;
+  --glow-marc: 0 0 calc(var(--u) * 2) #c8483a99;
+  --glow-yola: 0 0 calc(var(--u) * 2) #2fa39a99;
+  --z-stage: 0; --z-world: 10; --z-hud: 20; --z-hand: 30; --z-drag: 40; --z-screen: 50; --z-modal: 60; --z-tip: 70; --z-toast: 80;
+}
