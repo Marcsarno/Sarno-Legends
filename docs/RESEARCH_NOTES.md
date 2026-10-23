@@ -156,3 +156,87 @@ The plan that came out of this is in `DECKBUILDER_PLAN.md`. Page fetches failed 
 - **Dawncaster:** portrait, no ads, no timers; cards hidden behind the UI. [Pocket Gamer](https://www.pocketgamer.com/dawncaster/review/)
 
 **Niche:** no well-known zombie roguelike deckbuilder. Draft of Darkness, a survival-horror deckbuilder with ammo, is the nearest. [GamingOnLinux](https://www.gamingonlinux.com/2021/08/draft-of-darkness-is-a-deckbuilder-like-nothing-else-with-a-horror-theme)
+
+## Pass 5: card pools, family sets, zombies and floors, plus critic and verifier
+
+This pass led to the second draft of `DECKBUILDER_PLAN.md`. Page fetches failed again, so the findings come from search snippets, and the agents marked what came from memory. The verifier's sim scripts were throwaway, kept in the session scratchpad.
+
+**Card pools**
+- **Cobalt Core:** about 20 cards per crew member, with rewards drawn from the chosen crew's pools. [AV Club](https://avclub.com/game-theory-the-super-charming-cobalt-core-got-us-thro-1851138951), [Card Gamer](https://cardgamer.com/games/digital-card-games/cobalt-core-is-a-cozy-space-deckbuilder-with-a-lot-of-charm/)
+- **Slay the Spire:** about 75 cards per character (from memory).
+- **Monster Train:** tunes with pick rate, win rate per clan pairing, and median HP lost. [Film Stories](https://filmstories.co.uk/gaming/monster-train-literally-a-train-full-of-monsters/)
+- **Proposal: about 24 cards per hero plus 8 shared, and 8 keywords at most.**
+  - Keywords: Break, Guard, Evade, Loaded, Bleed, Duo, Exhaust, Retain.
+  - Build styles:
+    - **Marc:** Breaker (stagger payoffs) and Bulwark (block, Guard, shotgun).
+    - **Yola:** Triage (heal, cleanse, revive) and Marksman (pistol, evade, cheap cycling).
+  - Duo cards: Cover Fire, Pin and Smash, Second Wind, Crossfire.
+- **Healing budget:** in-fight heals restore only that fight's damage, about 15% of party HP per fight, or 25% for a healing build.
+- **Wildfrost warning:** a reviewer said a healing deck "will carry you." [Siliconera](https://www.siliconera.com/review-wildfrost-promises-hours-of-brutal-fun/)
+- **Roguebook's downed-hero rule:** sources disagree.
+
+**Family sets and progression**
+- **How many to start with:**
+  - Monster Train 2 opens 2 of 5 clans. [Destructoid](https://vip-develop.destructoid.com/?p=1070037)
+  - Cobalt Core opens 3 of 8 crew. [Wikipedia](https://en.wikipedia.org/wiki/Cobalt_Core)
+- **How characters unlock:** by achievement more than by currency.
+- **Grind complaints:**
+  - Rogue Legacy's gold toll. [wiki](https://roguelegacy.wiki.gg/wiki/Gold)
+  - Enter the Gungeon's "more than one run per item". [wiki](https://enterthegungeon.wiki.gg/wiki/Hegemony_Credit)
+- **Cheap early upgrades:** Hades' first mirror ranks cost 10–30. [Prima](https://primagames.com/gaming/hades-guide-mirror-of-night-upgrades-fated-list-of-prophecies)
+- **Hades weapon aspects:** sidegrades that change the weapon's look. [RPG Site](https://rpgsite.net/feature/10254-hades-infernal-arms-weapon-aspect-guide-aspects-and-upgrades-in-detail)
+- **Proposal:**
+  - A 12-card set template: 3 starters that replace basics, plus 9 reward cards.
+  - Scrap kept fully on a loss.
+  - The nail bat at 80 scrap.
+
+**Enemies and floors (Slay the Spire)**
+- **Move rules:** constrained randomness, e.g. Jaw Worm never repeats some moves. [slaythespire.gg](https://slaythespire.gg/monsters/Jaw_Worm)
+- **Encounter pools:** easy then hard. [Steam](https://steamcommunity.com/app/646570/discussions/0/3809531058952880820)
+- **Elites test a build:**
+  - Gremlin Nob punishes skills.
+  - Lagavulin sleeps, then bursts.
+  - Sentries add Dazed cards.
+  - [slaythespire.gg](https://www.slaythespire.gg/elites)
+- **Bosses:**
+  - The Slime Boss splits at half HP.
+  - The Guardian shifts mode.
+  - The boss is shown on the map, and a rest site comes before it.
+  - [High Ground Gaming](https://www.highgroundgaming.com/slay-the-spire-bosses-guide/), [wiki](https://slaythespire.wiki.gg/wiki/Bosses)
+- **Ascension 1–9:** more elites, harder hits, a 75% post-boss heal, more HP. [TrueAchievements](https://i1.trueachievements.com/game/Slay-The-Spire/walkthrough/2)
+- **Junk cards:** players dislike junk that only wastes energy (Cobalt Core). [Turn Based Lovers](https://turnbasedlovers.com/review/cobalt-core-review)
+- **Zombie deckbuilders:**
+  - Draft of Darkness tracks infection. [Steam](https://store.steampowered.com/app/1380650/Draft_of_Darkness/)
+  - Ascend from Dis (unreleased) has an infection meter. [Steam](https://store.steampowered.com/app/5091770/)
+
+**Critic and verifier on the first card draft** (simulated, 400–1000 fights per case)
+
+*Confirmed:*
+- **Floor HP math:** the first draft's targets summed to 0 HP left after the boss.
+- **Zombie damage was undefined.** Draft-3 numbers ÷ 5 made the Shield Guard a 98–100% wipe.
+- **Too little block:** 32% of hands had no Brace, and 21–27% of cards were dead in walker fights.
+- **Yola's damage:** she lost 0% in normal fights.
+- **Heal-stalling** works, with a large enough Patch Up.
+- **Rules gaps:**
+  - The downed rules were incomplete.
+  - There was no in-run currency, items or card-upgrade rule.
+  - The meta-progression contradicted itself.
+
+*Partly right:*
+- **Too many systems:** stagger carry-over was implied but not stated.
+- **Animation:** clips run 1.3–2.0 s against 0.5 s targets.
+  - There are no heal, buff, revive or home-run clips.
+  - The finishers have no zombie victim clips; reuse the gore system.
+  - The pistol is procedural, so it has no licence issue.
+- **Run length:** about 45 minutes, not the critic's 50–75 or the plan's 25.
+- **Home Run:** keep 14/4 and limit its delay to non-bosses. The critic's nerf would make it worse than two Bat Swings.
+- **Execute:** only useful on elites.
+
+*Missed by the critic:*
+- **Patch Up's value is the biggest lever:** it swings Marc's HP loss between 14% and 40%.
+- **Stagger bars** were never scaled down with HP.
+- **Cover's taunt** is near-useless, because walkers already hit Marc.
+- **HP targets** must be per hero.
+- **The only rest stop** was the pre-boss closet.
+- **Retargeting** when a hero is down was undefined.
+- **The boss** must be judged with the deck you'd have by then.
