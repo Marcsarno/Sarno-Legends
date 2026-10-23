@@ -1,156 +1,265 @@
-# Sarno Legends: the core (start here)
+# Sarno Legends: the core plan (start here)
 
-This page decides what the game is, as of 2026-10-23. It comes from the sixth research pass and a design-director audit (`RESEARCH_NOTES.md`, pass 6).
+Decided with Marc on 2026-10-23 ("I like it now").
 
-**When a new idea comes up, test it against the three pillars below.** `DECKBUILDER_PLAN.md` is the bigger reference plan. Most of it is **parked** (listed below) until the core is proven fun.
+- **The base:** copy Slay the Spire's proven rules and numbers, and add a small spin of our own. Marc: "I would rather copy something proven that works. And add a slight spin to it."
+- **Not the goal:** novelty. Marc: "I don't need to do something new no other game does."
+- **How to read this page:** where it disagrees with an older doc, this page wins.
+
+Older docs:
+- `DECKBUILDER_PLAN.md`: the bigger card plan. Mostly parked.
+- `COMBAT_DESIGN.md`: the turn-based design, superseded.
+
+Copying how a game plays is normal. **Don't copy Slay the Spire's card names, text or art.**
+
+Numbers marked **[StS, memory]** are Slay the Spire values recalled from memory. Check them against the wiki (slaythespire.wiki.gg) before building; that's a fast win.
 
 ## Pitch
 
-**A Slay the Spire-style deckbuilder where nobody kills alone.** Marc cracks zombies open and Yola finishes them with a cinematic kill. Every hit point you spend getting through the hospital is one you won't have at the boss.
+**A Slay the Spire-style deckbuilder starring Marc and Yola.**
+- Marc staggers the zombies and Yola cashes in.
+- Every kill plays one of the real finisher and death animations.
+- Every hit point you spend getting through the hospital is one you won't have at the boss.
 
-## Three pillars
+## Three pillars (they settle yes/no arguments and stop drift)
 
-1. **Marc opens, Yola closes.**
-   - Only Marc's cards break a zombie. Only Yola's cards cash a break in for the kill.
-   - A card that lets one hero do both jobs alone is a no.
-2. **The kill is the payoff.**
-   - A finisher on a broken zombie is the best play in the game.
-   - It plays the best animation and pays something back: a card, energy, or a little HP.
-   - A feature that doesn't make kills better, faster or more varied is a no.
+1. **Both heroes matter.**
+   - Marc's heavy hits make a zombie Vulnerable, and many of Yola's cards hit harder on a Vulnerable zombie.
+   - Both can deal damage, so a hand is never dead.
+   - The roles come from Marc's early ask: Marc tank or damage, Yola heals, buffs and some damage.
+2. **The kill is the show.**
+   - The killing blow picks the death animation.
+   - A kill on a Vulnerable zombie plays a finisher.
+   - The animations are the payoff, and they never slow a turn down.
 3. **Every hit point is a choice.**
-   - Zombies show their next move and damage, and nothing about damage is random.
-   - Healing is scarce, and HP carries from room to room.
-   - A free heal, or a hit the player couldn't see coming, is a no.
+   - Zombies always show their next move and its damage.
+   - Damage is never random, and healing is scarce.
+   - HP carries from room to room. Marc: "even the easy ones, you can want to conserve HP."
 
 Family, weapons and painted rooms are content. They serve the pillars rather than being pillars themselves.
 
-## Familiar is fine
+## Copied from Slay the Spire (the proven base)
 
-Marc, 2026-10-23: "I don't need to do something new no other game does."
+**Turn**
+- 3 energy and 5 cards drawn per turn [StS, memory].
+- Unplayed cards are discarded at end of turn. When the draw pile runs out, the discard pile is reshuffled.
+- Block lasts until your next turn.
 
-**The aim:** a well-made Slay the Spire-style game with our own heart. That means the family, the animations, and the hospital and neighbourhood already built.
+**Statuses**
+- Vulnerable: takes +50% damage.
+- Weak: deals −25% damage.
+- Strength: + damage per hit.
 
-**What the pillars are for:** stopping the design from drifting, not making the game novel. "Marc opens, Yola closes" comes from Marc's early asks: both heroes have to matter, and the finisher animations are the reward.
+[StS, memory]
 
-Borrowing proven Slay the Spire structure is welcome wherever it serves the pillars.
+**Intents**
+- Every enemy shows its next move: attack and damage, block, buff, debuff, or unknown.
+- Enemy moves follow constrained-random patterns. Example: Jaw Worm never uses Bellow twice in a row, never Thrash three times in a row, never Chomp twice ([slaythespire.gg](https://slaythespire.gg/monsters/Jaw_Worm)).
+- Elites and bosses use fixed cycles.
 
-## The core loop
+**Rewards**
+- After a fight: gold, sometimes a potion, and a pick of 1 of 3 cards or skip.
+- Card rarity:
+  - normal fights: 60/37/3 common/uncommon/rare
+  - elites: 50/40/10
+  - bosses: always rare
+  - a rare chance that rises after each common (pity)
+  - ([wiki](https://slay-the-spire.fandom.com/wiki/Card_Rewards))
+- Potion drop about 40% after a fight, adjusted up or down by ±10% each time [StS, memory]. 3 potion slots.
 
-- **A turn:** read the zombies' next moves, then split 3 energy between blocking, breaking (Marc) and finishing (Yola).
-- **A fight:** 2–4 zombies, 3–5 turns. Every kill is a finisher. HP lost stays lost.
-- **After a fight:** take 1 of 3 cards or skip. Then choose the next room on the map.
-- **A run:** one hospital floor of about 8 rooms, ending at the Shield Guard.
-  - Breaking him knocks his arm off.
-  - Finishing him takes his head off.
-- **Between runs:** scrap buys the next weapon (bat → nail bat). It swaps in new break or finish cards, a new look and a new kill.
+**Map (one act = one hospital floor)**
+- About 15 rows plus the boss, with branching paths ([wiki](https://slaythespire.wiki.gg/wiki/Map_Generation)).
+- Room odds: fight 53%, elite 8%, rest 12%, shop 5%, unknown 22%.
+- Fixed rows:
+  - row 1 is always fights
+  - about halfway is a treasure row
+  - the row before the boss is always rest sites
+- Placement rules [StS fan guide, verify]:
+  - no elites or rests before row 6
+  - no two shops, rests or elites in a row on one path
+- The boss is shown at the top of the map from the start.
 
-## Keep, cut, park
+**Rest site**
+- Heal 30% of max HP **or** upgrade one card [StS, memory].
 
-**Keep (the first playable):**
-- **Deck and turns:** one shared, colour-coded deck; 3 energy and 5 cards; Yola's block can go on Marc.
-- **The core mechanic:**
-  - Zombie intents that show the target.
-  - Stagger that carries over between turns.
-  - Breaking: Marc only.
-  - Finishing: Yola only. The killing blow picks the animation.
-  - Batter Up as the one duo card.
-- **Attrition:** HP carries between rooms.
-- **Zombies:** walker; nurse (her revive creates "who dies first?"); sprinter; one elite (the Big Walker, whose Roar a break cancels); the Shield Guard.
-- **The run:** a small branching map, a mid-floor rest (heal or upgrade), the boss shown from the start, one card-upgrade rule, and 1-of-3 rewards with at least one card per hero.
-- **Between runs:** scrap and one weapon step.
-- **Presentation:** fast play (the next card is playable when the hit lands), landscape, card art from clip stills, auto-save.
+**Shop**
+- Buy cards, potions and relics.
+- Remove a card: 75 gold the first time, +25 each time after [StS, memory].
 
-**Cut:**
-- The duo colour rule (pillar 1 replaces it).
-- The healing cap and the horde clock. Set Patch Up's number instead.
-- Second Wind, Help Up and Kip Up. One downed rule replaces them: out for the fight, back at 1 HP, and the run ends when both are down.
-- The Infected curse, the rarity pity timer, and the "three of a role" rule.
-- Cover's taunt.
-- The per-zombie targeting table (intents carry the target).
-- Everything left over from the turn-based design (turn order, Grit, levels, timed taps).
-- Full family card sets.
+**Gold**
+- Start with 99.
+- Normal fight 10–20, elite 25–35, boss about 100.
+- [StS, memory]
 
-**Park (good, after the core is proven):**
-- **Statuses and enemies:** Bitten cards, the second elite, the chapter-2 looters and zombified survivors.
-- **Shop and loot:** supplies, the pharmacy, items, trinkets, card removal, events, the stash.
-- **Difficulty and options:** rarity tiers, infection levels, mastery goals, Story mode, the speed menu.
-- **Content:** family call-ins, Code Blue, floors 2–3, extra painted rooms.
+**Relics**
+- One starter relic.
+- Elites and treasure give relics; bosses let you choose one of 3 boss relics.
 
-## The riskiest assumption, and the cheap test
+**Encounter pools**
+- The first 3 fights of act 1 come from an easy pool, later ones from a hard pool ([Steam guide quote](https://steamcommunity.com/app/646570/discussions/0/3809531058952880820)).
 
-**Assumption:** with a random shared hand, "Marc opens, Yola closes" gives real decisions, not dead hands (Marc's cards but nothing to finish with) or a fixed two-step routine.
+**Between acts**
+- The party heals fully [StS, memory]. Ascension 5 makes that 75% of missing HP.
 
-**The test is a paper prototype, played in one evening** with Yola and one of the kids:
-- **Materials:** 12 index cards, dice for HP and stagger, and zombies' moves written on paper.
-- **Fights:** 3 walkers, then a nurse + 2 walkers, then the Shield Guard.
-- **Count:** the turns with nothing to open or nothing to finish.
+**Ascension ladder** (later)
+1. more elites
+2. normal enemies hit harder
+3. elites hit harder
+4. bosses hit harder
+5. post-boss heal 75%
+6. start 10% hurt
+7. and up: more enemy HP …
 
-**Fun looks like:**
-- People planning across turns out loud: "I'll break him now, you finish next turn… but then nobody blocks the bite."
-- Arguing about killing the nurse first.
-- A missed finish feeling like their own mistake.
-- Asking for another go.
+([TrueAchievements](https://i1.trueachievements.com/game/Slay-The-Spire/walkthrough/2)). We'd call them infection levels.
 
-**It's broken if:**
-- More than about a quarter of turns have no matching half.
-- Every turn plays the same way.
+## Our spins (small, on purpose)
 
-**If dead hands are the problem, test one fix at a time:**
-- Yola's finish cards stay in hand.
-- A break lasts until the zombie's next turn, and it stands back up if nobody finishes it (Persona-style).
+1. **Two heroes, one deck, one HP bar.**
+   - Every card belongs to Marc (red frame) or Yola (teal frame), and that hero plays its animation.
+   - **HP and block are shared by the party**, exactly like Slay the Spire's math. This was recommended as the most proven option and accepted with the direction; confirm it in the paper test.
+   - Separate HP per hero (Roguebook-style, "protect Yola") was considered and set aside as more rules and less proven.
+2. **Marc staggers, Yola cashes in.**
+   - Marc's heavy cards apply **Vulnerable**. We call it "Staggered" on the card; it's the same rule.
+   - Several of Yola's cards add damage or effects against Vulnerable zombies.
+   - It's a soft split: both heroes deal damage, so there are no dead hands. The earlier hard split (only Marc breaks, only Yola finishes) was dropped for this.
+3. **The kill is the show.**
+   - The card that lands the killing blow picks the death animation. The zombies have about 6 deaths each:
+     - a light hit gives a collapse (`death_forward`, `death_back`)
+     - a pistol headshot drops it to its knees (`death_headshot_knees`)
+     - a heavy hit or shotgun throws it back (`death_chest_back`, `death_hit_back`)
+   - A kill on a Vulnerable zombie plays an **execution finisher**: Marc's `hub_execution_*` clips, or the yola-zombie gore and burst system, since the finishers have no zombie victim clips.
+   - Presentation only to start. An optional bonus (draw 1 on a finisher) is something to test, not decided.
+4. **Yola's healing is her starter relic.**
+   - "Nurse's Kit": heal 6 HP at the end of every fight. That's Slay the Spire's Ironclad starter relic (Burning Blood) in a nurse's hands, a proven number.
+   - A few rare Yola cards heal more, but they're scarce and usually exhaust.
+5. **Theme mapping** (same mechanics, new skin):
 
-Only after this passes do we build one fight on the phone. That build tests the other risk: whether 1–2-second clips keep a 5-card turn snappy.
+| Slay the Spire | Sarno Legends |
+|---|---|
+| Acts | Hospital floors (floor 1 lobby/ER, then wards, then basement are label ideas; the story is Marc's) |
+| Rest site | Supply closet |
+| Shop | Pharmacy (James's shop-counter clips could run it) |
+| Gold | Supplies |
+| Potions | Medkit (heal), adrenaline (energy or revive), extinguisher (enemies Weak) |
+| Relics | Things found in the hospital (props are cheap to make) |
+| Unknown rooms | Locked rooms (events; Marc decides the story ones) |
+| Card unlocks between runs | Weapon tiers (see between runs) |
 
-**Paper test cards** (starting numbers, not simulated):
+## Starting numbers (copied from Slay the Spire's Ironclad, mapped to the couple)
 
-| Hero | Card | Cost | Effect |
+**Party:** 80 HP, starting gold 99, starter relic Nurse's Kit [StS: Ironclad 80 HP, Burning Blood heals 6].
+
+**Starter deck: 11 cards.**
+- Ironclad's 10: 5 Strikes, 4 Defends, Bash.
+- Plus one Yola signature card.
+
+| Card | Hero | Cost | Effect | StS source | Animation |
+|---|---|---|---|---|---|
+| Bat Swing ×3 | Marc | 1 | 6 damage | Strike | `bat_swing` (2.0 s as is; trim or speed up) |
+| Pistol Shot ×2 | Yola | 1 | 6 damage | Strike | pistol idle + procedural recoil (no licence question) |
+| Brace ×2 | Marc | 1 | 5 block | Defend | `ual_Sword_Block` |
+| Sidestep ×2 | Yola | 1 | 5 block | Defend | `ual1_Dodge_Left/Right`, `ual1_Roll` |
+| Home Run | Marc | 2 | 8 damage, apply 2 Vulnerable (Staggered) | Bash | home-run swing (FBX exists, bake onto Marc) |
+| Clean Shot | Yola | 1 | 5 damage; +5 if the target is Vulnerable | our spin | pistol |
+
+**Early reward-card ideas** (StS-style templates, our names, not tuned):
+
+*Marc:*
+- **Shotgun Blast** (2): 10 damage to all.
+- **Crowbar Pry** (1): 6 damage, 1 Vulnerable.
+- **Hold the Line** (1): 8 block.
+- **Sledgehammer** (2): 14 damage, Vulnerable 2.
+- **Batter Up** (2): 8 damage twice. If the target is Vulnerable, also draw 1. The duo idea as a single card.
+
+*Yola:*
+- **Double Tap** (1): 4 damage twice.
+- **Triage** (1): heal 4, exhaust.
+- **Adrenaline Shot** (0): gain 1 energy, exhaust.
+- **Cover Him** (1): 7 block, draw 1.
+- **Headshot** (2): 12 damage; doubled on a Vulnerable zombie.
+
+The card-pool research proposed two build styles per hero (Marc: Breaker / Bulwark; Yola: Triage / Marksman). Those lists are in `RESEARCH_DETAIL.md`, to be fitted to these rules.
+
+## Zombies (Slay the Spire act-1 templates, re-skinned)
+
+Starting points [StS, memory], to check against the wiki.
+
+| Zombie | Template | HP | Moves |
 |---|---|---|---|
-| Marc | Bat Swing ×3 | 1 | 5 damage, stagger 2 |
-| Marc | Brace ×2 | 1 | 6 block on Marc |
-| Marc | Home Run ×1 | 2 | 10 damage, stagger 4 |
-| Yola | Finish ×2 | 1 | Broken zombie only: kill it if it has 15 HP or less, otherwise 10 damage. Draw 1 on a kill |
-| Yola | Pistol Shot ×1 | 1 | 4 damage, no stagger |
-| Yola | Sidestep ×2 | 1 | 5 block on either hero |
-| Yola | Patch Up ×1 | 1 | Heal 6 (this fight's damage only) |
-| Both | Batter Up | 2 | Needs a Marc and a Yola card played this turn: 12 damage, stagger 4 |
+| Walker | Jaw Worm | 40–44 | Chomp 11; Shamble 7 + 5 block; Groan +3 Strength (with Jaw Worm's no-repeat rules) |
+| Small walkers (in groups of 2–3) | Louse | 10–15 | Bite 5–7. Teaches groups |
+| Sprinter | Louse / Fungi beast, fast | 12–16 | Lunge 6. It's the "kill it first" pressure |
+| Nurse | Darkling's revive (act 3 in StS) | about 30 | Jab 5. Kneels to revive a fallen zombie unless the last two die in the same turn. This is a proven revive rule. |
+| **Elite: Big Walker** | Gremlin Nob | 82–86 | Gets stronger whenever you play a skill (block). Punishes turtling |
+| **Elite: Sleeping Patient** | Lagavulin | about 110 | Asleep and armoured for up to 3 turns, then heavy hits that drain Strength. Set up, then burst |
+| **Boss: Shield Guard** | The Guardian | about 240 | Shield mode = The Guardian's defensive mode (thorns-like shield, rolling bash). His mode shift after a damage threshold is when the **arm comes off**. Offensive mode: Fierce Bash 32, Vent (Weak + Vulnerable on you), Whirlwind 5×4. At 0 HP the **head comes off** (finisher) |
 
-**Paper zombies:**
-- **Walker:** 18 HP, stagger bar 4. Shamble 5 at Marc, or Bite 6.
-- **Nurse:** 14 HP, bar 3. Jab 5 at Yola; kneels, then revives a dead walker at half HP.
-- **Sprinter:** 12 HP, bar 2. Lunge 7 at Yola.
-- **Shield Guard:**
-  - 100 HP, bar 10.
-  - Bash 8 at Marc, Dash 10 at Yola, then Leap 12 at both.
-  - First break: the arm comes off, Bash is gone.
-  - At 0 HP: the head comes off.
-- **Breaking:** a full stagger bar breaks the zombie. It skips its next move. A break that nobody finishes ends when the zombie acts again.
+Later, once the core is proven:
+- More enemy types: the chapter-2 **looters** (pistol, cover = block, reload = a free turn for you) and the **zombified survivors** (Bryce, David, Remy).
+- More bosses, for example a looter leader, or Adam turning mid-fight (he has both pistol and zombie clips).
 
-**Heroes:** Marc 50 HP, Yola 40 HP (paper scale).
+## Between runs (meta)
 
-## How we'll balance (from pass 6)
+- **Slay the Spire's own rule:** unlock new cards over time, never raw power.
+- **Our version:**
+  - **Scrap**, earned every run, wins and losses, with no toll, buys **weapon tiers**: bat → nail bat → wire-and-tape bat.
+  - Each tier swaps or adds Marc cards (for example nails add bleed cards) and changes the bat's look.
+  - Starting numbers: fight 8, elite 20, boss 40, floor cleared +15; nail bat 80, wire bat 200.
+- **Infection levels** (Ascension) come after a first clear.
+- **If a change ever weakens a weapon, refund its scrap.**
 
-- **Log from day one:**
-  - Every card offered, picked or skipped.
-  - Every fight's turns, HP lost per hero, and the killing blow.
-  - Every run's floor reached and cause of death.
-- **A headless sim with three bots:** random, greedy, and sensible. The sensible bot should clearly beat the random one. That gap is a rough measure of skill.
-- **Target numbers at base difficulty:**
-  - Normal fight: 5–15% HP lost (under ~3% means easy rooms don't make you conserve HP).
-  - Elite: 20–30%.
-  - Boss: 30–45%.
-  - Arrive at the boss with 40–60% HP.
-  - A new player wins about 40% of first runs.
-- **Reading card data:**
-  - A card taken less than ~10% of the time is dead: check whether it's weak or just unclear.
-  - A card whose win rate is 15+ points above average is suspect: check with the sim before nerfing.
-  - Prefer buffing over nerfing, and leave a few broken combos in on purpose.
-- **Playtests:** 5–8 people who haven't seen the cards. Watch where they stop, not what they say.
-- **Don't compete on:** card count (25 cards first, 60–80 eventually), endless combos, or piles of systems. Klei scrapped an open-world Griftlands because "the whole was never better than the pieces."
+## Family (parked until the core is fun)
 
-## Decisions for Marc
+- **Recommended: one call-in card per run.** You choose who comes along, and their painted portrait cut-in plays one effect. It's cheap and personal, and nobody's card can feel weak.
+- **Marc's bigger idea, each family member bringing their own card set for the mission, is parked.** It's about 12 cards plus a portrait per person.
+- The kids "at home" could give one small buff.
+- Who's who is Marc's call.
 
-1. **Hard split** (only Marc breaks, only Yola finishes) **or soft** (both do everything)? Recommended: hard. It's the identity, and the paper test will show whether it holds.
-2. **Family:** one call-in card per run, **or** full card sets? Recommended: call-ins first. They're cheap, and nobody's set can feel weak.
-3. **Story:** Marc and Yola together in every fight, **or** split hospital and neighbourhood tracks that reunite? Recommended: together in fights, since the couple is the mechanic. How the story brings them together is yours.
+## Presentation
 
-**Next:** stop research passes until the paper fight has been played. The next document should be its playtest notes.
+- **Screen:** landscape. Painted room, heroes on the left, zombies on the right with their intents above them.
+- **Hand:** one straight row of cards along the bottom.
+- **Controls:** energy bottom-left, End Turn bottom-right. Drag up to play a card; tap to read it.
+- **Pacing:**
+  - Basic cards take about 0.5–0.6 s; the hit lands around 0.25–0.3 s.
+  - Five cards take about 4–5 s.
+  - The next card can be played as soon as the hit lands.
+  - Zombies act together.
+  - The finisher is the one long beat: 2–3 s at most, and shorter once you've seen it.
+- **Speed setting** (1×, 1.5×, 2×) from day one.
+- **Marc fights from a forward melee spot,** so there's no walking back and forth.
+- **Card art:** stills from the animation clips, all with the same camera, light and frame.
+
+## First steps
+
+1. **Check the [StS, memory] numbers** above against the Slay the Spire wiki.
+2. **Paper test, one evening, with Yola and one kid:**
+   - **Setup:** the 11-card starter deck on index cards, one shared HP of 80 tracked with dice, and the zombies' intents written on cards.
+   - **Fights:** 3 small walkers, then Walker + Nurse, then the Big Walker (elite).
+   - **Count:** turns where the hand felt useless, and whether Clean Shot after Home Run felt good.
+   - **Fun looks like:** planning out loud ("Home Run him, then I Clean Shot"), arguing about killing the nurse first, and asking to play again.
+3. **One fight on the phone:** the same deck against 2 walkers, with real clips and logging. This tests pacing (2.0 s clips need trimming) and the finisher feel.
+4. **Then floor 1:** the map, rewards, rest, shop, the elite and the Shield Guard. Play it with 5–8 family testers.
+
+**Balancing method (from research):**
+- **Log from day one:** card offered, picked or skipped; each fight's turns, HP lost and killing card; each run's floor reached and cause of death.
+- **A headless sim** with random, greedy and sensible bots.
+- **Targets:**
+  - normal fight 5–15% HP lost
+  - elite 20–30%
+  - boss 30–45%
+  - reach the boss with 40–60% HP
+  - new players win about 40% of first runs
+- **Reading the data:**
+  - A card taken less than ~10% of the time is dead.
+  - A win rate 15+ points above average is suspect: check with the sim first.
+  - Prefer buffs over nerfs.
+  - Leave a few broken combos in on purpose.
+- **Don't compete on:** card count (25 first, 60–80 eventually) or piles of systems.
+
+## Open (Marc's calls)
+
+- Story: why Marc and Yola are together in the hospital, the floor bosses beyond the Shield Guard, and the events.
+- Which family members, and what each one's call-in does.
+- Which chapter-2 people are enemies, which are friendly faces (shop, events), and which could be bosses.
+- Licences: the `t_` clips and the Unity store characters (see `ASSETS.md`).

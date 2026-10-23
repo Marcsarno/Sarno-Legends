@@ -1,18 +1,21 @@
 # Sarno Legends
 
-A family roguelike deckbuilder in the style of Slay the Spire: Marc and Yola fight zombies floor by floor through the hospital. Every card plays a real 3D animation, HP carries from room to room, and weapon upgrades carry forward between runs. Painted 2D battle rooms, 3D animated characters.
+A family roguelike deckbuilder built on Slay the Spire's proven rules, with a small spin: Marc and Yola share one deck and one HP bar, Marc staggers zombies and Yola cashes in, and every kill plays a real finisher or death animation. Floor by floor through the hospital; weapon upgrades carry between runs. Painted 2D battle rooms, 3D animated characters.
 
 **Status:** design only. Nothing is built yet.
 
 ## Docs
 
-- `docs/GAME_CORE.md`: **start here.** The pitch, the three pillars, what's kept, cut and parked, and the paper test.
-- `docs/DECKBUILDER_PLAN.md`: the bigger card-game plan; most of it is parked until the core is proven.
-- `docs/COMBAT_DESIGN.md`: the earlier turn-based design (draft 3). Its intents, stagger/break, roles and zombies carry into the card game.
-- `docs/RESEARCH_NOTES.md`: what the research passes found, with sources, plus the critic's and verifier's review.
-- `docs/ASSETS.md`: the art we can reuse from Marc's other projects, and the licence notes.
-- `docs/ROADMAP.md`: milestones from the turn-based phase; the next step is now the paper test in `GAME_CORE.md`.
-- `tools/balance-sim/`: the throwaway simulation behind the numbers in the combat design.
+- `docs/GAME_CORE.md`: **start here.** The decided plan: Slay the Spire's rules plus our spins (two heroes, one deck, one HP bar; Marc staggers, Yola cashes in; the kill picks the animation), with starting numbers, zombies, the meta, and the first steps.
+- `docs/DECISIONS.md`: Marc's words and decisions, in order.
+- `docs/RESEARCH_NOTES.md`: findings and sources from six research passes, plus the critic, verifier and audit verdicts.
+- `docs/RESEARCH_DETAIL.md`: the detailed proposals: card pools, family sets, scrap and the bat tree, floor 1, pacing, phone layout, game feel, the drift checklist, sim results.
+- `docs/ASSETS.md`: the art we can reuse (heroes, zombies, chapter-2 survivors and looters, weapons, props) and licence notes.
+- `docs/DECKBUILDER_PLAN.md`: the earlier, bigger card plan. Mostly parked; `GAME_CORE.md` wins where they differ.
+- `docs/COMBAT_DESIGN.md`: the earlier turn-based design (superseded).
+- `docs/ROADMAP.md`: milestones, art direction and story structure from the turn-based phase (still useful for look and story).
+- `docs/reviews/`: the critic and audit inputs as they were.
+- `tools/balance-sim/`, `tools/card-sim/`, `tools/turn-sim-verifier/`: the throwaway sims behind the numbers.
 
 ## Rules
 

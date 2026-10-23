@@ -1,6 +1,6 @@
 # Deckbuilder plan (the card-game direction)
 
-> **`GAME_CORE.md` now decides what the game is** (2026-10-23). Where this plan disagrees with it (break and finish split between the heroes, the duo rule, Second Wind and Help Up, the healing cap, the horde clock, family card sets), `GAME_CORE.md` wins. Most of this plan is parked until the paper test.
+> **`GAME_CORE.md` now decides what the game is** (2026-10-23): Slay the Spire's rules and numbers, one shared HP bar, Vulnerable as "Staggered", and Yola's heal as a starter relic. Where this plan disagrees (per-hero HP and block, the stagger bars, the duo rule, Second Wind and Help Up, the healing cap, the horde clock, family card sets, its numbers), `GAME_CORE.md` wins. Most of this plan is parked; it's kept as reference.
 
 Second draft, 2026-10-23.
 
