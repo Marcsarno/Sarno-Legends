@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-23T14:28:27.041Z",
+ "generated": "2026-10-23T14:29:54.862Z",
  "note": "tools/bake-art.mjs (npm run bake). Do not edit by hand.",
  "rooms": {
   "version": "rooms-1",
@@ -192,6 +192,29 @@
       "file": "rooms/xray-4x3.webp",
       "hash": "578b98dea3",
       "kb": 50.6,
+      "w": 1200,
+      "h": 900,
+      "q": 90
+     }
+    ]
+   },
+   {
+    "key": "storage",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/storage-wide.webp",
+      "hash": "ddea002d8a",
+      "kb": 85.3,
+      "w": 1920,
+      "h": 800,
+      "q": 90
+     },
+     {
+      "file": "rooms/storage-4x3.webp",
+      "hash": "55a7f13adc",
+      "kb": 65,
       "w": 1200,
       "h": 900,
       "q": 90
