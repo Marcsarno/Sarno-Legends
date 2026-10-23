@@ -6,7 +6,7 @@ This page decides what the game is, as of 2026-10-23. It comes from the sixth re
 
 ## Pitch
 
-**Slay the Spire, but nobody kills alone.** Marc cracks zombies open and Yola finishes them with a cinematic kill. Every hit point you spend getting through the hospital is one you won't have at the boss.
+**A Slay the Spire-style deckbuilder where nobody kills alone.** Marc cracks zombies open and Yola finishes them with a cinematic kill. Every hit point you spend getting through the hospital is one you won't have at the boss.
 
 ## Three pillars
 
@@ -24,16 +24,15 @@ This page decides what the game is, as of 2026-10-23. It comes from the sixth re
 
 Family, weapons and painted rooms are content. They serve the pillars rather than being pillars themselves.
 
-## Why this, and not another Slay the Spire clone
+## Familiar is fine
 
-- **The market is crowded.** About 316 roguelike deckbuilders had come out on Steam by September 2026, and the winners take most of the money.
-- **The hits changed the verb:**
-  - Balatro scores poker hands.
-  - Monster Train fights across floors.
-  - Inscryption sacrifices cards instead of paying mana.
-  - Cobalt Core moves and dodges.
-- **"Marc and Yola fight zombies" is a theme, not a verb.** "Open, then finish, together" is our verb. No rival has it: Roguebook's two heroes only swap places.
-- **The animations are our edge.** Slay the Spire's critics called its enemies generic and its animations static.
+Marc, 2026-10-23: "I don't need to do something new no other game does."
+
+**The aim:** a well-made Slay the Spire-style game with our own heart. That means the family, the animations, and the hospital and neighbourhood already built.
+
+**What the pillars are for:** stopping the design from drifting, not making the game novel. "Marc opens, Yola closes" comes from Marc's early asks: both heroes have to matter, and the finisher animations are the reward.
+
+Borrowing proven Slay the Spire structure is welcome wherever it serves the pillars.
 
 ## The core loop
 
