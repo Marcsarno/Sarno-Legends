@@ -1,0 +1,53 @@
+{
+ "generated": "2026-10-23T14:04:05.673Z",
+ "note": "tools/bake-art.mjs (npm run bake). Do not edit by hand.",
+ "rooms": {
+  "version": "rooms-1",
+  "list": [
+   {
+    "key": "er_lobby",
+    "look": null,
+    "tag": "",
+    "variants": [
+     {
+      "file": "rooms/er_lobby-wide.webp",
+      "hash": "0534dd8598",
+      "kb": 51.5,
+      "w": 1920,
+      "h": 800,
+      "q": 82
+     },
+     {
+      "file": "rooms/er_lobby-4x3.webp",
+      "hash": "8ebb743ad4",
+      "kb": 35.1,
+      "w": 1200,
+      "h": 900,
+      "q": 82
+     }
+    ]
+   }
+  ],
+  "sizes": {
+   "wide": [
+    1920,
+    800
+   ],
+   "tall": [
+    1200,
+    900
+   ]
+  }
+ },
+ "studio": {
+  "version": "studio-2",
+  "sizes": {
+   "card": "480x360",
+   "relic": "256",
+   "potion": "256",
+   "weapon": "256",
+   "portrait": "256"
+  },
+  "files": {}
+ }
+}

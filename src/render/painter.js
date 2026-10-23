@@ -5,11 +5,16 @@
 // edge darkening, brush streaks along the image structure, canvas grain and a vignette.
 //   const { texture, url } = await paintRoom(renderer, 'ward', { width: 1280, height: 720, seed: 7 })
 //     texture  a THREE.CanvasTexture (sRGB, fresh per call) for scene.background or a backdrop plane
-//     url      an object URL (JPEG) for CSS backgrounds of non-battle screens
-// Cached by key + size + seed; painted at most ~1600x900 (MAX_PIXELS) and at half size on a software GPU (SwiftShader),
-// where a 1280x720 room takes ~15 s instead of well under a second. The stage area (x -3.5..4.5, z -1.5..0.8) stays
-// clear: props stand behind z = -2.3 or off its sides. ROOMS holds the recipes (palette, light, look, dressing). The studio
-// paints card art through the same pipeline (renderPainted). Uses the caller's renderer and restores its state (render target, clear colour, shadows).
+//     url      an image URL of the room (the live painting's JPEG, or the baked file)
+//   await roomUrl(renderer, 'pharmacy', { width, height })   the room framed for a CSS backdrop of that size
+// Baked first: tools/bake-art.mjs (npm run bake) paints every room ahead of time into public/assets/baked/rooms, and
+// paintRoom crops the baked picture to the screen in a few milliseconds (see "baked rooms" below). Live painting is the
+// fallback (a room that wasn't baked, a stale bake, a failed download, a seed other than 1, ?baked=0 in the URL).
+// Live paintings are cached by key + size + seed; painted at most ~1600x900 (MAX_PIXELS) and at half size on a software
+// GPU (SwiftShader), where a 1280x720 room takes ~15 s instead of well under a second. The stage area (x -3.5..4.5,
+// z -1.5..0.8) stays clear: props stand behind z = -2.3 or off its sides. ROOMS holds the recipes (palette, light, look,
+// dressing). The studio paints card art through the same pipeline (renderPainted). Uses the caller's renderer and
+// restores its state (render target, clear colour, shadows).
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
@@ -1172,18 +1177,30 @@ function waitFonts() {
 
 /**
  * Paint a room. key: a ROOMS key ('er_lobby', 'ward', ...; an unknown key paints the ER lobby).
- * Returns { texture (a fresh CanvasTexture per call; the caller may dispose it), url (shared object URL), canvas, width,
- * height (the painted size), ms, timing }.
- * The painting is capped at MAX_PIXELS (about 1600x900): a painted backdrop has no fine detail, so a 1920 screen just
+ * Returns { texture (a fresh CanvasTexture per call; the caller may dispose it), url (shared object URL, or the baked
+ * file), canvas, width, height (the painted size), ms, timing, baked (true when it came from public/assets/baked) }.
+ * A baked room comes back at the asked aspect, at most as sharp as the baked pixels it covers. opts.live skips it.
+ * A live painting is capped at MAX_PIXELS (about 1600x900): a painted backdrop has no fine detail, so a 1920 screen just
  * stretches it. On a software GPU (SwiftShader: headless playtests) it paints at half size unless opts.full is set.
  */
 export const MAX_PIXELS = 1600 * 900;
-export async function paintRoom(renderer, key, { width = 1280, height = 720, seed = 1, look = null, full = false } = {}) {
+export async function paintRoom(renderer, key, { width = 1280, height = 720, seed = 1, look = null, full = false, live = false } = {}) {
   width = Math.max(64, Math.round(width)); height = Math.max(36, Math.round(height));
+  if (!ROOMS[key]) { console.warn('[painter] unknown room', key, '- painting er_lobby'); key = 'er_lobby'; }
+  // a baked picture cropped to this screen (no GPU work), when there is one for this room and look
+  if (!live && String(seed) === '1') {
+    const t0 = performance.now();
+    const b = await bakedRoom(key, width, height, look).catch(e => { warnOnce('room ' + key, e); return null; });
+    if (b) {
+      const texture = new THREE.CanvasTexture(b.canvas);
+      texture.colorSpace = THREE.SRGBColorSpace; texture.generateMipmaps = false; texture.minFilter = THREE.LinearFilter;
+      const ms = Math.round(performance.now() - t0);
+      return { texture, url: b.url, canvas: b.canvas, width: b.canvas.width, height: b.canvas.height, ms, timing: { baked: ms }, key, baked: true };
+    }
+  }
   let k = Math.min(1, Math.sqrt(MAX_PIXELS / (width * height)));
   if (!full && isSoftwareGL(renderer)) k *= 0.5;
   if (k < 1) { width = Math.round(width * k); height = Math.round(height * k); }
-  if (!ROOMS[key]) { console.warn('[painter] unknown room', key, '- painting er_lobby'); key = 'er_lobby'; }
   const ck = `${key}|${width}x${height}|${seed}${look ? '|' + JSON.stringify(look) : ''}`;
   if (!cache.has(ck)) {
     cache.set(ck, queue(() => paint(renderer, key, width, height, seed, look)).catch(e => { cache.delete(ck); throw e; }));
@@ -1240,3 +1257,179 @@ const hashNum = s => { let h = 7; for (const ch of String(s)) h = (h * 31 + ch.c
 
 /** Room keys in display order (no aliases). */
 export const ROOM_KEYS = Object.keys(ROOMS);
+
+// ---------------------------------------------------------------- baked rooms
+// tools/bake-art.mjs paints each room (and each look the app grades a room with, rooms.js BAKE_ROOMS) with paint() above,
+// vignette off, in two framings of the battle camera (camera.js applyBattleCamera):
+//   wide  2.4:1   the 32 degree lens every screen of 16:9 or wider uses (a wider screen just sees more of the sides)
+//   tall  4:3     the widened lens of narrower screens (they all show the same width, more or less floor and ceiling)
+// Every screen's view is then a centred crop of one of the two: bakedRoom picks the framing that covers it, crops it
+// (or mirrors the picture outward past its edges for a screen even wider or taller), and multiplies the room's vignette
+// over the result exactly as the paint shader would have for a painting of that size. The characters stand on the same
+// floor as on a live painting. public/assets/baked/manifest.json lists the files with a content hash (for caching) and the
+// BAKE_VERSION they were painted for: a bake made for another version is ignored (live painting) until it is re-baked.
+export const BAKE_VERSION = 'rooms-1';          // bump when a ROOMS recipe or the paint look changes, then npm run bake
+export const BAKE_SIZES = { wide: [1920, 800], tall: [1200, 900] };
+const NO_BAKED = typeof location !== 'undefined' && /[?&]baked=0(&|$)/.test(location.search || '');
+const IMAGES_MAX = 5;                           // decoded baked rooms kept in memory (~6 MB each)
+const URLS_MAX = 8;                             // composed CSS backdrops kept as object URLs
+
+let manifestP = null;
+/** public/assets/baked/manifest.json (tools/bake-art.mjs), or null without one (or with ?baked=0). Revalidated per load. */
+export function bakedManifest() {
+  if (!manifestP) manifestP = NO_BAKED || typeof fetch !== 'function' ? Promise.resolve(null)
+    : fetch(assetUrl('baked/manifest.json'), { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null);
+  return manifestP;
+}
+/** URL of a baked file from its manifest entry ({ file, hash }); the hash keeps a re-bake from hitting a stale cache. */
+export const bakedUrl = f => assetUrl('baked/' + f.file) + (f.hash ? '?h=' + f.hash : '');
+const warned = new Set();
+function warnOnce(what, e) { if (warned.has(what)) return; warned.add(what); console.warn(`[painter] baked ${what} unavailable, painting it live:`, e?.message || e); }
+
+const lookKey = look => (look ? JSON.stringify(look) : '');
+async function bakedEntry(key, look) {
+  const m = await bakedManifest();
+  if (!m?.rooms || m.rooms.version !== BAKE_VERSION) return null;
+  return (m.rooms.list || []).find(e => e.key === key && lookKey(e.look) === lookKey(look) && e.variants?.length) || null;
+}
+/** Tangents of the battle camera's half angles at an aspect: { th, tv } (the view a picture of that aspect shows). */
+function viewTan(aspect) {
+  const cam = applyBattleCamera(new THREE.PerspectiveCamera(), aspect);
+  const tv = Math.tan(cam.fov * D2R / 2);
+  return { th: tv * aspect, tv };
+}
+/** The framing that covers a width x height screen's view with the most pixels (or, if none covers it, the closest). */
+function pickVariant(entry, width, height) {
+  const D = viewTan(width / height);
+  let best = null;
+  for (const v of entry.variants) {
+    const S = viewTan(v.w / v.h), fx = D.th / S.th, fy = D.tv / S.tv;      // the screen's share of the picture
+    const score = Math.max(fx, fy) <= 1.002 ? Math.min(1, fx) * v.w * Math.min(1, fy) * v.h : -Math.max(fx, fy);
+    if (!best || score > best.score) best = { v, fx, fy, score };
+  }
+  return best;
+}
+const images = new Map();   // file -> Promise<ImageBitmap | HTMLImageElement> (LRU)
+function loadImage(f) {
+  const hit = images.get(f.file);
+  if (hit) { images.delete(f.file); images.set(f.file, hit); return hit; }
+  const url = bakedUrl(f);
+  const p = (async () => {
+    if (typeof createImageBitmap === 'function' && typeof fetch === 'function') {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${r.status} ${f.file}`);
+      return createImageBitmap(await r.blob());          // decoded off the main thread
+    }
+    const img = new Image(); img.decoding = 'async';
+    await new Promise((res, rej) => { img.onload = res; img.onerror = () => rej(new Error('could not load ' + f.file)); img.src = url; });
+    return img;
+  })();
+  p.catch(() => { if (images.get(f.file) === p) images.delete(f.file); });
+  images.set(f.file, p);
+  while (images.size > IMAGES_MAX) images.delete(images.keys().next().value);
+  return p;
+}
+/** The baked room for a width x height screen: { canvas (sRGB, the screen's aspect), url (the baked file) } or null. */
+async function bakedRoom(key, width, height, look) {
+  const e = await bakedEntry(key, look);
+  if (!e) return null;
+  const pick = pickVariant(e, width, height);
+  if (!pick) return null;
+  const img = await loadImage(pick.v);
+  // no sharper than the baked pixels this view spans (a 1920 screen gets ~1920 px across a 16:9 crop of 1920x800)
+  const k = Math.min(1, (pick.fx * pick.v.w) / width);
+  const W = Math.max(16, Math.round(width * k)), H = Math.max(9, Math.round(height * k));
+  const canvas = makeCanvas(W, H), ctx = canvas.getContext('2d');
+  // the whole picture's size and place on this canvas (its view centred on the screen's)
+  const w = W / pick.fx, h = H / pick.fy, x0 = (W - w) / 2, y0 = (H - h) / 2;
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  for (const i of [-1, 0, 1]) for (const j of [-1, 0, 1]) {   // the picture, and mirror images of it past its edges
+    const x = x0 + i * w, y = y0 + j * h;
+    if (x >= W || y >= H || x + w <= 0 || y + h <= 0) continue;
+    ctx.setTransform(i ? -1 : 1, 0, 0, j ? -1 : 1, i ? x + w : x, j ? y + h : y);
+    ctx.drawImage(img, 0, 0, w, h);
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  vignette2d(ctx, W, H, { ...LOOK, ...(ROOMS[key].look || {}), ...(look || {}) });
+  return { canvas, url: bakedUrl(pick.v) };
+}
+// The finish shader's vignette (SHADERS.finish), as a multiply over a 2D canvas: an ellipse in the picture's own uv space.
+function vignette2d(ctx, W, H, L) {
+  const amount = L.vignette ?? 0;
+  if (!(amount > 0)) return;
+  const vc = L.vigColor || [0, 0, 0], R = 0.78 / 1.18, N = 40;
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+  for (let i = 0; i <= N; i++) {
+    const x = (R * i / N) * 1.18, t = Math.min(1, Math.max(0, (x - 0.78) / (0.18 - 0.78))), v = t * t * (3 - 2 * t);
+    const m = 1 - amount * (1 - v);
+    g.addColorStop(i / N, `rgb(${vc.map(c => Math.round(255 * Math.min(1, Math.max(0, c + (1 - c) * m)))).join(',')})`);
+  }
+  ctx.save();
+  ctx.setTransform(W, 0, 0, H / 0.86, W / 2, H / 2);    // q = (uv - 0.5) * (1, 0.86)
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = g; ctx.fillRect(-1, -1, 2, 2);
+  ctx.restore();
+}
+
+const urls = new Map();   // key|size|look -> Promise<{ url, own }> (LRU; own: an object URL made here, revoked on eviction)
+/**
+ * A room framed for a CSS backdrop of width x height (the DOM screens): the baked room composed for that size as a JPEG
+ * object URL, or the live painting's URL. Promise<url>.
+ */
+export function roomUrl(renderer, key, { width = 1280, height = 720, look = null } = {}) {
+  if (!ROOMS[key]) key = 'er_lobby';
+  width = Math.max(64, Math.round(width)); height = Math.max(36, Math.round(height));
+  const ck = `${key}|${width}x${height}|${lookKey(look)}`;
+  let p = urls.get(ck);
+  if (p) { urls.delete(ck); urls.set(ck, p); return p.then(r => r.url); }
+  p = (async () => {
+    const b = await bakedRoom(key, width, height, look).catch(e => { warnOnce('room ' + key, e); return null; });
+    if (b) return { url: await canvasUrl(b.canvas, 'image/jpeg', 0.88), own: true };
+    const r = await paintRoom(renderer, key, { width, height, look, live: true });
+    r.texture?.dispose?.();
+    return { url: r.url, own: false };
+  })();
+  p.catch(() => urls.delete(ck));
+  urls.set(ck, p);
+  while (urls.size > URLS_MAX) { const [k0, old] = urls.entries().next().value; urls.delete(k0); old.then(r => r.own && URL.revokeObjectURL(r.url)).catch(() => {}); }
+  return p.then(r => r.url);
+}
+
+/**
+ * Get a room ready ahead of time for a width x height screen: download and decode its baked picture, or (opts.live, the
+ * default) paint it live when it has none. Resolves true when it's ready, false when there was nothing to do.
+ */
+export async function prefetchRoom(renderer, key, { width = innerWidth, height = innerHeight, look = null, live = true } = {}) {
+  if (!ROOMS[key]) key = 'er_lobby';
+  const e = await bakedEntry(key, look).catch(() => null);
+  if (e) {
+    const pick = pickVariant(e, Math.max(1, width), Math.max(1, height));
+    if (pick && await loadImage(pick.v).then(() => true, err => { warnOnce('room ' + key, err); return false; })) return true;
+  }
+  if (!live || !renderer) return false;
+  const r = await paintRoom(renderer, key, { width, height, look, live: true });
+  r.texture?.dispose?.();
+  return true;
+}
+
+/** True when a baked picture exists for this room and look (and this BAKE_VERSION). */
+export async function hasBakedRoom(key, look = null) { return !!(await bakedEntry(key, look).catch(() => null)); }
+
+/**
+ * For tools/bake-art.mjs: paint one room for the bake at exactly width x height (no size cap, no cache), vignette off
+ * (paintRoom lays it on for each screen's frame). Returns the canvas.
+ */
+export async function bakeRoom(renderer, key, { width, height, look = null } = {}) {
+  if (!ROOMS[key]) throw new Error('unknown room ' + key);
+  const r = await queue(() => paint(renderer, key, width, height, 1, { ...(look || {}), vignette: 0 }));
+  URL.revokeObjectURL(r.url);
+  return r.canvas;
+}
+/** A renderer set up like the stage's (sRGB output, ACES, PCF shadows) for off-screen work: the bake tool, the labs. */
+export function offlineRenderer() {
+  const r = new THREE.WebGLRenderer({ canvas: makeCanvas(64, 64), antialias: false, alpha: true, preserveDrawingBuffer: false });
+  r.setPixelRatio(1); r.setSize(64, 64, false);
+  r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping;
+  r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFShadowMap;
+  return r;
+}

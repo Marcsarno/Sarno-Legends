@@ -16,8 +16,9 @@ import * as armory from './armory.js';
 import * as settings from './settings.js';
 import * as deck from './deck.js';
 import * as picker from './picker.js';
+import * as howto from './howto.js';
 
-export const SCREENS = { title, intro, map, reward, rest, shop, event, treasure, result, armory, settings, deck, picker };
+export const SCREENS = { title, intro, map, reward, rest, shop, event, treasure, result, armory, settings, deck, picker, howto };
 
 /** Overlays sit on top of another screen (and of the battle) instead of replacing it. */
-export const OVERLAYS = new Set(['settings', 'deck', 'picker', 'reward']);
+export const OVERLAYS = new Set(['settings', 'deck', 'picker', 'reward', 'howto']);

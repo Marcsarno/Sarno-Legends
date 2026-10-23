@@ -8,7 +8,8 @@
 //       | "text:Title|Body html" | "<source>:<arg>" for a source added with tipSource(name, fn(arg, el) -> content)
 //   tipSource('intent', uid => tipIntent(...))  the HUD registers live sources (intents need the combat)
 //   tipKeyword / tipStatus / tipRelic / tipPotion / tipIntent / tipCardKeywords   content builders
-// A long-press that showed a tip swallows the click that follows, so holding a potion never also uses it.
+// A long-press that showed a tip swallows the click that follows, so holding a potion never also uses it. On touch, a
+// plain tap on something that does nothing else (a relic, a status, an intent, the HP) shows its tip for a few seconds.
 
 import { KEYWORDS, describeStatus, statusName, describeIntent, intentLabel, describeRelic, describePotion, cardKeywords, RARITY_LABELS } from '../game/text.js';
 import { STATUSES, isPositive } from '../game/content/statuses.js';
@@ -162,11 +163,13 @@ export const tipShownFor = () => shownFor;
 
 // ---------------------------------------------------------------- delegated hover / long-press
 
-const HOVER_DELAY = 140, PRESS_DELAY = 380;
+const HOVER_DELAY = 140, PRESS_DELAY = 380, TAP_HOLD = 3200;
+// things a tap already does something with: they only show their tip on a long-press
+const INTERACTIVE = 'button, a, input, select, label, textarea, .hand-card, [role="button"]';
 
 /** Hover (mouse) and long-press (touch / pen) tooltips for every [data-tip] inside root. Returns an unbind function. */
 export function bindTips(root = document.body) {
-  let hoverT = 0, pressT = 0, pressEl = null, pressXY = null, pressShown = false;
+  let hoverT = 0, pressT = 0, pressEl = null, pressXY = null, pressShown = false, tapEl = null, tapT = 0;
   const target = e => e.target instanceof Element ? e.target.closest('[data-tip],[data-kw]') : null;
 
   const over = e => {
@@ -191,6 +194,7 @@ export function bindTips(root = document.body) {
   };
   const down = e => {
     if (e.pointerType === 'mouse') { clearTimeout(hoverT); hideTip(); return; }
+    if (tapEl) { clearTimeout(tapT); hideTip(tapEl); tapEl = null; }
     const el = target(e);
     if (!el || !root.contains(el)) return;
     pressEl = el; pressXY = [e.clientX, e.clientY]; pressShown = false;
@@ -205,14 +209,25 @@ export function bindTips(root = document.body) {
     if (!pressEl || !pressXY) return;
     if (Math.hypot(e.clientX - pressXY[0], e.clientY - pressXY[1]) > 12) { clearTimeout(pressT); pressEl = null; if (pressShown) hideTip(); }
   };
-  const up = () => {
+  const up = e => {
     clearTimeout(pressT);
     if (pressShown) {
       // swallow the click that ends a long-press
       const swallow = ev => { ev.stopPropagation(); ev.preventDefault(); };
       window.addEventListener('click', swallow, { capture: true, once: true });
       setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 350);
-      setTimeout(() => hideTip(pressEl), 900);
+      const el = pressEl;
+      setTimeout(() => hideTip(el), 1600);
+    } else if (pressEl && e?.type === 'pointerup' && e.pointerType !== 'mouse' && !suppressed && pressXY
+      && Math.hypot(e.clientX - pressXY[0], e.clientY - pressXY[1]) < 12 && !pressEl.closest(INTERACTIVE)) {
+      // a quick tap on something with nothing else to do: show its tip for a moment
+      const el = pressEl, c = resolve(el);
+      if (c) {
+        showTip(el, c, { key: el, side: el.dataset.tipSide || 'auto' });
+        tapEl = el;
+        clearTimeout(tapT);
+        tapT = setTimeout(() => { hideTip(el); if (tapEl === el) tapEl = null; }, TAP_HOLD);
+      }
     }
     pressEl = null; pressShown = false;
   };
@@ -225,7 +240,7 @@ export function bindTips(root = document.body) {
   const scroll = () => hideTip();
   window.addEventListener('wheel', scroll, { passive: true });
   return () => {
-    clearTimeout(hoverT); clearTimeout(pressT);
+    clearTimeout(hoverT); clearTimeout(pressT); clearTimeout(tapT);
     root.removeEventListener('pointerover', over);
     root.removeEventListener('pointerout', out);
     root.removeEventListener('pointerdown', down, true);

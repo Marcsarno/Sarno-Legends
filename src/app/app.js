@@ -35,6 +35,7 @@ import { createSaves } from './save.js';
 import { createRooms, battleRoom } from './rooms.js';
 import { openCombat } from './combat.js';
 import { createBoot } from './loading.js';
+import { createCoach } from './coach.js';
 import { showError } from './errors.js';
 
 export const VERSION = '0.2.0';
@@ -78,6 +79,10 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   applySettings();
   const saveProfile = () => saves.saveProfile(profile);
   const saveRun = () => { if (app.run && !app.run.over) saves.saveRun(app.run); };
+  app.saveProfile = saveProfile;
+  // the first-run tips (src/app/coach.js): told about every screen and fight below
+  const coach = createCoach(app);
+  app.coach = coach;
 
   // ---------------------------------------------------------------- the heroes (built once, used by the title and every fight)
   let heroesP = null;
@@ -144,6 +149,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     main = { name, handle, ctx };
     app.screen = name;
     document.body.dataset.screen = name;
+    coach.screen(name, ctx);
     return handle;
   }
   function openOverlay(name, ctx) {
@@ -213,14 +219,24 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   app.openSettings = () => {
     const ex = topOverlay('settings'); if (ex) return closeOverlay(ex);
     const o = openOverlay('settings', {
-      settings: { ...profile.settings }, inRun: !!(app.run && !app.run.over), version: VERSION, audio,
+      settings: { ...profile.settings, tips: coach.on }, inRun: !!(app.run && !app.run.over), version: VERSION, audio,
       act: {
-        set: (k, v) => { const r = M.setSetting(profile, k, v); if (r.ok) { saveProfile(); applySettings(); } },
+        set: (k, v) => {
+          if (k === 'tips') { coach.setOn(v); return; }
+          const r = M.setSetting(profile, k, v); if (r.ok) { saveProfile(); applySettings(); }
+        },
+        howTo: () => { closeOverlay(o); app.openHowTo(); },
         close: () => closeOverlay(o),
         abandonRun: () => { closeOverlay(o); abandonRun(); },
         resetProfile: () => { closeOverlay(o); resetProfile(); },
       },
     });
+  };
+
+  app.openHowTo = () => {
+    const ex = topOverlay('howto'); if (ex) return closeOverlay(ex);
+    audio.ui('open');
+    const o = openOverlay('howto', { audio, act: { close: () => closeOverlay(o), replayTips: () => coach.reset() } });
   };
 
   // ---------------------------------------------------------------- title, armory
@@ -239,6 +255,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
         newRun: () => app.newRun(),
         armory: () => app.toArmory(),
         settings: () => app.openSettings(),
+        howTo: () => app.openHowTo(),
       },
     });
     audio.music('menu');
@@ -376,10 +393,11 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     main = { name: 'combat', handle: { unmount() {}, update() {} }, ctx: {} };
     app.screen = 'combat';
     document.body.dataset.screen = 'combat';
+    coach.screen('combat'); coach.fight(fight);
     // the stage needs a moment for the first frame of the new cast
     await new Promise(r => setTimeout(r, 120));
   }
-  function disposeFight() { if (app.fight) { app.fight.dispose(); app.fight = null; } }
+  function disposeFight() { if (app.fight) { coach.fight(null); app.fight.dispose(); app.fight = null; } }
 
   function fightOver(fight) {
     const run = app.run;
@@ -428,6 +446,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
       main = { name: 'reward', handle: h, ctx };
       app.screen = 'reward';
       document.body.dataset.screen = 'reward';
+      coach.screen('reward', ctx);
     } else {
       h = mountMain('reward', ctx);
       audio.music('map');
@@ -557,7 +576,6 @@ export async function startApp({ params = new URLSearchParams(location.search), 
     await showRun();
   });
   app.saveRun = saveRun;
-  app.saveProfile = saveProfile;
   app.refresh = refresh;
   app.overlays = overlays;
   app.mainScreen = () => main;

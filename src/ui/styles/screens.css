@@ -230,6 +230,26 @@
 @container (max-aspect-ratio: 4/3) {
   .ttl-right { width: 62%; }
 }
+/* How to Play and Settings share a row */
+.ttl-row { display: flex; gap: calc(var(--u) * 1.3); width: 100%; }
+.ttl-row .ttl-btn { flex: 1 1 0; min-width: 0; padding-left: calc(var(--u) * 1.8); padding-right: calc(var(--u) * 1.2); white-space: nowrap; }
+.ttl-btn--help { border-left-color: var(--gold-dark); }
+.ttl-btn--help .ttl-btn__ico { color: var(--gold); }
+/* phones held sideways: 44 px buttons, a slightly smaller logo, clear of the notch */
+@media (max-height: 520px) {
+  .ttl-right { padding-right: max(calc(var(--u) * 5), calc(var(--sa-r) + 12px)); width: min(48%, 340px); }
+  .ttl-logo__a { font-size: calc(var(--u) * 16.5); }
+  .ttl-logo__b { font-size: calc(var(--u) * 11.6); }
+  .ttl-tag { margin-bottom: 10px; font-size: 11px; }
+  .ttl-menu { gap: 6px; width: 100%; }
+  .ttl-btn { min-height: 44px; padding: 4px 12px; gap: 9px; font-size: 13px; }
+  .ttl-btn--primary { min-height: 48px; font-size: 16px; }
+  .ttl-btn__ico { width: 17px; height: 17px; }
+  .ttl-btn__note { font-size: 11px; }
+  .ttl-row { gap: 6px; }
+  .ttl-row .ttl-btn { padding: 4px 10px; gap: 7px; font-size: 12.5px; letter-spacing: .07em; }
+  .ttl-foot { right: max(calc(var(--u) * 3), calc(var(--sa-r) + 8px)); bottom: max(calc(var(--u) * 2.4), calc(var(--sa-b) + 4px)); }
+}
 
 /* ---------------------------------------------------------------- Shift Change (intro) */
 .scr--intro .intro-wrap { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -352,6 +372,29 @@
 .pk-col > span { font: 600 max(10px, calc(var(--u) * 1.8))/1 var(--f-head); letter-spacing: .24em; color: var(--ink-dim); text-transform: uppercase; }
 .pk-burn { position: relative; }
 .pk-burn::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: repeating-linear-gradient(-45deg, #b3261e33 0 10px, transparent 10px 20px); }
+
+/* phones held sideways: 44 px close buttons and toggles (the settings rows go two to a line) */
+@media (max-height: 520px) {
+  .scr-x { width: 44px; height: 44px; padding: 13px; }
+  .seg button { min-height: 36px; min-width: 46px; font-size: 13px; padding: 0 10px; }
+  .seg { padding: 3px; }
+  .set-slider input[type=range] { height: 40px; }
+  .set-slider input[type=range]::-webkit-slider-thumb { width: 22px; height: 22px; margin-top: -8px; }
+  .set-row__label b { font-size: 13px; }
+  .scr--deck, .scr--picker { --card-grid-w: clamp(92px, min(28vmin, 14.6vw), 205px); }
+}
+@media (max-height: 520px) and (min-width: 640px) {
+  .scr--settings .scr-modal { width: min(calc(100% - 16px - var(--sa-l) - var(--sa-r)), 760px); max-height: calc(100% - 12px - var(--sa-b)); }
+  .scr--settings .scr-modal__head { padding: 6px 14px 6px 18px; }
+  .scr--settings .scr-modal__head h2 { font-size: 26px; }
+  .scr--settings .scr-modal__body { display: grid; grid-template-columns: 1fr 1fr; column-gap: 26px; padding: 4px 18px 10px; }
+  .scr--settings .set-row { padding: 4px 0; min-height: 50px; }
+  .scr--settings .set-slider { width: 52%; }
+  .scr--settings .set-danger, .scr--settings .set-foot { grid-column: 1 / -1; }
+  .scr--settings .set-danger { margin-top: 8px; padding: 6px 12px; flex-wrap: nowrap; }
+  .scr--settings .set-danger__label { flex: 0 0 auto; margin-right: auto; }
+  .scr--settings .set-foot { margin-top: 8px; }
+}
 
 /* phone landscape: tighter */
 @media (max-height: 460px) {

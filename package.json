@@ -12,7 +12,8 @@
     "test": "node --test tests/*.test.mjs",
     "sim": "node tools/sim/run.mjs",
     "snap": "node tools/snap.mjs",
-    "playtest": "node tools/playtest.mjs"
+    "playtest": "node tools/playtest.mjs",
+    "bake": "node tools/bake-art.mjs"
   },
   "repository": {
     "type": "git",

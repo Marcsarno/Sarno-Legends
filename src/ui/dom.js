@@ -42,6 +42,20 @@ export const lerp = (a, b, t) => a + (b - a) * t;
 /** Listen and get an unsubscribe function back. */
 export function on(target, type, fn, opts) { target.addEventListener(type, fn, opts); return () => target.removeEventListener(type, fn, opts); }
 
+/** The safe-area insets in px ({ t, r, b, l }: notches, the home bar), from the --sa-* tokens (tokens.css). */
+let saProbe = null;
+export function safeInsets() {
+  if (typeof document === 'undefined') return { t: 0, r: 0, b: 0, l: 0 };
+  if (!saProbe || !saProbe.isConnected) {
+    saProbe = document.createElement('i');
+    saProbe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;' +
+      'padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)';
+    document.body.append(saProbe);
+  }
+  const cs = getComputedStyle(saProbe);
+  return { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+}
+
 /** Current CSS unit (--u) in px, for code that needs pixel sizes matching the CSS scale. */
 export function unit() { return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--u')) || 8; }
 

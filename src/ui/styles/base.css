@@ -60,3 +60,9 @@ img { -webkit-user-drag: none; }
 
 /* reduced motion */
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+
+/* phones held sideways: every button is a comfortable thumb target (44 px) and its label at least 13 px */
+@media (max-height: 520px) {
+  .btn { min-height: 44px; padding: 0 16px; font-size: max(13px, calc(var(--u) * 2.4)); }
+  .btn.big { min-height: 48px; padding: 0 22px; font-size: max(15px, calc(var(--u) * 3.2)); }
+}

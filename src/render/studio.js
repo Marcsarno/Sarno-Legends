@@ -5,15 +5,21 @@
 //                                            gradient in the hero colour (Marc red, Yola teal, status cards grey)
 //   await studio.relicIcon('duct_tape')   -> object URL (PNG, square, transparent): a kit model or a small procedural one
 //   await studio.potionIcon('flashbang')  -> idem;  studio.weaponIcon('nail_bat') -> idem;  studio.portrait('shambler') -> PNG
-// Every picture uses the same camera, lights and frame for its kind. Results are cached in memory and in IndexedDB
-// (keys carry VERSION: bump it when a recipe changes). One render at a time, shared with the painter (runExclusive).
-// Card poses come from CARD_POSES (by card id) or POSE_BY_ANIM (by the card's anim); clips and frames were picked from
-// contact sheets in labs/painter.html?poses=marc.
+// Baked first: tools/bake-art.mjs (npm run bake) renders every card, relic, potion, weapon and portrait ahead of time
+// into public/assets/baked/{cards,icons,portraits} (WebP; icons keep their alpha), listed in public/assets/baked/
+// manifest.json with the VERSION they were made for. A picture listed there for this VERSION and size comes back as its
+// static URL (once it has loaded); anything else (a card added since the bake, a failed download, ?baked=0) is rendered
+// live: every picture uses the same camera, lights and frame for its kind, and live results are cached in memory and in
+// IndexedDB (keys carry VERSION: bump it when a recipe changes, then re-bake). One render at a time, shared with the
+// painter (runExclusive). Card poses come from CARD_POSES (by card id) or POSE_BY_ANIM (by the card's anim); clips and
+// frames were picked from contact sheets in labs/painter.html?poses=marc.
 import * as THREE from 'three';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { loadGltf, loadModel, renderPainted, canvasTex, makeCanvas, seededRandom, runExclusive, roomEnvironment, SIGN_FONT } from './painter.js';
+import { loadGltf, loadModel, renderPainted, canvasTex, makeCanvas, seededRandom, runExclusive, roomEnvironment, SIGN_FONT, bakedManifest, bakedUrl } from './painter.js';
 
-export const VERSION = 'studio-1';
+export const VERSION = 'studio-2';
+/** The picture sizes the game asks for (createStudio's defaults; the bake renders these). */
+export const SIZES = { card: [480, 360], icon: 256, portrait: 256 };
 const D2R = Math.PI / 180;
 
 // ---------------------------------------------------------------- characters
@@ -318,13 +324,17 @@ async function heldProp(name, actor, seed) {
 }
 
 // ---------------------------------------------------------------- the studio
-export function createStudio(renderer, { cache = true, cardSize = [480, 360], iconSize = 256, portraitSize = 256 } = {}) {
+export function createStudio(renderer, { cache = true, baked = true, cardSize = SIZES.card, iconSize = SIZES.icon, portraitSize = SIZES.portrait } = {}) {
   const mem = new Map();
-  const db = cache ? openDb() : null;
+  let dbp = null;                               // IndexedDB, opened the first time a picture has to be rendered live
+  const getDb = () => (cache ? (dbp ||= openDb()) : null);
 
   function cached(kind, id, size, make) {
     const key = `${VERSION}|${kind}|${id}|${size}`;
     if (!mem.has(key)) mem.set(key, (async () => {
+      const url = baked ? await bakedArt(kind, id, size) : null;
+      if (url) return url;
+      const db = getDb();
       const hit = db && await dbGet(db, key).catch(() => null);
       if (hit) return URL.createObjectURL(hit);
       const canvas = await runExclusive(make);
@@ -461,18 +471,37 @@ export function createStudio(renderer, { cache = true, cardSize = [480, 360], ic
     } finally { a.dispose(); bt.dispose(); back.geometry.dispose(); back.material.dispose(); }
   }
 
-  const sizeKey = (a) => Array.isArray(a) ? a.join('x') : String(a);
+  const makers = {
+    card: id => renderCard(id), relic: id => renderIcon('relic', id), potion: id => renderIcon('potion', id),
+    weapon: id => renderIcon('weapon', id), portrait: key => renderPortrait(key),
+  };
   return {
     cardArt: id => cached('card', id, sizeKey(cardSize), () => renderCard(id)),
-    relicIcon: id => cached('relic', id, iconSize, () => renderIcon('relic', id)),
-    potionIcon: id => cached('potion', id, iconSize, () => renderIcon('potion', id)),
-    weaponIcon: id => cached('weapon', id, iconSize, () => renderIcon('weapon', id)),
-    portrait: key => cached('portrait', key, portraitSize, () => renderPortrait(key)),
+    relicIcon: id => cached('relic', id, sizeKey(iconSize), () => renderIcon('relic', id)),
+    potionIcon: id => cached('potion', id, sizeKey(iconSize), () => renderIcon('potion', id)),
+    weaponIcon: id => cached('weapon', id, sizeKey(iconSize), () => renderIcon('weapon', id)),
+    portrait: key => cached('portrait', key, sizeKey(portraitSize), () => renderPortrait(key)),
     /** Render a list of card ids ahead of time (e.g. the starter deck behind the title screen). */
     async prewarm(ids = []) { for (const id of ids) await this.cardArt(id).catch(() => {}); },
+    /** True when baked pictures for this VERSION are there (the app warms them up all at once instead of one by one). */
+    async baked() { return baked && (await bakedManifest())?.studio?.version === VERSION; },
+    /** One picture rendered live, as its canvas (no cache, no encoding): tools/bake-art.mjs. kind: card|relic|potion|weapon|portrait */
+    render(kind, id) { if (!makers[kind]) throw new Error('studio: no kind ' + kind); return runExclusive(() => makers[kind](id)); },
     /** Drop the memory cache (and, with persistent: true, the IndexedDB entries). */
-    async clear({ persistent = false } = {}) { for (const p of mem.values()) p.then(u => u?.startsWith?.('blob:') && URL.revokeObjectURL(u)).catch(() => {}); mem.clear(); if (persistent && db) await dbClear(db).catch(() => {}); },
+    async clear({ persistent = false } = {}) { for (const p of mem.values()) p.then(u => u?.startsWith?.('blob:') && URL.revokeObjectURL(u)).catch(() => {}); mem.clear(); const db = getDb(); if (persistent && db) await dbClear(db).catch(() => {}); },
   };
+}
+const sizeKey = (a) => Array.isArray(a) ? a.join('x') : String(a);
+// a baked picture (public/assets/baked, listed for this VERSION and size) once it has loaded, else null (render it live)
+async function bakedArt(kind, id, size) {
+  const S = (await bakedManifest())?.studio;
+  if (!S || S.version !== VERSION || String(S.sizes?.[kind]) !== String(size)) return null;
+  const f = S.files?.[`${kind}:${id}`];
+  if (!f) return null;
+  const url = bakedUrl(f);
+  const ok = await new Promise(res => { const img = new Image(); img.decoding = 'async'; img.onload = () => res(true); img.onerror = () => res(false); img.src = url; });
+  if (!ok) console.warn('[studio] baked picture failed to load, rendering it live:', kind, id);
+  return ok ? url : null;
 }
 const guessHero = id => /shot|tap|pistol|aim|kneecap|cover|tuck|mag|flare|triage|adrenaline|marksman|spray|painkiller|feet|kill|overdrive|slow|eye|defib|blank|buck|barrel|sidestep|fire/.test(id) ? 'yola' : 'marc';
 const hashNum = s => { let h = 7; for (const ch of String(s)) h = (h * 31 + ch.charCodeAt(0)) % 9973; return h; };
@@ -787,9 +816,17 @@ function openDb() {
     try {
       const rq = indexedDB.open('sarno-studio', 1);
       rq.onupgradeneeded = () => rq.result.createObjectStore('art');
-      rq.onsuccess = () => res(rq.result); rq.onerror = () => res(null);
+      rq.onsuccess = () => { res(rq.result); prune(rq.result); }; rq.onerror = () => res(null);
     } catch (e) { res(null); }
   });
+}
+// drop pictures an older VERSION rendered (they are never asked for again)
+function prune(db) {
+  try {
+    const store = db.transaction('art', 'readwrite').objectStore('art');
+    const rq = store.openKeyCursor ? store.openKeyCursor() : store.openCursor();
+    rq.onsuccess = () => { const c = rq.result; if (!c) return; if (!String(c.key).startsWith(VERSION + '|')) store.delete(c.key); c.continue(); };
+  } catch (e) { /* best effort */ }
 }
 async function dbGet(dbp, key) { const db = await dbp; if (!db) return null; return new Promise((res, rej) => { const rq = db.transaction('art').objectStore('art').get(key); rq.onsuccess = () => res(rq.result || null); rq.onerror = () => rej(rq.error); }); }
 async function dbPut(dbp, key, blob) { const db = await dbp; if (!db) return; return new Promise((res, rej) => { const tx = db.transaction('art', 'readwrite'); tx.objectStore('art').put(blob, key); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); }

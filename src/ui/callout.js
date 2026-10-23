@@ -3,7 +3,7 @@
 // the 3D stage) and steps aside while the target is gone. Never modal: only the bubble itself takes taps.
 //   const c = createCallout({ onGotIt(id), onSkip(id) })
 //   c.show({ id, title, sub?, target: () => Element | DOMRect | null, side?: 'top'|'bottom'|'left'|'right'|'auto',
-//            ring?: true, pad?: 6 })                         replaces whatever is shown
+//            ring?: true, pad?: 6, swipe?: false })          replaces whatever is shown; swipe: a finger slides up from it
 //   c.hide()     c.quiet(bool)  (faded and click-through, e.g. while a card is dragged)     c.shown -> id | null
 //   c.destroy()
 // A tap anywhere on the bubble is "Got it"; "Skip tips" turns the coach off (Settings > Tips turns it back on).
@@ -22,7 +22,8 @@ export function createCallout({ onGotIt, onSkip } = {}) {
   const bubble = h('div.coach__bubble', { role: 'status', 'aria-live': 'polite' },
     arrow, h('div.coach__text', title, sub), h('div.coach__btns', skip, ok));
   const safe = h('i.coach__safe');   // a box inset by the safe areas (notches, home bar): the bubble stays inside it
-  const layer = h('div.coach', safe, ring, bubble);
+  const swipe = h('div.coach__swipe', { html: '<svg viewBox="0 0 24 24"><path d="M12 3l6 7h-4v5h-4v-5H6z"/></svg>' }, h('i'));
+  const layer = h('div.coach', safe, ring, swipe, bubble);
   document.body.append(layer);
 
   let cur = null, raf = 0, quietOn = false, lastKey = '';
@@ -86,6 +87,8 @@ export function createCallout({ onGotIt, onSkip } = {}) {
     const r = { left: r0.left - pad, top: r0.top - pad, right: r0.right + pad, bottom: r0.bottom + pad };
     r.width = r.right - r.left; r.height = r.bottom - r.top;
     ring.style.display = cur.ring ? '' : 'none';
+    swipe.style.display = cur.swipe ? '' : 'none';
+    if (cur.swipe) swipe.style.transform = `translate(${Math.round((r.left + r.right) / 2)}px, ${Math.round(r.top + Math.min(r.height * .45, 70))}px)`;
     ring.style.transform = `translate(${Math.round(r.left)}px, ${Math.round(r.top)}px)`;
     ring.style.width = Math.round(r.width) + 'px';
     ring.style.height = Math.round(r.height) + 'px';

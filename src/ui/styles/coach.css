@@ -82,3 +82,11 @@
   .ht-item { padding: 6px 8px; }
   .ht-item p { line-height: 1.22; }
 }
+
+/* "drag up": a gold arrow that rises out of the hand, over and over */
+.coach__swipe { position: absolute; left: 0; top: 0; width: 0; height: 0; pointer-events: none; }
+.coach__swipe svg, .coach__swipe i { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; }
+.coach__swipe svg { fill: #ffd166; stroke: #3a2504; stroke-width: 1.2; filter: drop-shadow(0 0 8px #ffcf5a) drop-shadow(0 2px 0 #000a); animation: coach-swipe 1.6s ease-in-out infinite; }
+.coach__swipe i { border-radius: 50%; box-shadow: 0 0 0 3px #ffd16699; animation: coach-swipe-dot 1.6s ease-in-out infinite; }
+@keyframes coach-swipe { 0% { transform: translateY(10px); opacity: 0; } 20% { opacity: 1; } 70% { transform: translateY(-70px); opacity: 1; } 100% { transform: translateY(-82px); opacity: 0; } }
+@keyframes coach-swipe-dot { 0% { transform: scale(.4); opacity: 0; } 15% { opacity: 1; } 60%, 100% { transform: scale(1.3); opacity: 0; } }
