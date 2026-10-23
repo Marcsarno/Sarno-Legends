@@ -38,7 +38,7 @@ export function mount(root, ctx) {
     const contNote = save ? [`Floor ${save.floor ?? '?'}`, h('br'), save.hp != null ? `${save.hp}/${save.maxHp} HP` : ''] : null;
     menu.replaceChildren(...[   // (replaceChildren would print a null as the text "null")
       ctx.hasSave ? btn('.ttl-btn--cont', 'arrow_up', 'Continue', contNote, () => ctx.act?.continue?.()) : null,
-      btn('.ttl-btn--primary', 'swords', ctx.hasSave ? 'New Run' : 'Start a Run', armed ? ['Tap again to', h('br'), 'abandon the saved run'] : null, newRun),
+      btn('.ttl-btn--primary', 'swords', ctx.hasSave ? 'New Run' : 'Start a Run', armed ? ['Tap again', h('br'), 'to abandon it'] : null, newRun),
       btn('', 'weapon_wood_bat', 'Armory', h('span.gold-c', `${scrap} scrap`), () => ctx.act?.armory?.()),
       btn('', 'settings', 'Settings', null, () => ctx.act?.settings?.())].filter(Boolean));
     scrapN.textContent = String(scrap);

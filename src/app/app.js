@@ -56,7 +56,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
   // ---- the shared renderer and friends
   const stage = createStage(canvas, { maxPixelRatio: 1.75 });
   const studio = createStudio(stage.renderer);
-  const audio = createAudio({ volume: { music: profile.settings.music, sfx: profile.settings.sfx } });
+  const audio = createAudio({ volume: { music: profile.settings.music, sfx: profile.settings.sfx }, settings: () => app.settings() });
   const rooms = createRooms(stage);
 
   const app = {

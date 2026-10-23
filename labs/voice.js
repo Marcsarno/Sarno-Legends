@@ -17,7 +17,7 @@ import { h, $ } from '../src/ui/dom.js';
 const Q = new URLSearchParams(location.search);
 let speed = [1, 1.5, 2].includes(+Q.get('speed')) ? +Q.get('speed') : 1;
 let on = true;
-const audio = createAudio({ autoMusic: false, settings: () => ({ voices: on, speed }) });
+const audio = createAudio({ base: new URL('../assets/', location.href).href, autoMusic: false, settings: () => ({ voices: on, speed }) });
 const voice = audio.voice;
 window.__audio = audio;
 
