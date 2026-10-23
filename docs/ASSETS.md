@@ -47,6 +47,33 @@ The shared zombie clips:
 
 Some files have 0–1 clips and are model-only variants: `zombie-a`, `zombie-nurse-burst`, `zombie-patient-burst`, and the `*-scratch` files.
 
+## Chapter 2 people: same branch, `yolanda/zombie/assets/survivors/`
+
+These are Unity and Mixamo characters Marc added for chapter 2 of the yola-zombie game.
+
+**Base models.** Each has 5 clips: `death_back`, `death_forward`, `hit`, `pistol_idle`, `rifle_idle`.
+- `adam.glb`, `brian.glb`, `bryce.glb`, `david.glb`, `eve.glb`, `james.glb`, `lewis.glb`, `pete.glb`, `remy.glb`, `sophie.glb`
+
+**Looter packs (`moves/*-looter.glb`).** 12 clips each: crouch enter/idle/exit (cover), pistol idle/aim/shoot/reload, hit chest/head/stomach, Death01, Death02.
+- brian, bryce, david, james, lewis, remy
+- bryce and lewis also have jog and sprint.
+
+**Neighborhood packs (`moves/*-hood.glb`):**
+
+| Pack | Clips | What they cover |
+|---|---|---|
+| `adam-hood.glb` | 11 | Pistol idle/aim/shoot, hits, death. **Also zombie spawn, bite, idle and walk, so he can turn.** |
+| `pete-hood.glb` | 8 | Pistol, hits, two deaths, jog |
+| `james-hood.glb` | 7 | Interact, counter idle, counter angry, aim, two deaths, surprise |
+| `sophie-hood.glb` | 18 | A civilian: idle/walk/jog/sprint, crouch, crying, tired, talking, kneeling pick-up, kneeling fix, interact, hit, death, surprise, "no", scared, kneel-cry |
+
+**Zombified (`zombified/`).** The full 20-clip zombie set (the same clips as the hospital zombies), each with a `-mod` variant:
+- `bryce-zombie`, `david-zombie`, `remy-zombie`
+
+**Still to come (per yola-zombie's `CHAPTER2_POLISH.md`):** models for Arianna, Lilah, Grandma, and some of the survivors and looters.
+
+**Licence check:** the store licences that cover Unity models in a game may not allow serving the raw model files from a web build, where anyone can download them. Check each one's licence before shipping, and record it here.
+
 ## Weapons and props
 
 - **Weapons (yola-zombie `yolanda/zombie/assets/weapons/`):**
