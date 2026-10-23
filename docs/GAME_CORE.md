@@ -230,6 +230,14 @@ Later, once the core is proven:
 - **Marc fights from a forward melee spot,** so there's no walking back and forth.
 - **Card art:** stills from the animation clips, all with the same camera, light and frame.
 
+## Engine
+
+**Three.js in the browser** (Marc, 2026-10-23), the same stack as yola-zombie and survival.
+- The heroes, zombies, clips, weapons and props load as GLBs, as they do now.
+- The finisher and gore system and the procedural pistol recoil can be reused from yola-zombie. Copy them; never edit them there.
+- Painted battle rooms are textured background planes behind the 3D characters, lit to match.
+- Deploy to Vercel like the other games.
+
 ## First steps
 
 1. **Check the [StS, memory] numbers** above against the Slay the Spire wiki.

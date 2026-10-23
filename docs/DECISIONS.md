@@ -68,6 +68,16 @@ What Marc said and decided, in order, with what was done about it. All on 2026-1
     - Saved as `GAME_CORE.md`.
 15. **Saving for compaction.** "Save and commit everything we talked about. Keep strong details of the plan, not very vague. Keep strong amount of research."
 
+16. **Engine: Three.js.**
+    - Marc: "I think three js is the right engine.. everything from one game will translate and transfer nicely."
+    - It's the same browser stack as yola-zombie and survival (Vite + three in survival; three 0.180 + esbuild in yola-zombie).
+    - What carries over:
+      - The GLB heroes and zombies, and their clips (Mixamo bone names).
+      - The finisher and gore code (`zombies.js` EXEC_GORE).
+      - The procedural pistol recoil.
+      - The asset pipelines.
+    - It deploys to Vercel like the others.
+
 ## Standing rules from Marc's other projects (carried over)
 
 - Marc decides story beats. Names, lines and stats are placeholders until he approves them.
