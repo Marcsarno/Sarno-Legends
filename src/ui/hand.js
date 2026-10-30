@@ -189,9 +189,10 @@ export function createHand(o) {
         rec.to = 1; rec.k = 16;
       } else if (rec.state === 'drag' || rec.state === 'carry') {
         const above = pointer.y < G.lineY;
-        if (needsTarget(rec) && above && !potionAim) {
-          const a = aimSpot();
-          rec.tx = a.x; rec.ty = a.y; rec.ts = 1.08; rec.tr = 0; rec.k = 18;
+        if (needsTarget(rec) && !potionAim) updateAiming(rec);
+        if (rec.aiming && !potionAim) {
+          const a = aimSpot(rec);
+          rec.tx = a.x; rec.ty = a.y; rec.ts = 1.08; rec.tr = 0; rec.k = 14;
         } else {
           const touch = pointer.type !== 'mouse';
           rec.tx = pointer.x - (touch ? 0 : press?.gx || 0);
@@ -201,7 +202,7 @@ export function createHand(o) {
         rec.z = 400; rec.to = 1;
         rec.el.classList.toggle('card--ready', above && !needsTarget(rec));
       } else if (rec.state === 'select' || rec.state === 'aim' || rec.state === 'pending') {
-        const a = rec.state === 'pending' ? playSpot() : aimSpot();
+        const a = rec.state === 'pending' ? playSpot() : aimSpot(rec);
         rec.tx = a.x; rec.ty = a.y; rec.ts = rec.state === 'pending' ? 1.05 : 1.08; rec.tr = 0; rec.k = 18; rec.z = 400; rec.to = 1;
       }
       const held = rec.state !== 'hand' && !(rec.state === 'select' && slot);
@@ -252,7 +253,20 @@ export function createHand(o) {
   }
 
   const playSpot = () => ({ x: G.vw * 0.5, y: G.phone ? G.vh * 0.44 : G.vh * 0.45 });
-  const aimSpot = () => ({ x: G.vw * 0.5, y: G.vh - G.sab - G.H * (G.phone ? 0.78 : 0.82) });
+  // an aimed card lifts just above the hand, over the spot it was pulled from (no jump to the centre)
+  const aimSpot = rec => ({
+    x: clamp(rec?.aimX ?? G.vw * 0.5, G.W * 0.75, G.vw - G.W * 0.75),
+    y: G.vh - G.sab - G.H * (G.phone ? 0.78 : 0.82),
+  });
+
+  // a target card being dragged starts aiming as soon as it clearly leaves the hand (well before the play line),
+  // and only stops when it is pulled back down into the hand (hysteresis, so it never flickers at the edge)
+  function updateAiming(rec) {
+    const top = G.vh - G.sab - G.H;
+    const pulled = press && press.y0 - pointer.y > G.H * 0.38;
+    if (!rec.aiming && (pointer.y < top || pulled)) { rec.aiming = true; rec.aimX = rec.x; }
+    else if (rec.aiming && pointer.y > top + G.H * 0.38 && !pulled) { rec.aiming = false; }
+  }
 
   // ---------------------------------------------------------------- targeting
 
@@ -261,7 +275,7 @@ export function createHand(o) {
     if (potionAim) return null;
     if (!needsTarget(active)) return null;
     if (active.state === 'select' || active.state === 'aim') return active;
-    if ((active.state === 'drag' || active.state === 'carry') && pointer.y < G.lineY) return active;
+    if ((active.state === 'drag' || active.state === 'carry') && active.aiming) return active;
     return null;
   }
 
@@ -272,7 +286,7 @@ export function createHand(o) {
     else if (rec) {
       from = { x: rec.x, y: rec.y - G.H * rec.s / 2 + G.H * 0.06 };
       if (rec.state === 'select' && pointer.type !== 'mouse') want = kbTarget || soloTarget();
-      else want = (pointer.type === 'mouse' || rec.state === 'drag' ? pickAt(pointer.x, pointer.y) : null) || kbTarget || soloTarget();
+      else want = (pointer.type === 'mouse' || rec.state === 'drag' ? pickNear(pointer.x, pointer.y, target) : null) || kbTarget || soloTarget();
     }
     if (want !== target) {
       target = want;
@@ -297,6 +311,24 @@ export function createHand(o) {
     if (x < 0) return null;
     const u = o.pick?.(x, y);
     return u && o.targets().includes(u) ? u : null;
+  }
+
+  /** The zombie under (x, y), else the nearest one within a forgiving reach (sideways counts more than up/down), so a
+   *  release in the gap between zombies or just off one's edge still lands. `keep` (the current target) is sticky. */
+  function pickNear(x, y, keep = null) {
+    const hit = pickAt(x, y);
+    if (hit) return hit;
+    if (x < 0 || y > G.lineY + G.H * 0.2) return null;
+    const reach = Math.max(G.W * 1.1, G.vw * 0.11);
+    let best = null, bd = Infinity;
+    for (const uid of o.targets()) {
+      const p = o.targetPoint?.(uid);
+      if (!p) continue;
+      let d = Math.abs(p.x - x) + Math.abs(p.y - y) * 0.35;
+      if (uid === keep) d *= 0.8;
+      if (d < bd) { bd = d; best = uid; }
+    }
+    return bd <= reach ? best : null;
   }
   function soloTarget() { const t = o.targets(); return t.length === 1 ? t[0] : null; }
 
@@ -344,7 +376,7 @@ export function createHand(o) {
 
   function putBack(rec) {
     if (!rec || !cards.has(rec.uid)) return;
-    rec.state = 'hand';
+    rec.state = 'hand'; rec.aiming = false; rec.aimX = null;
     rec.el.classList.remove('card--selected', 'card--ready');
     if (active === rec) { active = null; mode = 'idle'; }
     updateCardNumbers(rec.el, o.getCombat(), null);
@@ -415,7 +447,7 @@ export function createHand(o) {
         mode = 'carry'; rec.state = 'carry';
         press.gx = 0; press.gy = 0;
       } else {
-        mode = 'select'; rec.state = 'select'; rec.el.classList.add('card--selected');
+        mode = 'select'; rec.state = 'select'; rec.aimX = rec.x; rec.el.classList.add('card--selected');
         if (needsTarget(rec)) kbTarget = soloTarget();
         showTipFor(rec, true);
       }
@@ -425,10 +457,11 @@ export function createHand(o) {
     if (mode === 'drag' && active) {
       const rec = active;
       press = null;
-      if (e.clientY < G.lineY) {
-        if (needsTarget(rec)) { const t = target || pickAt(e.clientX, e.clientY); if (t) tryPlay(rec, t); else putBack(rec); }
-        else tryPlay(rec, null);
-      } else putBack(rec);
+      if (needsTarget(rec)) {
+        const t = rec.aiming ? target || pickNear(e.clientX, e.clientY) : null;
+        if (t) tryPlay(rec, t); else putBack(rec);
+      } else if (e.clientY < G.lineY) tryPlay(rec, null);
+      else putBack(rec);
       if (mode === 'drag') { mode = 'idle'; active = null; }
       hovered = pointer.type === 'mouse' ? nearestSlotIfInZone(e.clientX, e.clientY) : null;
     }
@@ -439,7 +472,7 @@ export function createHand(o) {
     if (destroyed || !visible) return;
     if (e.target.closest?.('.hand-card')) return;
     if (potionAim) {
-      const t = pickAt(e.clientX, e.clientY) || (e.target.closest?.('[data-target-uid]')?.dataset.targetUid);
+      const t = pickNear(e.clientX, e.clientY) || (e.target.closest?.('[data-target-uid]')?.dataset.targetUid);
       const pa = potionAim; potionAim = null; arrow.hide(); target = null; o.onTarget?.(null);
       if (t && o.targets().includes(t)) pa.onPick(t); else pa.onCancel?.();
       e.stopPropagation(); e.preventDefault();
@@ -454,7 +487,7 @@ export function createHand(o) {
     if (e.button === 2) { endInteraction(false); return; }
     const hitUid = pickAt(e.clientX, e.clientY) || (e.target.closest?.('[data-target-uid]')?.dataset.targetUid);
     if (needsTarget(rec)) {
-      const t = hitUid && o.targets().includes(hitUid) ? hitUid : (mode === 'carry' && e.clientY < G.lineY ? target : null);
+      const t = hitUid && o.targets().includes(hitUid) ? hitUid : (mode === 'carry' && rec.aiming ? target : pickNear(e.clientX, e.clientY));
       if (t) tryPlay(rec, t); else endInteraction(false);
     } else if (e.clientY < G.lineY || (mode === 'select' && hitUid)) tryPlay(rec, null);
     else endInteraction(false);
