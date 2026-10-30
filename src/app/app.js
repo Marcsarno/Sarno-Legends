@@ -564,7 +564,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
         leave: () => { R.leaveRest(run); saveRun(); go(showRun); },
       },
     }));
-    audio.music('map');
+    audio.music('calm');
   }
 
   function showShop() {
@@ -581,7 +581,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
         leave: () => { R.leaveShop(run); saveRun(); go(showRun); },
       },
     }));
-    audio.music('map');
+    audio.music('calm');
   }
 
   function showEvent() {
@@ -653,7 +653,7 @@ export async function startApp({ params = new URLSearchParams(location.search), 
         title: () => { app.run = null; app.toTitle(); },
       },
     });
-    audio.music(run.won ? 'menu' : null);
+    audio.music(run.won ? 'victory' : 'defeat');
   }
 
   function abandonRun() {

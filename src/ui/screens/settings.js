@@ -1,7 +1,7 @@
 // Settings: a modal over whatever is behind it. Game speed, music and sound volume, screen shake, gore, and the two
 // destructive buttons (abandon this run, reset the whole profile), each needing a second tap to confirm.
 // Every change goes out at once through act.set(key, value) so the app can apply it live.
-//   ctx: { settings: { speed: 1|1.5|2, music: 0..1, sfx: 0..1, voices: bool, shake: bool, gore: 'full'|'low', tips: bool,
+//   ctx: { settings: { speed: 1|1.5|2, music: 0..1, sfx: 0..1, shake: bool, gore: 'full'|'low', tips: bool,
 //          warnEndTurn: bool }, inRun?: bool, version? }
 //   act: set(key, value), close(), abandonRun(), resetProfile(), howTo(), saveCode()
 //   (tips: the first-run coach, src/app/coach.js; warnEndTurn: "End turn with energy left?"; saveCode: the backup overlay)
@@ -12,9 +12,9 @@ import '../styles/screens.css';
 export function mount(root, ctx) {
   const s = shell(root, 'settings', { modal: true });
   const act = ctx.act || {};
-  const cur = { speed: 1, music: .7, sfx: .8, voices: true, shake: true, gore: 'full', tips: true, warnEndTurn: true, ...(ctx.settings || {}) };
+  const cur = { speed: 1, music: .7, sfx: .8, shake: true, gore: 'full', tips: true, warnEndTurn: true, ...(ctx.settings || {}) };
   const close = () => { ui(ctx, 'click'); act.close?.(); };
-  const set = (k, v) => { cur[k] = v; act.set?.(k, v); if (k === 'voices' && !v) ctx.audio?.voice?.stop?.(); };
+  const set = (k, v) => { cur[k] = v; act.set?.(k, v); };
 
   const seg = (key, options) => {
     const el = h('div.seg', { role: 'group' });
@@ -61,7 +61,6 @@ export function mount(root, ctx) {
       row('Tips', 'Short hints the first time something new comes up.', seg('tips', [[true, 'On'], [false, 'Off']])),
       row('Music', null, slider('music')),
       row('Sound', null, slider('sfx')),
-      row('Voices', 'Marc and Yola talk during fights.', seg('voices', [[true, 'On'], [false, 'Off']])),
       row('Screen shake', 'Big hits shake the camera.', seg('shake', [[true, 'On'], [false, 'Off']])),
       row('Gore', 'Low turns off blood and dismemberment.', seg('gore', [['full', 'Full'], ['low', 'Low']])),
       row('Warn before ending a turn', 'When you still have energy and a card you could play.', seg('warnEndTurn', [[true, 'On'], [false, 'Off']])),

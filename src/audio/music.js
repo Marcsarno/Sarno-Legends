@@ -1,8 +1,9 @@
-// The music: three of Marc's supplied tracks, streamed from <audio> elements through the music bus (decoding a whole
+// The music: all five of Marc's supplied tracks, streamed from <audio> elements through the music bus (decoding a whole
 // 3-4 MB MP3 would hold ~80 MB of samples on a phone). One element per file, created the first time it is asked for.
 //   menu / map  -> ch2_a_tension.mp3   (resumes where it left off between screens)
 //   fight       -> agile_groove.mp3    (Marc's track from yola-zombie; restarts at each fight)
 //   elite / boss -> ch2_c_action.mp3   (restarts at each fight)
+//   calm (rest, shop) and victory -> ch2_d_leaving.mp3; defeat -> ch2_b_grief.mp3 (Marc's other two yola-zombie tracks)
 // Switching crossfades (default 1.2 s). Before the first user gesture the wanted track is remembered and starts on
 // unlock. The page going to the background pauses it; coming back resumes it. A missing or blocked file is skipped
 // quietly. The three files measure within 0.5 LU of each other (-15.7 to -16.2 LUFS), so no per-track trims.
@@ -15,6 +16,9 @@ export const TRACKS = {
   fight: { src: 'music/agile_groove.mp3', level: 1, restart: true },
   elite: { src: 'music/ch2_c_action.mp3', level: 1, restart: true },
   boss: { src: 'music/ch2_c_action.mp3', level: 1, restart: true },
+  calm: { src: 'music/ch2_d_leaving.mp3', level: 1, restart: false },    // supply closet and pharmacy: a breather
+  victory: { src: 'music/ch2_d_leaving.mp3', level: 1, restart: true },  // floor cleared
+  defeat: { src: 'music/ch2_b_grief.mp3', level: 1, restart: true },     // overrun
 };
 
 export function createMusic({ base = '/assets/', bus, ctx }) {

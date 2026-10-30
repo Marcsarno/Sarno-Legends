@@ -87,6 +87,9 @@ What Marc said and decided, in order, with what was done about it. All on 2026-1
     - "The finishers need more time to slow motion."
     - "The attacks all happen so quick. I think it's ok to give them a moment to show what they are doing." (GAME_CORE pacing updated.)
 
+20. **No voices.** "I don't want any voices in the game." The Kokoro barks, their generator and the audition page were removed.
+21. **Music from the main game.** All five of Marc's yola-zombie tracks are in: `ch2_a_tension` (menu, map), `agile_groove` (fights), `ch2_c_action` (elites, boss), `ch2_d_leaving` (supply closet, pharmacy, floor cleared), `ch2_b_grief` (overrun).
+
 ## Standing rules from Marc's other projects (carried over)
 
 - Marc decides story beats. Names, lines and stats are placeholders until he approves them.

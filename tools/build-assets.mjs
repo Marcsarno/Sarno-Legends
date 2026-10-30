@@ -101,7 +101,8 @@ const TEXTURES = ['hospital_outbreak/blood_drag.webp', 'hospital_outbreak/blood_
 const SURVIVAL_ITEMS = ['medkit', 'radio', 'food-can', 'matchbox', 'water-bottle', 'backpack', 'lantern', 'pistol', 'axe'];
 // sfx: all CC0 (see yola-zombie SOUND_PLAN.md "Sources used so far"); copied whole folders, trimmed below
 const SFX_DIRS = ['sfx/guns', 'sfx/lib', 'sfx/zombie', 'sfx/reveal'];
-const MUSIC = ['music/agile_groove.mp3', 'neighborhood/music/ch2_a_tension.mp3', 'neighborhood/music/ch2_c_action.mp3'];
+const MUSIC = ['music/agile_groove.mp3', 'neighborhood/music/ch2_a_tension.mp3', 'neighborhood/music/ch2_c_action.mp3',
+  'neighborhood/music/ch2_b_grief.mp3', 'neighborhood/music/ch2_d_leaving.mp3'];
 
 // ---------- extract (read-only) ----------
 function extract() {
