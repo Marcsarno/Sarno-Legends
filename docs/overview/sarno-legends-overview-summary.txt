@@ -1,0 +1,35 @@
+SARNO LEGENDS — snapshot 2026-10-30 (main @ 7bc7cbe)
+Play: https://sarno-legends.vercel.app   Build flip-book: /build-log/   Repo: github.com/Marcsarno/Sarno-Legends
+
+WHAT IT IS
+Family roguelike deckbuilder in Three.js (browser, phone landscape first). Copies Slay the Spire's rules and numbers
+with a slight spin; names, text and art are original. Marc and Yola (Marc Sarno's family, same story world as his games
+yola-zombie and Sarno Survive) share ONE deck and ONE 80-HP bar and fight zombies floor by floor up a hospital.
+
+THE SPIN
+1. Two heroes, one deck, one HP bar: each card is Marc's (red) or Yola's (teal) and that hero animates it.
+2. Marc staggers (Vulnerable, +50% damage), Yola cashes in (bonus damage vs Staggered). Soft split: both deal damage.
+3. The kill is the show: the killing card picks the death animation; a Staggered kill plays a slow-mo finisher.
+4. Yola's healing is the starter relic (Nurse's Kit: heal 6 after each fight).
+5. Meta = weapons bought with scrap (earned win or lose): 9 weapons, each swaps a starter card + adds a passive.
+
+BUILT (act 1 complete)
+Title, Armory, Shift Change (run-start bonus), StS-rule map (15 rows), fights, elites, Supply Closet (rest/upgrade),
+Pharmacy (shop/removal), 10 locked-room events, supply crates, boss (Shield Guard, 240 HP), victory/defeat, scrap.
+Content: 56 reward cards + 11-card starter + 7 weapon cards; 11 zombie types; 17 encounters;
+23 relics; 10 medicines; Infection 0-5 (Ascension); Daily Run; run history; collection; saves + save code.
+Presentation: painted (oil-filtered) 3D rooms, animated 3D characters, card art posed from real clips, per-weapon hit
+sounds, Marc's 5 music tracks, NO voices (Marc's call). 175 tests, bot playtests, balance simulator.
+
+BALANCE (sensible bot, Infection 0): win 99%; HP lost normal 5.2% / elite 22% / boss 44.5% (targets 5-15 / 20-30 / 30-45).
+Infection 0-5 win rates: 99/98/98/89/73/60%. Every reward card gets picked; Bulwark (block) build ~ stagger build.
+
+TIMELINE: designed with Marc; built 23-30 Oct 2026 by Claude in stages (scaffold → 9 parallel modules → integration →
+Marc's feel notes → balance/polish). Latest: iPhone touch guard, forgiving card aiming.
+
+OPEN / THINKING
+Next: family human testing on phones. Marc's calls: story (why they're together), event text, family call-in cards
+(1 per run recommended vs full sets per person), difficulty of the family level. Parked: more floors + bosses (looter
+leader, Adam turning), chapter-2 looters & zombified survivors (Bryce, David, Remy), more weapons, Infection 6+.
+Guard rails: test ideas against the 3 pillars (both heroes matter / the kill is the show / every HP is a choice);
+copy proven mechanics; don't compete on card count or system count.
