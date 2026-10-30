@@ -598,6 +598,8 @@ export function createEventSounds(api) {
   const lastMove = new Map();       // uid -> move id of its current action
   let energy = null, hp = null, maxHp = 80, ended = false, bossDown = false, lastCard = null, lastCardAt = 0, lastHurtAny = 0, turnAt = 0;
   let weapons = { marc: 'wood_bat', yola: 'pistol' };
+  // Yola's gun cards sound like the gun in her hands: the shotgun and the sawed-off fire shells, the pistol fires rounds
+  const yolaGun = () => (weapons.yola === 'shotgun' || weapons.yola === 'sawed_off' ? 'shotgun' : 'pistol');
 
   const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   const recent = (name, ms = 350) => { const t = fxAt.get(name); return t != null && now() - t < ms; };
@@ -657,7 +659,7 @@ export function createEventSounds(api) {
         play(heavy ? 'swing_heavy' : 'swing', { pan: pan(e.by || 'marc') });
         break;
       }
-      case 'pistol': play('pistol', { pan: pan(e.by || 'yola') }); break;
+      case 'pistol': play(yolaGun(), { pan: pan(e.by || 'yola') }); break;
       case 'shotgun': play('shotgun', { pan: pan(e.by || 'yola') }); break;
       case 'zombie_attack': zombieAttack(e.by); break;
       case 'finisher': play('finisher', { vol: e.first === false ? 0.85 : 1 }); break;
@@ -739,7 +741,7 @@ export function createEventSounds(api) {
       case 'attack': {
         if (isEnemy(e.by)) { if (!recent('zombie_attack')) zombieAttack(e.by); break; }
         const anim = e.anim || '';
-        if (/pistol/.test(anim)) { if (!recent('pistol')) play('pistol', { pan: pan(e.by) }); }
+        if (/pistol/.test(anim)) { const g = yolaGun(); if (!recent(g)) play(g, { pan: pan(e.by) }); }
         else if (/shotgun/.test(anim)) { if (!recent('shotgun')) play('shotgun', { pan: pan(e.by) }); }
         else if (/^melee/.test(anim)) { if (!recent('swing')) play(/heavy|sweep/.test(anim) ? 'swing_heavy' : 'swing', { pan: pan(e.by) }); }
         break;
