@@ -8,10 +8,12 @@ import { installDebug } from './app/debug.js';
 import { installErrorOverlay, showError } from './app/errors.js';
 import { createBoot } from './app/loading.js';
 import { runShot, shotProfile, shotHistoryProfile } from './app/shots.js';
+import { installTouchGuard } from './app/touchguard.js';
 
 const params = new URLSearchParams(location.search);
 const shot = params.get('shot');
 let app = null;
+installTouchGuard();
 installErrorOverlay({ onTitle: () => (app ? app.recover() : location.reload()) });
 
 const boot = createBoot();

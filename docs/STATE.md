@@ -16,6 +16,7 @@ like a video, push to GitHub and Vercel at the end; save and commit before any c
 (Latest: stage 4 merged to main: card pass 8, Infection 0-5, daily run, history, collection, save code + PWA, choice
 step, end-turn warning, auto-quality, enemy looks. 175 tests. Next: Marc's human testing and feedback.)
 (2026-10-30: voices removed at Marc's request; music now uses all five yola-zombie tracks.)
+(2026-10-30: touch guard (src/app/touchguard.js): no pinch/double-tap zoom or long-press Copy/Paste menu on iPhone. Next: card aiming polish (aim starts late, needs exact zombie hit, card jumps to centre).)
 
 - Stage 0 done: scaffold, asset pipeline, spec, build-log tooling.
 - Stage 1 done (76d7f28): all modules built and tested in labs; frames #2-#11.
