@@ -36,3 +36,11 @@ Supplied by Marc for his games, copied from yola-zombie. Not CC0: they are Marc'
 | `agile_groove.mp3` ("Agile Groove", Marc's track; yola-zombie `assets/music/`) | normal fights |
 | `ch2_a_tension.mp3` (yola-zombie neighborhood level) | title, map and other screens |
 | `ch2_c_action.mp3` (yola-zombie neighborhood level) | elite fights and the boss |
+
+## FPS prototype (`public/assets/models/fps/`, branch `fps-prototype` only)
+
+| File | What | Source and licence |
+|---|---|---|
+| `ybot_pistol_idle.fbx` | Mixamo's Y Bot with its Mixamo pistol idle: the first-person hands | Adobe Mixamo (free for commercial use in games). Copied from yola-zombie `assets/mixamo/reference/ref_xbot_pistol_idle.fbx` |
+| `ual_pistol.glb` | Pistol_Idle_Loop / Pistol_Shoot / Pistol_Reload | Quaternius Universal Animation Library 1, CC0. Re-baked on the Mixamo skeleton in yola-zombie (`assets/test_clips/ual_pistol.glb`), meshopt-packed here |
+| `shotgun_shell.glb` | Shotgun shell prop (the reload) | Made for Marc's games; copied from yola-zombie `assets/weapons/` |

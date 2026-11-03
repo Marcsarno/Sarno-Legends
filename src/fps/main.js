@@ -253,7 +253,15 @@ function updatePlayer(dt, I) {
   // reload ticking
   if (P.reload) {
     P.reload.t -= dt;
-    if (P.reload.t <= 0) {
+    if (P.weapon === 'shotgun') {
+      // shell by shell: one in every 0.45 s; firing stops the reload once a shell is in
+      if (P.reload.t <= 0) {
+        if (A.mag < A.size && A.res > 0) { vm.insertShell(); P.reload.pending = 0.26; P.reload.t = 0.45; }
+        else { vm.endReload(); P.reload = null; }
+      }
+      if (P.reload?.pending > 0) { P.reload.pending -= dt; if (P.reload.pending <= 0) { A.mag++; A.res--; audio.sfx('pickup', { vol: 0.45, rate: 1.3 }); } }
+      if (P.reload && I.firePressed && A.mag > 0) { vm.endReload(); P.reload = null; }
+    } else if (P.reload.t <= 0) {
       const n = Math.min(A.size - A.mag, A.res); A.mag += n; A.res -= n; P.reload = null;
     }
   }
@@ -277,8 +285,8 @@ function swapTo(to) {
 function startReload() {
   const A = P.ammo[P.weapon];
   if (P.reload || A.mag >= A.size || A.res <= 0 || vm.swapping) return;
-  if (P.weapon === 'pistol') { P.reload = { t: 1.25 }; vm.reload(1.25); audio.sfx('check_mag'); }
-  else { P.reload = { t: 1.9 }; vm.reload(1.9); audio.sfx('check_mag', { rate: 0.8 }); setTimeout(() => audio.sfx('pickup', { vol: 0.4 }), 900); }
+  if (P.weapon === 'pistol') { P.reload = { t: 1.6 }; vm.reload(1.6); audio.sfx('check_mag'); }
+  else { P.reload = { t: 0.3 }; vm.reload(0.3); audio.sfx('check_mag', { rate: 0.8, vol: 0.5 }); }
 }
 
 // ---------------------------------------------------------------- shooting
@@ -576,6 +584,7 @@ function tick(real) {
 }
 
 // ---------------------------------------------------------------- debug hooks (headless checks)
+window.__fpsCam = camera; window.__fpsRenderer = renderer;
 window.__fps = {
   G, P, get zombies() { return G.zombies; }, begin, startWave, spawnOne, fire, shove, endGame, level: () => level, marc: () => marc,
   look(yaw, pitch) { P.yaw = yaw; P.pitch = pitch; },
