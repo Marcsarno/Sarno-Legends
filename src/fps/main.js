@@ -5,7 +5,7 @@
 // sounds, Marc's music. See docs/FPS_PROTOTYPE.md.
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import { preload, prop } from '../render/assets.js';
+import { preload, prop, weaponGltf } from '../render/assets.js';
 import { createFx } from '../render/fx.js';
 import { createAudio } from '../audio/audio.js';
 import { installTouchGuard } from '../app/touchguard.js';
@@ -130,7 +130,7 @@ const game = {
 // ---------------------------------------------------------------- loading
 async function load() {
   const fill = $('.fill0'), lt = $('.load');
-  const keys = ['yola', 'z_romero', 'z_nurse', 'z_patient', 'z_scrubs', 'z_patient_mod', 'z_girl', 'z_sprinter', 'z_brute', 'weapon:pistol_core', 'weapon:pump_shotgun', 'prop:medkit', 'prop:first_aid_case_closed'];
+  const keys = ['yola', 'z_romero', 'z_nurse', 'z_patient', 'z_scrubs', 'z_patient_mod', 'z_girl', 'z_sprinter', 'z_brute', 'weapon:pistol_core', 'weapon:pump_short', 'prop:medkit', 'prop:first_aid_case_closed'];
   await preload(keys, (d, n) => { fill.style.width = (n ? d / n * 70 : 0) + '%'; });
   lt.textContent = 'Building the ER…';
   level = await buildLevel(scene, { lowPower: touch });
@@ -169,7 +169,7 @@ async function makePickup(type, x, z, { y = 0, drop = false } = {}) {
   let obj;
   if (type === 'med') { obj = await prop('first_aid_case_closed').catch(() => null); if (obj) { const bb = new THREE.Box3().setFromObject(obj); const s = 0.36 / Math.max(0.05, bb.max.x - bb.min.x); obj.scale.setScalar(s); } }
   if (type === 'ammo' || !obj) obj = ammoBox();
-  if (type === 'shotgun') { obj = new THREE.Group(); const m = await prop('pump_shotgun'); const bb = new THREE.Box3().setFromObject(m); const s = 0.9 / Math.max(0.1, bb.max.x - bb.min.x); m.scale.setScalar(s); m.rotation.z = 0.1; obj.add(m); }
+  if (type === 'shotgun') { obj = new THREE.Group(); const m = (await weaponGltf('pump_short')).scene.clone(true); m.rotation.z = 0.1; obj.add(m); }
   const g = new THREE.Group(); g.add(obj); g.position.set(x, y, z);
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: pickupGlow, color: type === 'med' ? 0x7cf08a : type === 'shotgun' ? 0xffd27a : 0xffc34d, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.45 }));
   glow.scale.setScalar(0.9); glow.position.y = 0.25; g.add(glow);
@@ -253,13 +253,13 @@ function updatePlayer(dt, I) {
   if (P.reload) {
     P.reload.t -= dt;
     if (P.weapon === 'shotgun') {
-      // shell by shell: one in every 0.45 s; firing stops the reload once a shell is in
+      // shell by shell: one in every SHELL_T s (the clip's carry to the port); firing stops the reload once a shell is in
       if (P.reload.t <= 0) {
-        if (A.mag < A.size && A.res > 0) { vm.insertShell(); P.reload.pending = 0.26; P.reload.t = 0.45; }
-        else { vm.endReload(); P.reload = null; }
+        if (A.mag < A.size && A.res > 0) { vm.insertShell(SHELL_T); P.reload.pending = SHELL_T * 0.86; P.reload.t = SHELL_T; }
+        else { vm.endReload(); P.reload = null; P.fireCd = Math.max(P.fireCd, 0.55); audio.sfx('check_mag', { rate: 1.3, vol: 0.5 }); }
       }
       if (P.reload?.pending > 0) { P.reload.pending -= dt; if (P.reload.pending <= 0) { A.mag++; A.res--; audio.sfx('pickup', { vol: 0.45, rate: 1.3 }); } }
-      if (P.reload && I.firePressed && A.mag > 0) { vm.endReload(); P.reload = null; }
+      if (P.reload && I.firePressed && A.mag > 0) { vm.endReload(true); P.reload = null; P.fireCd = Math.max(P.fireCd, 0.12); }
     } else if (P.reload.t <= 0) {
       const n = Math.min(A.size - A.mag, A.res); A.mag += n; A.res -= n; P.reload = null;
     }
@@ -281,11 +281,12 @@ function swapTo(to) {
   P.fireCd = 0.45;
 }
 
+const SHELL_T = 0.62;   // s per shell
 function startReload() {
   const A = P.ammo[P.weapon];
   if (P.reload || A.mag >= A.size || A.res <= 0 || vm.swapping) return;
   if (P.weapon === 'pistol') { P.reload = { t: 1.6 }; vm.reload(1.6); audio.sfx('check_mag'); }
-  else { P.reload = { t: 0.3 }; vm.reload(0.3); audio.sfx('check_mag', { rate: 0.8, vol: 0.5 }); }
+  else { P.reload = { t: 0.4 }; vm.reload(0.4); audio.sfx('check_mag', { rate: 0.8, vol: 0.5 }); }
 }
 
 // ---------------------------------------------------------------- shooting
@@ -585,7 +586,7 @@ function tick(real) {
 
 // ---------------------------------------------------------------- debug hooks (headless checks)
 window.__fpsCam = camera; window.__fpsRenderer = renderer;
-window.__fps = {
+window.__fps = { swapTo, startReload, 
   G, P, get zombies() { return G.zombies; }, begin, startWave, spawnOne, fire, shove, endGame, level: () => level,
   look(yaw, pitch) { P.yaw = yaw; P.pitch = pitch; },
   step(n = 30, dt = 1 / 30) { stepping = true; for (let i = 0; i < n; i++) tick(dt); render(); stepping = false; },

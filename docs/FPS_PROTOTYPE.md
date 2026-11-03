@@ -7,7 +7,7 @@ An experiment next to the deckbuilder, not a replacement: Sarno Legends as a fir
 One player (Yola, purple nitrile gloves), first person, in a hospital built for a shooter. Three large open floors
 link through short corridors: the ER lobby, an open ward and an atrium cafeteria. Each floor has its own wave of
 zombies, coming through dark doorways on several sides. Pillars and hospital props give cover. Clearing a floor opens
-the swing doors to the next. You find a pump shotgun in the first corridor. Medkits and ammo lie around, and zombies
+the swing doors to the next. You find a short pump shotgun in the first corridor. Medkits and ammo lie around, and zombies
 sometimes drop them. Clear the atrium to win; lose at 0 HP. (Marc fighting beside her was the first prototype; Marc
 dropped him: "we're just having one character".)
 
@@ -24,9 +24,13 @@ caps. The others are cut from their skin weights.
 - Mixamo's Y Bot, loaded straight from its FBX, holding the pistol in its own Mixamo two-handed idle.
 - The pistol reload is the Quaternius Universal Animation Library's Pistol_Reload (CC0). The view blends into that
   clip's own framing for the reload, so the gun stays in front of you.
-- The shotgun has no first-person clip in any of our libraries. It sits in the right hand down the crosshair, and
-  two-bone IK puts the left hand on the pump, so the hand rides the pump on every shot. It reloads shell by shell, the
-  left hand carrying each shell to the port, then a pump.
+- The shotgun is yola-zombie's short pump (`pump_short.glb`, Marc's pick: "that one has the grips set correctly"), on
+  Mixamo's standing rifle reload (yola-zombie's `sg_reload` source). That clip is on the same skeleton and rest pose as
+  the bot, so it plays as is. Its first frame is the hold: the gun is fixed in the right hand there (barrel from the
+  right grip to the left, which sits on the pump 27 cm out). IK keeps the left hand on the pump whenever the clip has it
+  near, so it rides the pump on each shot. The reload plays the clip in parts, shell by shell: tip up, carry a shell to
+  the port (repeated per shell, cross-faded), then back down and rack. From the eye, the clip's 50° lift is mostly turned
+  back down and canted, so the gun stays on screen.
 - Only the hands and gun show: they draw in their own pass with a narrower lens (54°).
 
 **Zombie pathing:** a flow field over a 0.5 m grid of the floor plan, rebuilt when a door opens and re-flooded from the
@@ -46,14 +50,14 @@ last couple of metres.
 - `fx.js` (blood, pools, tracers, sparks, blasts), `audio.js` banks (pistol, shotgun, zombie, finisher, pickups) and
   Marc's music (tension while exploring, `ch2_c_action` in fights, victory / defeat), the hospital kit props, wall and
   floor textures, `touchguard.js`.
-- New files (all in `CREDITS.md`): the Mixamo Y Bot FBX, the Quaternius UAL pistol clips (CC0) and the shell prop,
-  copied from yola-zombie.
+- New files (all in `CREDITS.md`): the Mixamo Y Bot FBX, Mixamo's rifle reload, the Quaternius UAL pistol clips (CC0)
+  and the shell prop, copied from yola-zombie.
 
 ## Felt good / bad (before Marc has played this version)
 - Good: the stagger-then-finish loop reads instantly in first person; leg shots that take a leg off and drop the zombie
   are satisfying; the bot's hands sit right on the pistol; the open floors give room to back off and use cover.
 - Rough: the floors are blockout walls with kit props; the shove uses no clip of its own (the hands lunge
-  procedurally); the shotgun's left hand is IK, not an authored clip; performance on an iPhone isn't measured yet.
+  procedurally);  performance on an iPhone isn't measured yet.
 
 ## Research
 Three research passes (game feel, phones, touch controls) and the plan they point to: `docs/fps-research/`.

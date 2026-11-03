@@ -37,10 +37,11 @@ const PISTOL_SCALE = 0.8;
 const PG_AT = new THREE.Vector3(0, 0.005, 0.0026);
 const PG_AXIS = new THREE.Vector3(0, 0.9509, 0.3094).normalize();
 const PG_BARREL = new THREE.Vector3(0, 0, 1).addScaledVector(PG_AXIS, -PG_AXIS.z).normalize();
-// Rig Lab pistol fits per character (pistol_fit.json: male1 = Marc, yola2 = Yola)
+// Rig Lab pistol fits per character (pistol_fit.json: male1 = Marc, yola2 = Yola, xbot = Mixamo's X Bot)
 const PISTOL_FIT = {
   marc: { size: 100, fwd: -37, up: 0, side: 6, tilt: 8, turn: -14, roll: -13 },
   yola: { size: 101, fwd: -21, up: 7, side: 14, tilt: 17, turn: -18, roll: -11 },
+  xbot: { size: 100, fwd: -36, up: 8, side: 17, tilt: 15, turn: -18, roll: -5 },   // (Mixamo's bots: the FPS hands)
 };
 // shotguns: in the right fist (barrel along the forearm), set back so the stock meets the shoulder line
 const SHOTGUN_FIT = {
