@@ -11,7 +11,7 @@ import { createAudio } from '../audio/audio.js';
 import { installTouchGuard } from '../app/touchguard.js';
 import { buildLevel, collideCircle } from './level.js';
 import { createZombie, TYPES } from './zombie.js';
-import { createViewmodel, VM_LAYER } from './viewmodel.js';
+import { createViewmodel, VM_LAYER, VM_FOV } from './viewmodel.js';
 import { createInput, isTouch } from './input.js';
 import { createMarc } from './marc.js';
 import { createGore } from './gore.js';
@@ -26,10 +26,11 @@ const params = new URLSearchParams(location.search);
 // ---------------------------------------------------------------- renderer, scene, camera
 const canvas = $('#view');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: !touch, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, touch ? 1.6 : 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, touch ? 1.5 : 2));   // fill rate is the phone's limit (docs/fps-research)
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
 renderer.autoClear = false;
+renderer.localClippingEnabled = true;   // Yola's arms are clipped near the eye (viewmodel.js)
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x040506);
 scene.fog = new THREE.FogExp2(0x06080a, 0.06);
@@ -514,7 +515,10 @@ function render() {
   renderer.clear();
   camera.layers.set(0);
   renderer.render(scene, camera);
-  if (vm && G.state !== 'title' && !P.dead) { renderer.clearDepth(); camera.layers.set(VM_LAYER); const bg = scene.background; scene.background = null; renderer.render(scene, camera); scene.background = bg; camera.layers.set(0); }
+  if (vm && G.state !== 'title' && !P.dead) { renderer.clearDepth(); camera.layers.set(VM_LAYER); const bg = scene.background, fov = camera.fov, near = camera.near;
+    scene.background = null; camera.fov = window.__vmFov || VM_FOV; camera.near = 0.01; camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+    scene.background = bg; camera.fov = fov; camera.near = near; camera.updateProjectionMatrix(); camera.layers.set(0); }
 }
 
 let last = performance.now(), stepping = false;
@@ -576,7 +580,7 @@ window.__fps = {
   G, P, get zombies() { return G.zombies; }, begin, startWave, spawnOne, fire, shove, endGame, level: () => level, marc: () => marc,
   look(yaw, pitch) { P.yaw = yaw; P.pitch = pitch; },
   step(n = 30, dt = 1 / 30) { stepping = true; for (let i = 0; i < n; i++) tick(dt); render(); stepping = false; },
-  input: () => input, gore,
+  input: () => input, gore, vm: () => vm,
   aimAt(x, y, z) { const dx = x - P.pos.x, dy = y - P.eye, dz = z - P.pos.z; P.yaw = Math.atan2(-dx, -dz); P.pitch = Math.atan2(dy, Math.hypot(dx, dz)); },
   async put(type, x, z) { const W = G.wave; const zz = await createZombie(game, type, { spawn: new THREE.Vector3(x, 0, z), entry: new THREE.Vector3(x, 0, z + 0.5) }); zz.state = 'chase'; scene.add(zz.root); G.zombies.push(zz); G.alive++; return zz; }, tp(x, z) { P.pos.set(x, 0, z); },
 };

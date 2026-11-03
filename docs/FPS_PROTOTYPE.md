@@ -25,9 +25,10 @@ caps. The others are cut from their skin weights.
   shooting), SHOVE, R, ⇄ swap, ☀ torch. The touch guard is installed.
 
 ## What it reuses from the deckbuilder
-- Yola's own `yola.glb` rig and clips for the arms: `pistol_idle`, `pistol_reload`, `rifle_aim_idle`, `sg_reload`, `pistol_hit`.
-  The camera hangs her body behind her arms; her head is collapsed; she draws in a second pass so the gun never clips
-  into walls.
+- Yola's own `yola.glb` rig for the arms: her `pistol_idle` and `rifle_aim_idle` holds. Only her hands and the gun show:
+  she draws in her own pass with a narrower lens (54°), pulled back so the arms run off-screen, with a near clip plane.
+  Her full-body reload clips swing the gun round her body and read badly in first person, so reloads are a procedural
+  tilt and slap / pump pivoting on her hands (Marc's note: "you should really only see the hands and the gun").
 - `weapons.js` holds the pistol and shotgun exactly as in the battles (Rig Lab fits), and Marc's wood bat.
 - Zombies: every model and its walk / sprint / scratch / hit / stumble / death clips (`death_headshot_knees` for
   headshots, `death_chest_back` / `knockback` for the shotgun).
@@ -42,6 +43,9 @@ caps. The others are cut from their skin weights.
 - Rough: the rooms are blockout walls with kit props; zombies walk straight at you (no real pathing around props);
   the shove uses no clip of its own (the arms lunge procedurally); Marc can stand in your line of fire (bullets pass
   through him); performance on an iPhone isn't measured yet.
+
+## Research
+Three research passes (game feel, phones, touch controls) and the plan they point to: `docs/fps-research/`.
 
 ## Ideas
 - Marc's own finisher when he hits a zombie Yola has staggered (`hub_execution_B_uppercut`).
