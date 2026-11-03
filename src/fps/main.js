@@ -13,7 +13,6 @@ import { buildLevel, collideCircle } from './level.js';
 import { createZombie, TYPES } from './zombie.js';
 import { createViewmodel, VM_LAYER, VM_FOV } from './viewmodel.js';
 import { createInput, isTouch } from './input.js';
-import { createMarc } from './marc.js';
 import { createGore } from './gore.js';
 import './fps.css';
 
@@ -69,15 +68,15 @@ const P = {
 };
 const G = {
   state: 'loading', zombies: [], pickups: [], wave: -1, waveQ: [], spawnT: 0, alive: 0, room: 0, t: 0, timeScale: 1, slowT: 0,
-  kills: 0, finishers: 0, headshots: 0, shots: 0, hits: 0, startT: 0, endT: 0, hintStagger: false, marc: null, msgT: 0,
+  kills: 0, finishers: 0, headshots: 0, shots: 0, hits: 0, startT: 0, endT: 0, hintStagger: false, msgT: 0,
 };
-let level, vm, input, marc;
+let level, vm, input;
 
 // waves: one per room, triggered on entering it
 const WAVES = [
-  { room: 0, list: ['walker', 'walker', 'walker', 'runner', 'walker', 'walker'], max: 3, gap: 2.4, title: 'ER Lobby', sub: 'Hold the lobby' },
-  { room: 1, list: ['walker', 'runner', 'walker', 'sprinter', 'walker', 'runner'], max: 3, gap: 2.0, title: 'The corridor', sub: 'Push through' },
-  { room: 2, list: ['walker', 'runner', 'walker', 'sprinter', 'walker', 'walker', 'runner', 'sprinter', 'brute'], max: 4, gap: 1.8, title: 'The ward', sub: 'Clear the ward' },
+  { room: 0, list: ['walker', 'walker', 'walker', 'runner', 'walker', 'walker', 'runner', 'walker', 'walker', 'runner'], max: 5, gap: 1.7, title: 'ER Lobby', sub: 'Hold the lobby' },
+  { room: 2, list: ['walker', 'runner', 'walker', 'walker', 'sprinter', 'walker', 'runner', 'brute', 'walker', 'walker', 'sprinter', 'runner', 'walker', 'walker'], max: 6, gap: 1.4, title: 'The ward', sub: 'Clear the ward' },
+  { room: 4, list: ['walker', 'runner', 'walker', 'sprinter', 'walker', 'walker', 'runner', 'brute', 'walker', 'sprinter', 'walker', 'runner', 'walker', 'walker', 'sprinter', 'runner', 'walker', 'brute'], max: 7, gap: 1.2, title: 'The atrium', sub: 'Last stand' },
 ];
 
 // ---------------------------------------------------------------- HUD
@@ -131,7 +130,7 @@ const game = {
 // ---------------------------------------------------------------- loading
 async function load() {
   const fill = $('.fill0'), lt = $('.load');
-  const keys = ['yola', 'marc', 'z_romero', 'z_nurse', 'z_patient', 'z_scrubs', 'z_patient_mod', 'z_girl', 'z_sprinter', 'z_brute', 'weapon:pistol_core', 'weapon:pump_shotgun', 'weapon:wood_bat', 'prop:medkit', 'prop:first_aid_case_closed'];
+  const keys = ['yola', 'z_romero', 'z_nurse', 'z_patient', 'z_scrubs', 'z_patient_mod', 'z_girl', 'z_sprinter', 'z_brute', 'weapon:pistol_core', 'weapon:pump_shotgun', 'prop:medkit', 'prop:first_aid_case_closed'];
   await preload(keys, (d, n) => { fill.style.width = (n ? d / n * 70 : 0) + '%'; });
   lt.textContent = 'Building the ER…';
   level = await buildLevel(scene, { lowPower: touch });
@@ -140,7 +139,6 @@ async function load() {
   // every light also lights Yola's arms (drawn on their own layer)
   scene.traverse(o => { if (o.isLight && o !== torch) o.layers.enable(VM_LAYER); });
   input = createInput(canvas, $('#touch'));
-  try { marc = await createMarc({ scene, game, level, fx, sound }); G.marc = marc; } catch (e) { console.warn('[fps] Marc failed', e); $('.marc').style.display = 'none'; }
   await placePickups();
   fill.style.width = '100%';
   // warm up: compile the shaders with a zombie in view so the first spawn doesn't hitch
@@ -181,14 +179,16 @@ async function makePickup(type, x, z, { y = 0, drop = false } = {}) {
 }
 async function placePickups() {
   await Promise.all([
-    makePickup('ammo', -3.8, -6.9, { y: 0 }),
-    makePickup('med', 5.5, -11.0),
-    makePickup('shotgun', 0.4, -13.6),
-    makePickup('ammo', -0.9, -18.8),
-    makePickup('med', 0.8, -24.6),
-    makePickup('ammo', -5.6, -27.2),
-    makePickup('med', 6.1, -28.0),
-    makePickup('ammo', 3.6, -37.0),
+    // lobby
+    makePickup('ammo', -6.8, -7.8), makePickup('med', 10.6, -1.2), makePickup('ammo', 6.8, -13.8),
+    // corridor A: the shotgun
+    makePickup('shotgun', 0.3, -21.5), makePickup('ammo', -0.9, -25.5),
+    // ward
+    makePickup('med', -6, -30.5), makePickup('ammo', 6, -30.5), makePickup('ammo', -4.2, -46.5), makePickup('med', 9.8, -46),
+    // corridor B
+    makePickup('ammo', 0.8, -51.5), makePickup('med', -0.8, -56.5),
+    // atrium
+    makePickup('ammo', -11.5, -62), makePickup('ammo', 11.5, -64), makePickup('med', 0, -66), makePickup('ammo', -9, -79), makePickup('med', 9, -73),
   ]);
 }
 function updatePickups(dt) {
@@ -206,7 +206,7 @@ function updatePickups(dt) {
 
 // ---------------------------------------------------------------- the player
 function resetPlayer() {
-  P.pos.set(0, 0, -1.6); P.yaw = 0; P.pitch = -0.02; P.hp = P.maxHp; P.dead = false; P.reload = null; P.fireCd = 0; P.shoveCd = 0;
+  P.pos.copy(level?.start || new THREE.Vector3(0, 0, -2.5)); P.yaw = 0; P.pitch = -0.02; P.hp = P.maxHp; P.dead = false; P.reload = null; P.fireCd = 0; P.shoveCd = 0;
   P.ammo.pistol.mag = 12; P.ammo.pistol.res = 48; P.ammo.shotgun.mag = 6; P.ammo.shotgun.res = 12; P.ammo.shotgun.owned = false; P.weapon = 'pistol';
 }
 const _f = new THREE.Vector3(), _r = new THREE.Vector3(), _d = new THREE.Vector3(), _o = new THREE.Vector3(), _m = new THREE.Vector3();
@@ -233,7 +233,6 @@ function updatePlayer(dt, I) {
     const dx = P.pos.x - z.pos.x, dz = P.pos.z - z.pos.z, r = z.radius + 0.34, d2 = dx * dx + dz * dz;
     if (d2 < r * r && d2 > 1e-6) { const d = Math.sqrt(d2), k = (r - d) / d * 0.6; P.pos.x += dx * k; P.pos.z += dz * k; }
   }
-  if (marc) { const dx = P.pos.x - marc.pos.x, dz = P.pos.z - marc.pos.z, d2 = dx * dx + dz * dz; if (d2 < 0.5 && d2 > 1e-6) { const d = Math.sqrt(d2), k = (0.7 - d) / d * 0.5; P.pos.x += dx * k; P.pos.z += dz * k; } }
   collideCircle(P.pos, 0.34, level.colliders, { player: true });
   const sp = Math.hypot(P.vel.x, P.vel.z);
   const prevBob = P.bob;
@@ -394,7 +393,7 @@ function shove() {
     if (hit) { P.shake = Math.max(P.shake, 0.35); }
   }, 90);
 }
-// Marc's bat calls this (marc.js)
+// a melee hit that staggers (kept for a future melee weapon)
 game.batHit = (z, dir) => {
   const res = z.damage(z.staggered ? 30 : 18, { part: 'body', dir, weapon: 'bat', stagger: 1 });
   const pt = z.pos.clone().setY(z.height * 0.75);
@@ -430,7 +429,7 @@ function hurtPlayer(dmg, z) {
 
 // ---------------------------------------------------------------- waves
 function startWave(i) {
-  G.wave = i; const W = WAVES[i];
+  G.wave = i; G.waveDone = false; const W = WAVES[i];
   G.waveQ = W.list.slice(); G.spawnT = 1.4; G.alive = 0;
   hud.obj.textContent = W.title + ' · ' + W.sub;
   message(W.title + '<small>' + W.sub + '</small>', 2.4);
@@ -457,11 +456,12 @@ async function spawnOne(typeId) {
 function updateWaves(dt) {
   // entering the next room starts its wave (its door must be open)
   const room = level.roomOf(P.pos.x, P.pos.z);
-  if (G.wave >= 0 && G.waveDone && room === G.wave + 1 && WAVES[G.wave + 1] && P.pos.z < [0, -13.2, -27.4][room]) { G.waveDone = false; startWave(G.wave + 1); }
+  const nextW = WAVES[G.wave + 1];
+  if (G.wave >= 0 && G.waveDone && nextW && room === nextW.room && P.pos.z < level.rooms[room].z[1] - 2) { G.waveDone = false; startWave(G.wave + 1); }
   if (G.wave < 0 || G.waveDone) return;
   G.spawnT -= dt;
   if (G.waveQ.length && G.spawnT <= 0 && G.alive < WAVES[G.wave].max) {
-    const last = G.waveQ.length === 1 && G.waveQ[0] === 'brute';
+    const last = G.waveQ.length === 1 && G.waveQ[0] === 'brute' && G.wave === WAVES.length - 1;
     if (!last || G.alive === 0) { spawnOne(G.waveQ.shift()); G.spawnT = WAVES[G.wave].gap * (0.7 + Math.random() * 0.6); }
   }
   if (!G.waveQ.length && G.alive <= 0) {
@@ -469,8 +469,8 @@ function updateWaves(dt) {
     audio.music('menu');
     if (G.wave < WAVES.length - 1) {
       level.doors[G.wave].open(); sound('door', new THREE.Vector3(0, 0, level.doors[G.wave].z));
-      message('Clear<small>' + (G.wave === 0 ? 'The corridor door is open' : 'The ward door is open') + '</small>', 2.6);
-      hud.obj.textContent = G.wave === 0 ? 'Go through to the corridor' : 'Go through to the ward';
+      message('Floor clear<small>The doors are open</small>', 2.6);
+      hud.obj.textContent = G.wave === 0 ? 'Through to the ward' : 'Through to the atrium';
     } else setTimeout(() => endGame(true), 1800);
   }
 }
@@ -563,14 +563,14 @@ function tick(real) {
   camera.updateMatrixWorld();
 
   // world
-  level.update(dt, G.t);
+  level.update(dt, G.t, P.pos);
+  // the zombies' flow field toward the player, a few times a second
+  G.navT = (G.navT || 0) - dt; if (G.navT <= 0 && G.state === 'play') { G.navT = 0.3; level.nav.update(P.pos); }
   const ctx = { player: P, colliders: level.colliders, level, others: G.zombies };
   for (const z of G.zombies) {
     z.update(dt, ctx);
     if (!z.dead && G.state === 'play') { z.growlT -= dt; if (z.growlT <= 0) { z.growlT = 3 + Math.random() * 6; sound(z.typeId === 'brute' ? 'brute_roar' : 'z_alert', z.pos, { vol: 0.45 }); } }
   }
-  marc?.update(dt, { player: P, zombies: G.zombies, colliders: level.colliders, playing: G.state === 'play' });
-  if (marc) hud.mst.textContent = marc.status;
   gore.update(dt, G.zombies);
   for (const fn of frameFns) fn(dt);
   flashLevel = Math.max(0, flashLevel - real * 40); flashL.intensity = flashLevel * 10;
@@ -586,7 +586,7 @@ function tick(real) {
 // ---------------------------------------------------------------- debug hooks (headless checks)
 window.__fpsCam = camera; window.__fpsRenderer = renderer;
 window.__fps = {
-  G, P, get zombies() { return G.zombies; }, begin, startWave, spawnOne, fire, shove, endGame, level: () => level, marc: () => marc,
+  G, P, get zombies() { return G.zombies; }, begin, startWave, spawnOne, fire, shove, endGame, level: () => level,
   look(yaw, pitch) { P.yaw = yaw; P.pitch = pitch; },
   step(n = 30, dt = 1 / 30) { stepping = true; for (let i = 0; i < n; i++) tick(dt); render(); stepping = false; },
   input: () => input, gore, vm: () => vm,

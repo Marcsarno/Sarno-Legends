@@ -216,7 +216,7 @@ export class Zombie {
   update(dt, ctx) {
     const { player, colliders, level, others } = ctx;
     this.t += dt;
-    this.mixer.update(dt);
+    if (!this.dead || this.deadT < 4) this.mixer.update(dt);
     for (const b of this.collapsed) b.scale.setScalar(0.001);
     if (this.flash > 0) {
       this.flash = Math.max(0, this.flash - dt * 7);
@@ -258,20 +258,16 @@ export class Zombie {
       return;
     }
 
-    // enter: walk out of the dark doorway to the entry point; chase: to the player (through the doors if needed)
+    // enter: walk out of the dark doorway; chase: downhill on the level's flow field (round furniture, through doors),
+    // straight at the player for the last couple of metres
     let goal;
     if (this.state === 'enter') {
       goal = _c.copy(this.entry).sub(this.pos).setY(0);
-      if (goal.length() < 0.5) this.state = 'chase';
+      if (goal.length() < 0.6 || this.t > 4) this.state = 'chase';
     }
     if (this.state === 'chase') {
-      const zr = level.roomOf(this.pos.x, this.pos.z), pr = level.roomOf(player.pos.x, player.pos.z);
-      if (zr !== pr) {
-        const D = level.doors[Math.min(zr, pr)];
-        const side = pr > zr ? -1 : 1;
-        goal = _c.set(D.x, 0, D.z + side * 0.9).sub(this.pos).setY(0);
-        if (Math.abs(this.pos.x - D.x) > 1.2) goal = _c.set(D.x, 0, D.z - side * 0.8).sub(this.pos).setY(0);
-      } else goal = _c.copy(toP);
+      const near = dist < 2.2 || level.nav.steps(this.pos) < 5;
+      goal = near ? _c.copy(toP) : (level.nav.dir(this.pos, _c)?.multiplyScalar(2) || _c.copy(toP));
       if (dist < 1.25 * this.scale && this.attackCd <= 0 && !player.dead) { this.startAttack(); return; }
     }
     const gl = goal.length();

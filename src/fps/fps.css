@@ -38,14 +38,11 @@ body { font-family: 'Barlow Semi Condensed', system-ui, sans-serif; color: var(-
 .res { font: 400 22px/1 'Bebas Neue', sans-serif; color: #bfcac6; }
 .rl { font: 700 12px/1 'Barlow Semi Condensed', sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); opacity: 0; }
 .rl.on { opacity: 1; animation: blink .5s infinite alternate; } @keyframes blink { to { opacity: .35; } }
-.marc { position: absolute; left: max(18px, env(safe-area-inset-left)); bottom: 50px; display: flex; gap: 8px; align-items: baseline; }
-.marc .lbl { color: var(--red); font-size: 18px; } .mst { font: 600 12px/1 'Barlow Semi Condensed', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #bfcac6; }
 .stats { position: absolute; right: max(18px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); font: 600 12px/1.4 'Barlow Semi Condensed', sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #9fb0ae; text-align: right; text-shadow: 0 1px 2px #000; }
 /* touch */
 #touch { position: fixed; inset: 0; display: none; touch-action: none; }
 body.touch #touch { display: block; }
 body.touch .hp { bottom: auto; top: max(10px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); }
-body.touch .marc { bottom: auto; top: calc(max(10px, env(safe-area-inset-top)) + 30px); left: max(14px, env(safe-area-inset-left)); }
 body.touch .ammo { bottom: auto; top: calc(max(10px, env(safe-area-inset-top)) + 18px); right: max(14px, env(safe-area-inset-right)); }
 body.touch .stats { display: none; }
 .tc-stick { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid #ffffff40; background: #ffffff10; opacity: 0; transition: opacity .15s; }
